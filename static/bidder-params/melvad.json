@@ -3,5 +3,13 @@
   "title": "Melvad Adapter Params",
   "description": "A schema which validates params accepted by the Melvad adapter",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "sspId": {
+      "type": "string",
+      "description": "SSP identifier issued by Melvad",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    }
+  },
+  "required": ["sspId"]
 }

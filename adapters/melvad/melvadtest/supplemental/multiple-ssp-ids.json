@@ -1,0 +1,146 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-a",
+        "banner": {"w": 300, "h": 250},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      },
+      {
+        "id": "imp-b",
+        "banner": {"w": 728, "h": 90},
+        "ext": {"bidder": {"sspId": "partner"}}
+      },
+      {
+        "id": "imp-c",
+        "banner": {"w": 320, "h": 50},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      },
+      {
+        "id": "imp-d",
+        "banner": {"w": 320, "h": 50},
+        "ext": {"bidder": {}}
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression imp-d: ext.bidder.sspId is required",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-a",
+              "banner": {"w": 300, "h": 250},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            },
+            {
+              "id": "imp-c",
+              "banner": {"w": 320, "h": 50},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            }
+          ]
+        },
+        "impIDs": ["imp-a", "imp-c"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-a",
+                  "impid": "imp-a",
+                  "price": 1.25,
+                  "adm": "<div>a</div>",
+                  "crid": "crid-a"
+                }
+              ],
+              "seat": "melvad"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/partner",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-b",
+              "banner": {"w": 728, "h": 90},
+              "ext": {"bidder": {"sspId": "partner"}}
+            }
+          ]
+        },
+        "impIDs": ["imp-b"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-b",
+                  "impid": "imp-b",
+                  "price": 0.75,
+                  "adm": "<div>b</div>",
+                  "crid": "crid-b"
+                }
+              ],
+              "seat": "melvad"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-a",
+            "impid": "imp-a",
+            "price": 1.25,
+            "adm": "<div>a</div>",
+            "crid": "crid-a"
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-b",
+            "impid": "imp-b",
+            "price": 0.75,
+            "adm": "<div>b</div>",
+            "crid": "crid-b"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

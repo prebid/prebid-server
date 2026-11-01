@@ -1,4 +1,4 @@
-endpoint: "https://rtb.bidder.melvad.com/ssps/1/prebid"
+endpoint: "https://rtb.bidder.melvad.com/ssps/1/{{.SspID}}"
 maintainer:
   email: support@melvad.com
 endpointCompression: gzip
@@ -16,5 +16,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&wu=1
+    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
     userMacro: '{{oui}}'

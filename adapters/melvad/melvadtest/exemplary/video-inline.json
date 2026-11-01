@@ -1,0 +1,222 @@
+{
+  "mockBidRequest": {
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37934lssd34fgd",
+    "imp": [
+      {
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "secure": 1,
+        "tagid": "ierui234fdfdf",
+        "video": {
+          "delivery": [
+            2
+          ],
+          "h": 360,
+          "linearity": 1,
+          "maxbitrate": 6000,
+          "maxduration": 60,
+          "mimes": [
+            "video/mp4",
+            "video/webm",
+            "video/mpeg"
+          ],
+          "minbitrate": 500,
+          "minduration": 5,
+          "placement": 1,
+          "protocols": [
+            3
+          ],
+          "startdelay": 0,
+          "w": 640
+        }
+      }
+    ],
+    "site": {
+      "cat": [
+        "IAB12",
+        "IAB17-12"
+      ],
+      "domain": "tass.ru",
+      "id": "9fu48u347ru34o",
+      "page": "https://tass.ru/sport/4237913",
+      "publisher": {
+        "id": "p-93dj34di3344"
+      }
+    },
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37934lssd34fgd",
+          "imp": [
+            {
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "secure": 1,
+              "tagid": "ierui234fdfdf",
+              "video": {
+                "delivery": [
+                  2
+                ],
+                "h": 360,
+                "linearity": 1,
+                "maxbitrate": 6000,
+                "maxduration": 60,
+                "mimes": [
+                  "video/mp4",
+                  "video/webm",
+                  "video/mpeg"
+                ],
+                "minbitrate": 500,
+                "minduration": 5,
+                "placement": 1,
+                "protocols": [
+                  3
+                ],
+                "startdelay": 0,
+                "w": 640
+              }
+            }
+          ],
+          "site": {
+            "cat": [
+              "IAB12",
+              "IAB17-12"
+            ],
+            "domain": "tass.ru",
+            "id": "9fu48u347ru34o",
+            "page": "https://tass.ru/sport/4237913",
+            "publisher": {
+              "id": "p-93dj34di3344"
+            }
+          },
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37934lssd34fgd",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11296",
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"><Ad id=\"1\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11296]]></AdTitle><Impression id=\"1\"><![CDATA[https://rtb.melvad.com/imp/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A]]></Impression><Creatives><Creative id=\"1\" AdID=\"1\"><Linear skipoffset=\"00:00:05\"><Duration>00:00:20</Duration><TrackingEvents><Tracking event=\"close\"><![CDATA[https://rtb.melvad.com/close/GXMG74XuNqSVSosCjk_WpAUrUG181Mpswfulm0B8gzBZiqrLQDzCC_xXyLIO_gSdfa7TaNIuSGwoF48M736SyAjcEsFd6SCUj_J9k2JNMrteDmoG_ThPEjebOxitd8eB5jpBhf-pMon2NrB2_9JBQ6c8C3fH8c6lXiTQOPPolKVDSA2Tpbv_sEoAjkbp64kICA4PlcHXThOWUdbHSYeK8FhjA7nr77PD8OWsUHKABMrpnk7lhjjWSCP6KqkwxztfszaqAP0hmwEGn_UxeMK4OzJ5gAu2KbtfggJ0iTrKAoORNQB9w0jItTxDGngj38oEv_Y9CbNhlDMMOULTw-mx8HDJuwAgs3bC7usFmhQILjvPDYncAP2_30e49tYc5vD2KKQZE5MaKFxvPHA]]></Tracking><Tracking event=\"pause\"><![CDATA[https://rtb.melvad.com/pause/HLkO0Y7QPCSYOas0teOpmU1NAr8T2WixAemi17kmLIUpFeVjNtmfdkK2VAlVXczjCV7uL_50FJpFzAGrtisqHzTDLUUUXxXyDl-zB0ezfKijulFfFs1FrDSu5m0yBvkNByNu8ypfcmppv2BXJcqkCN5eRPNVNrBeXHcqCLoPu3UIK3xNSNQTJoCwCc25OybMKArqByLJcGG8VZ-l2yQSjzrnU2nN2OtVBS1E2_Q9la7OTKBBRhDwx6oveVhbkClunj1Xm5ZjiLhtOlb7Xq2d3tudJO1lKggwsOyY5mbUpIzZEbZabE1zzfBN4DmoXs15VYrAIW-ySM4yKDJ8WUXYSdXfR96cap7eQJPmqOxcMuEFcgjVPQB50IgUbYIqpZIjYC7qPpXLg28pb0g]]></Tracking><Tracking event=\"unmute\"><![CDATA[https://rtb.melvad.com/unmute/BWs5Ia6lVe-3UkBKT84thZ2nPLhK7-OQA8ywhFim4eyQfe4LxBzE1vFWluKzPyRdGJ8teHVTKcShUfd68uakqWFhYbU81XL2OaihnWGBSKzpc3FpfjdDYXDkP3yQT6hjNcGBdU6IFOkW5oLJbGdh7LTLAXC13lzRkcoYz5ulSU8pWCYvBYkQG2QHD63mmGyhYac37z4BfM-4966uuEJxPKuA2QMAom_dCIdNN56cgU2X3ZJQElvh39YWjmqIXM7ceMh4pCZeQAHL0GQ3IH5Rr-ZnGIfQflKeUdRC8miR-cnAoCJi2j3F_Jh-HTsm-s9CI0CaRQTmhskFWKCfaPRddrmGdU-gtIG3HIzgNO6f3FFad7ELJADFRWSLEx7Cc9iD60TL2Utz_cP6keE]]></Tracking><Tracking event=\"start\"><![CDATA[https://rtb.melvad.com/start/BL4uKy1bEvnxPbFqT17XDKlGJvP0AXGkpi3pESuk1CNmpk7mtrkrzKx56QsIMv5w2JO34fB6AaYVEobgWwT2pB49DgfSqK8pYPXXZVKBPWTl9P5vBHtL68ix0QPKMhPo8hhQSM_944vRniWsKe0gUPDXGPtVPVLk56_yD0ybUynxaobfxDXDQbMYcSFQ9xEOBpFfkHIkeTJU1RG2n40y4HVEtr6CXILWTNTQzFuSBEZOtPCIIhUA1zN-TVBzIM-QruzKUoW3eskuEVNaezSONLo9dHFajqHdripsrxyZabxiVqlRTipPXTUS6M3PdXSNfLM2dSZwTBnUum6yQXlpeS5mNcIcd1-9NIs3hZzlOoUiVDCBv8zlZMPZF7hJ5nFncyCZMOjG6sC7SRw]]></Tracking><Tracking event=\"midpoint\"><![CDATA[https://rtb.melvad.com/midpoint/EHAWw0mVInAJ0IifFeBUfWYSWzaehohZRtFETmEQk_5-YDzSGslxUdxDV3JidEWIEfCkQ3OWwHupaVGxxRQ6HtS4ZRh9dqmmrUvBD9u_WCy1uGFR8PFan3-eUg9bEtED5MMQ4DxuCmF5FkvCmxx0V6lu80v89fN9aRL5d1opt417Z5wWbB7uOA691_HifaWgNK-Zxt5KK-PQcrxbmC7FkAr2QFpBzJLsFTAS9y0I7zU0UnkXRzSfvj_2FPZRDun0vXiu0vyKd1WVgOb0SmDH27IdWzXzohDrZEOsyOIpcsNM7lTuelmnKR0XxqVusyLjcYNm8ewcYkNhe1SvLnU4yk_g-eKOtg6vyj-S6RwqePp3dUkrwgiQWu4oXuWibi-n7HLxzsxKgOm_TQM]]></Tracking><Tracking event=\"thirdQuartile\"><![CDATA[https://rtb.melvad.com/thirdQuartile/zkfpJrnZ7KjV_gDTZP2Wg1LarNFdZtWeK-GmLWLHJNYkJHK7n6yk-cVXlwX-0RdChTSlJs25kkgxXG-TM5km4bcnHExMEFwivPSqrz7vdUILk4iqmiocZxAzWdcLyyOLQ3T9EAldND5ZKQAxafpiXMbkqI_CNmH1kl70BUQpx2Ib9mDx986ae2vqHkNxdjcczhTlHWCTUQ6rJ-7uiTJeI-x7RcfUBmUuti_HZ3o1xP2D5w8xd-M_AOWdt4o3b1k9xdkidop6IxgZhmvLBARQ2K8YNJYPfdM3lvWIaHBw7xlXzbdvz_YLJnSGsrbqY9QBW7IRzKak7nbNbwCfQVrdsvI2whiKpxN_q8saOhBOrfKlkzhbEHPg_giJh2CK5b5w5N-8W0vsoYHJTJ8]]></Tracking><Tracking event=\"skip\"><![CDATA[https://rtb.melvad.com/skip/StPPIauk7fyFce3orgP9fPNNhGb-sEOA0blHuUjUByS2OHkfsTjjUOOMWgYRhc4Yg0xrWei2jMDJSO3thnNUyhwDS1N3tANcE554Foh4xktRSVx_UOw8q6aUo4OTgOq9F3Be1aYSq5gIv_zCHHrhuiVbgOt5XQ2-gvw6BVsSmeOb-ips0kXfClMIFE6m9VPeFgavf2W8fGMjNxHmjSy2IzfkAc0bFb8neR_QJwg2XkuqFKsTTsn4r8GOw0obDQd5HZZITMpAW2JOQmGI84J5Sq-tokesQ2qR-3OMkuUU-CnO4WL4Qxyn_ToEZsih2dX3aPr53J0MtKtpnyNplZbktkmwzsDj6AIqvdDGB_GVAVxOPa5b2c6a7TN1dqhJduO2pwYmxO77Zu3PvBg]]></Tracking><Tracking event=\"mute\"><![CDATA[https://rtb.melvad.com/mute/L03KVBjgm7mK7PKB_rYQ0jIs5577ttOITdhiXf9i7ZaX94ofVyn2njR2JWT2Ey_uANZJkwr1i2wixQp8KVTLWyjpUmp9eXxOYw-P300BG0thrIX75O3YjKWleZ8k5XGxK5AN0JG3J9sp8jYLQ9RXKK1Pb_37mu8g87qEUIRMGK03k9lhRsTqaR4EzbwL9hCFuGetiTVfR7s5agtsgfOfIzQ8gnLhY3Af74OS5ymG0KUkvj3Hm3y9ZFZp_fEyVbzYPhXUa-oBlErNvFbD13G2SsxbZNOTRxxGmPFDhUOK9EltkROChrEHFyEsVZb70FHSISAG280Ugrh5uH9x-KquFn6qjLc9cx3z1AjGzd-EkiKlvnFiRlqqgBoeCF6dcTcpC7WtgK9v4ny3O1s]]></Tracking><Tracking event=\"firstQuartile\"><![CDATA[https://rtb.melvad.com/firstQuartile/7H0Nk-pZwSScSCG1XG_mC5Mmfoh2pqIK_UzwubLwcz1n390kThEg8sIDIlZcSCQ46VPbUOpZZsbSpOu_jA8WbOaw5-ZDZPTpfwLkwsicnNlb74j2voHKpXvIS8UjlIpOvshpIN1dR1rN4FRqmztQ2GABiYjtI-1WWJ6QZQB51I50PRpzCS8FGyZHmETLhMmAY_GDNkNIbZTGDuBcSEb0Bv56hxwgSsOmJVq-L4zbgqAeQJNxafmN57fGWcLqk_SpSO37Y_ISJWezcgLEggA6oG95VtqTze77-NCiWgTm25VdhjhC9EIyCaxzZRCI8orUVAnXeB3QWaC_LxoZlrxPLSIMCP5V8AIwh7QbSJd1-9FW8ZD2GhmPrriiq3nY4koFM_4hXwMPmLsCXHI]]></Tracking><Tracking event=\"complete\"><![CDATA[https://rtb.melvad.com/complete/g1YOQKa204JxqiLUwLMsu3bNfP6oANuDa0CkMGQYj0dROTiKSep7zIa86CZJRcrPl1NOX9qjKTQYGhEaCgcd2U4-eI37aDGrkvafCxZYLywV8oChdHnrbmG-majiGD4uuTsuawlWbCWHRyD4A_cNpST7433yOk09JqEkM2pDlYiy3Ofo8Dt3mc0_1NHT4Tmh_jtfbTYdExc6NZNGXelWtTOK0P3xzN90oMHqJ0G90_z3lWUHQ3Jg1OsDFYJBl_onESc9pOqPFBlVxMZjYIlWB5g5Fbw_kL5PGGtR2Tvl8czb3sZruPRyEuGBxpslWpVUwfiE6jYdlAsi4ASsxhPp0rYDypqKhF1nvZ-XDVwlw50GRTXIrpeoUWNF-hM6g-V8HsRJfmDR-8jv5QE]]></Tracking><Tracking event=\"creativeView\"><![CDATA[https://rtb.melvad.com/creativeView/fAvd05a2bVLG9-YhU6M9_AxQXR60KZKXB2nPt5OHTkSlL8xxyf8olvM2SzrGnk4PoEtpAAuDhu885rGXZy5Rd2pvDxWz2-EQqLX8DonP0MxrIGc5q5FjbNTtdXrWdJT9-yy0CIdp6KClDRa8qPm2sh0oBRaaX1ZziXaIiTteujrWL6Ff0Iiy6M4ptSgDYV8v1vQ5dXsI0eliRmD_5AA0cnBoSv8SOJG7TLYLJlevv0jjCbbplo0FF46COZ-mLOBOWGUQygp2G-pGtkFr1tuRKL2wNkmCqSoD4BzPWbgu2R9cKz11g6fLCxTYie_U6MfPe-rEDwtR0dpLXSlVzHj2rSjjRA63Ij46nWa9EsPo8iVlGAOjEHcl3HA5KP7KuAUOOAh-vhVNmsITXfI]]></Tracking><Tracking event=\"resume\"><![CDATA[https://rtb.melvad.com/resume/tOlGiBbvbpwHofqtCYIQ3_nDZfRWEXFjJD28z2L_I1N440l5vGJ4o1xC61awe8FO-Y2LKsrZRkErxZMYxBUGSXNLpLICZHC7rW09eXYZmw1Z03PlW7xIWMJrKJcnbby8x0Gu-yMbXXG1ANv3qS-KwKz-Ux64UISWtHLV0Q6zi1MxnpFYr4nJj4Mh9Z9CbCHbTv8z67sYB2UCpAv4jD8r_IzefMxF2fmQEgyLs87e8oWiCP8eM-5BebRffVzBKhtweE8FCXYJ_i_IMijJyYw3_pkcrs42ojmOZ3cZvN0vxAVI8pfehZTxkBNNKtKT7gRAE50e6nkgfBfj4Gv-SzaMqD23WpXGJKfU1hXuIrsEEo-g26c6l2HOk33W_zSQU5tgGQF3JGP0Gz2u5Hw]]></Tracking></TrackingEvents><VideoClicks><ClickThrough id=\"1\"><![CDATA[https://melvad.com]]></ClickThrough><ClickTracking id=\"1\"><![CDATA[https://rtb.melvad.com/click/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A]]></ClickTracking></VideoClicks><MediaFiles><MediaFile id=\"1\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18\" width=\"640\" height=\"360\" scalable=\"true\" maintainAspectRatio=\"true\"><![CDATA[https://cdn.melvad.com/files/dev/vmw2gpntupe.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+                  "adomain": [
+                    "melvad.com"
+                  ],
+                  "burl": "https://rtb.melvad.com/billing/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5934",
+                  "crid": "11296",
+                  "id": "11296",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A",
+                  "price": 1.9517991108,
+                  "protocol": 3
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11296",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"><Ad id=\"1\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11296]]></AdTitle><Impression id=\"1\"><![CDATA[https://rtb.melvad.com/imp/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A]]></Impression><Creatives><Creative id=\"1\" AdID=\"1\"><Linear skipoffset=\"00:00:05\"><Duration>00:00:20</Duration><TrackingEvents><Tracking event=\"close\"><![CDATA[https://rtb.melvad.com/close/GXMG74XuNqSVSosCjk_WpAUrUG181Mpswfulm0B8gzBZiqrLQDzCC_xXyLIO_gSdfa7TaNIuSGwoF48M736SyAjcEsFd6SCUj_J9k2JNMrteDmoG_ThPEjebOxitd8eB5jpBhf-pMon2NrB2_9JBQ6c8C3fH8c6lXiTQOPPolKVDSA2Tpbv_sEoAjkbp64kICA4PlcHXThOWUdbHSYeK8FhjA7nr77PD8OWsUHKABMrpnk7lhjjWSCP6KqkwxztfszaqAP0hmwEGn_UxeMK4OzJ5gAu2KbtfggJ0iTrKAoORNQB9w0jItTxDGngj38oEv_Y9CbNhlDMMOULTw-mx8HDJuwAgs3bC7usFmhQILjvPDYncAP2_30e49tYc5vD2KKQZE5MaKFxvPHA]]></Tracking><Tracking event=\"pause\"><![CDATA[https://rtb.melvad.com/pause/HLkO0Y7QPCSYOas0teOpmU1NAr8T2WixAemi17kmLIUpFeVjNtmfdkK2VAlVXczjCV7uL_50FJpFzAGrtisqHzTDLUUUXxXyDl-zB0ezfKijulFfFs1FrDSu5m0yBvkNByNu8ypfcmppv2BXJcqkCN5eRPNVNrBeXHcqCLoPu3UIK3xNSNQTJoCwCc25OybMKArqByLJcGG8VZ-l2yQSjzrnU2nN2OtVBS1E2_Q9la7OTKBBRhDwx6oveVhbkClunj1Xm5ZjiLhtOlb7Xq2d3tudJO1lKggwsOyY5mbUpIzZEbZabE1zzfBN4DmoXs15VYrAIW-ySM4yKDJ8WUXYSdXfR96cap7eQJPmqOxcMuEFcgjVPQB50IgUbYIqpZIjYC7qPpXLg28pb0g]]></Tracking><Tracking event=\"unmute\"><![CDATA[https://rtb.melvad.com/unmute/BWs5Ia6lVe-3UkBKT84thZ2nPLhK7-OQA8ywhFim4eyQfe4LxBzE1vFWluKzPyRdGJ8teHVTKcShUfd68uakqWFhYbU81XL2OaihnWGBSKzpc3FpfjdDYXDkP3yQT6hjNcGBdU6IFOkW5oLJbGdh7LTLAXC13lzRkcoYz5ulSU8pWCYvBYkQG2QHD63mmGyhYac37z4BfM-4966uuEJxPKuA2QMAom_dCIdNN56cgU2X3ZJQElvh39YWjmqIXM7ceMh4pCZeQAHL0GQ3IH5Rr-ZnGIfQflKeUdRC8miR-cnAoCJi2j3F_Jh-HTsm-s9CI0CaRQTmhskFWKCfaPRddrmGdU-gtIG3HIzgNO6f3FFad7ELJADFRWSLEx7Cc9iD60TL2Utz_cP6keE]]></Tracking><Tracking event=\"start\"><![CDATA[https://rtb.melvad.com/start/BL4uKy1bEvnxPbFqT17XDKlGJvP0AXGkpi3pESuk1CNmpk7mtrkrzKx56QsIMv5w2JO34fB6AaYVEobgWwT2pB49DgfSqK8pYPXXZVKBPWTl9P5vBHtL68ix0QPKMhPo8hhQSM_944vRniWsKe0gUPDXGPtVPVLk56_yD0ybUynxaobfxDXDQbMYcSFQ9xEOBpFfkHIkeTJU1RG2n40y4HVEtr6CXILWTNTQzFuSBEZOtPCIIhUA1zN-TVBzIM-QruzKUoW3eskuEVNaezSONLo9dHFajqHdripsrxyZabxiVqlRTipPXTUS6M3PdXSNfLM2dSZwTBnUum6yQXlpeS5mNcIcd1-9NIs3hZzlOoUiVDCBv8zlZMPZF7hJ5nFncyCZMOjG6sC7SRw]]></Tracking><Tracking event=\"midpoint\"><![CDATA[https://rtb.melvad.com/midpoint/EHAWw0mVInAJ0IifFeBUfWYSWzaehohZRtFETmEQk_5-YDzSGslxUdxDV3JidEWIEfCkQ3OWwHupaVGxxRQ6HtS4ZRh9dqmmrUvBD9u_WCy1uGFR8PFan3-eUg9bEtED5MMQ4DxuCmF5FkvCmxx0V6lu80v89fN9aRL5d1opt417Z5wWbB7uOA691_HifaWgNK-Zxt5KK-PQcrxbmC7FkAr2QFpBzJLsFTAS9y0I7zU0UnkXRzSfvj_2FPZRDun0vXiu0vyKd1WVgOb0SmDH27IdWzXzohDrZEOsyOIpcsNM7lTuelmnKR0XxqVusyLjcYNm8ewcYkNhe1SvLnU4yk_g-eKOtg6vyj-S6RwqePp3dUkrwgiQWu4oXuWibi-n7HLxzsxKgOm_TQM]]></Tracking><Tracking event=\"thirdQuartile\"><![CDATA[https://rtb.melvad.com/thirdQuartile/zkfpJrnZ7KjV_gDTZP2Wg1LarNFdZtWeK-GmLWLHJNYkJHK7n6yk-cVXlwX-0RdChTSlJs25kkgxXG-TM5km4bcnHExMEFwivPSqrz7vdUILk4iqmiocZxAzWdcLyyOLQ3T9EAldND5ZKQAxafpiXMbkqI_CNmH1kl70BUQpx2Ib9mDx986ae2vqHkNxdjcczhTlHWCTUQ6rJ-7uiTJeI-x7RcfUBmUuti_HZ3o1xP2D5w8xd-M_AOWdt4o3b1k9xdkidop6IxgZhmvLBARQ2K8YNJYPfdM3lvWIaHBw7xlXzbdvz_YLJnSGsrbqY9QBW7IRzKak7nbNbwCfQVrdsvI2whiKpxN_q8saOhBOrfKlkzhbEHPg_giJh2CK5b5w5N-8W0vsoYHJTJ8]]></Tracking><Tracking event=\"skip\"><![CDATA[https://rtb.melvad.com/skip/StPPIauk7fyFce3orgP9fPNNhGb-sEOA0blHuUjUByS2OHkfsTjjUOOMWgYRhc4Yg0xrWei2jMDJSO3thnNUyhwDS1N3tANcE554Foh4xktRSVx_UOw8q6aUo4OTgOq9F3Be1aYSq5gIv_zCHHrhuiVbgOt5XQ2-gvw6BVsSmeOb-ips0kXfClMIFE6m9VPeFgavf2W8fGMjNxHmjSy2IzfkAc0bFb8neR_QJwg2XkuqFKsTTsn4r8GOw0obDQd5HZZITMpAW2JOQmGI84J5Sq-tokesQ2qR-3OMkuUU-CnO4WL4Qxyn_ToEZsih2dX3aPr53J0MtKtpnyNplZbktkmwzsDj6AIqvdDGB_GVAVxOPa5b2c6a7TN1dqhJduO2pwYmxO77Zu3PvBg]]></Tracking><Tracking event=\"mute\"><![CDATA[https://rtb.melvad.com/mute/L03KVBjgm7mK7PKB_rYQ0jIs5577ttOITdhiXf9i7ZaX94ofVyn2njR2JWT2Ey_uANZJkwr1i2wixQp8KVTLWyjpUmp9eXxOYw-P300BG0thrIX75O3YjKWleZ8k5XGxK5AN0JG3J9sp8jYLQ9RXKK1Pb_37mu8g87qEUIRMGK03k9lhRsTqaR4EzbwL9hCFuGetiTVfR7s5agtsgfOfIzQ8gnLhY3Af74OS5ymG0KUkvj3Hm3y9ZFZp_fEyVbzYPhXUa-oBlErNvFbD13G2SsxbZNOTRxxGmPFDhUOK9EltkROChrEHFyEsVZb70FHSISAG280Ugrh5uH9x-KquFn6qjLc9cx3z1AjGzd-EkiKlvnFiRlqqgBoeCF6dcTcpC7WtgK9v4ny3O1s]]></Tracking><Tracking event=\"firstQuartile\"><![CDATA[https://rtb.melvad.com/firstQuartile/7H0Nk-pZwSScSCG1XG_mC5Mmfoh2pqIK_UzwubLwcz1n390kThEg8sIDIlZcSCQ46VPbUOpZZsbSpOu_jA8WbOaw5-ZDZPTpfwLkwsicnNlb74j2voHKpXvIS8UjlIpOvshpIN1dR1rN4FRqmztQ2GABiYjtI-1WWJ6QZQB51I50PRpzCS8FGyZHmETLhMmAY_GDNkNIbZTGDuBcSEb0Bv56hxwgSsOmJVq-L4zbgqAeQJNxafmN57fGWcLqk_SpSO37Y_ISJWezcgLEggA6oG95VtqTze77-NCiWgTm25VdhjhC9EIyCaxzZRCI8orUVAnXeB3QWaC_LxoZlrxPLSIMCP5V8AIwh7QbSJd1-9FW8ZD2GhmPrriiq3nY4koFM_4hXwMPmLsCXHI]]></Tracking><Tracking event=\"complete\"><![CDATA[https://rtb.melvad.com/complete/g1YOQKa204JxqiLUwLMsu3bNfP6oANuDa0CkMGQYj0dROTiKSep7zIa86CZJRcrPl1NOX9qjKTQYGhEaCgcd2U4-eI37aDGrkvafCxZYLywV8oChdHnrbmG-majiGD4uuTsuawlWbCWHRyD4A_cNpST7433yOk09JqEkM2pDlYiy3Ofo8Dt3mc0_1NHT4Tmh_jtfbTYdExc6NZNGXelWtTOK0P3xzN90oMHqJ0G90_z3lWUHQ3Jg1OsDFYJBl_onESc9pOqPFBlVxMZjYIlWB5g5Fbw_kL5PGGtR2Tvl8czb3sZruPRyEuGBxpslWpVUwfiE6jYdlAsi4ASsxhPp0rYDypqKhF1nvZ-XDVwlw50GRTXIrpeoUWNF-hM6g-V8HsRJfmDR-8jv5QE]]></Tracking><Tracking event=\"creativeView\"><![CDATA[https://rtb.melvad.com/creativeView/fAvd05a2bVLG9-YhU6M9_AxQXR60KZKXB2nPt5OHTkSlL8xxyf8olvM2SzrGnk4PoEtpAAuDhu885rGXZy5Rd2pvDxWz2-EQqLX8DonP0MxrIGc5q5FjbNTtdXrWdJT9-yy0CIdp6KClDRa8qPm2sh0oBRaaX1ZziXaIiTteujrWL6Ff0Iiy6M4ptSgDYV8v1vQ5dXsI0eliRmD_5AA0cnBoSv8SOJG7TLYLJlevv0jjCbbplo0FF46COZ-mLOBOWGUQygp2G-pGtkFr1tuRKL2wNkmCqSoD4BzPWbgu2R9cKz11g6fLCxTYie_U6MfPe-rEDwtR0dpLXSlVzHj2rSjjRA63Ij46nWa9EsPo8iVlGAOjEHcl3HA5KP7KuAUOOAh-vhVNmsITXfI]]></Tracking><Tracking event=\"resume\"><![CDATA[https://rtb.melvad.com/resume/tOlGiBbvbpwHofqtCYIQ3_nDZfRWEXFjJD28z2L_I1N440l5vGJ4o1xC61awe8FO-Y2LKsrZRkErxZMYxBUGSXNLpLICZHC7rW09eXYZmw1Z03PlW7xIWMJrKJcnbby8x0Gu-yMbXXG1ANv3qS-KwKz-Ux64UISWtHLV0Q6zi1MxnpFYr4nJj4Mh9Z9CbCHbTv8z67sYB2UCpAv4jD8r_IzefMxF2fmQEgyLs87e8oWiCP8eM-5BebRffVzBKhtweE8FCXYJ_i_IMijJyYw3_pkcrs42ojmOZ3cZvN0vxAVI8pfehZTxkBNNKtKT7gRAE50e6nkgfBfj4Gv-SzaMqD23WpXGJKfU1hXuIrsEEo-g26c6l2HOk33W_zSQU5tgGQF3JGP0Gz2u5Hw]]></Tracking></TrackingEvents><VideoClicks><ClickThrough id=\"1\"><![CDATA[https://melvad.com]]></ClickThrough><ClickTracking id=\"1\"><![CDATA[https://rtb.melvad.com/click/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A]]></ClickTracking></VideoClicks><MediaFiles><MediaFile id=\"1\" delivery=\"progressive\" type=\"video/mp4\" bitrate=\"18\" width=\"640\" height=\"360\" scalable=\"true\" maintainAspectRatio=\"true\"><![CDATA[https://cdn.melvad.com/files/dev/vmw2gpntupe.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+            "adomain": [
+              "melvad.com"
+            ],
+            "burl": "https://rtb.melvad.com/billing/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5934",
+            "crid": "11296",
+            "id": "11296",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A",
+            "price": 1.9517991108,
+            "protocol": 3
+          },
+          "type": "video"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}

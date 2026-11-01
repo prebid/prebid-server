@@ -1,0 +1,236 @@
+{
+  "mockBidRequest": {
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37934lssd34fgd",
+    "imp": [
+      {
+        "banner": {
+          "btype": [
+            1,
+            3,
+            4
+          ],
+          "expdir": [
+            5
+          ],
+          "format": [
+            {
+              "h": 480,
+              "w": 320
+            }
+          ],
+          "h": 480,
+          "mimes": [
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "text/html"
+          ],
+          "w": 320
+        },
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "instl": 1,
+        "secure": 1,
+        "tagid": "ierui234fdfdf"
+      }
+    ],
+    "site": {
+      "cat": [
+        "IAB12",
+        "IAB17-12"
+      ],
+      "domain": "tass.ru",
+      "id": "9fu48u347ru34o",
+      "page": "https://tass.ru/sport/4237913",
+      "publisher": {
+        "id": "p-93dj34di3344"
+      }
+    },
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37934lssd34fgd",
+          "imp": [
+            {
+              "banner": {
+                "btype": [
+                  1,
+                  3,
+                  4
+                ],
+                "expdir": [
+                  5
+                ],
+                "format": [
+                  {
+                    "h": 480,
+                    "w": 320
+                  }
+                ],
+                "h": 480,
+                "mimes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "w": 320
+              },
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "instl": 1,
+              "secure": 1,
+              "tagid": "ierui234fdfdf"
+            }
+          ],
+          "site": {
+            "cat": [
+              "IAB12",
+              "IAB17-12"
+            ],
+            "domain": "tass.ru",
+            "id": "9fu48u347ru34o",
+            "page": "https://tass.ru/sport/4237913",
+            "publisher": {
+              "id": "p-93dj34di3344"
+            }
+          },
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37du34ajfj34h",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11287",
+                  "adm": "<div id=\"Melvad\"><html>\n   <head>\n      <meta charset=\"UTF-8\">\n      <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n      <style>\n         body {\n         margin: 0;\n         padding: 0;\n         display: flex;\n         justify-content: center;\n         align-items: center;\n         height: 100vh;\n         background-color: #f4f4f4;\n         }\n         .ad-container {\n         position: relative;\n         width: 300px;\n         height: 250px;\n         margin: 0 auto;\n         }\n         .ad-image {\n         width: 100%;\n         height: 100%;\n         cursor: pointer;\n         transition: all 0.3s ease-in-out;\n         }\n         .fullscreen-image {\n         position: fixed;\n         top: 0;\n         left: 0;\n         width: 100vw;\n         height: 100vh;\n         object-fit: cover;\n         z-index: 1000;\n         background: #000;\n         }\n         .close-btn {\n         position: fixed;\n         top: 10px;\n         right: 10px;\n         width: 32px;\n         height: 32px;\n         padding: 0;\n         border: none;\n         background: none;\n         z-index: 1100;\n         display: none;\n         cursor: pointer;\n         }\n         .close-btn img {\n         width: 100%;\n         height: 100%;\n         }\n      </style>\n   </head>\n   <body>\n      <div id=\"ad-banner\" class=\"ad-container\">\n         <img id=\"banner-image\" src=\"https://cdn.melvad.com/melvad_300x250.png\" class=\"ad-image\"/>\n         <button id=\"close-btn\" class=\"close-btn\">\n         <img src=\"https://cdn.melvad.com/close23.png\"/>\n         </button>\n      </div>\n      <script>\n         document.addEventListener(\"DOMContentLoaded\", () => {\n             const bannerImage = document.getElementById(\"banner-image\");\n             const closeButton = document.getElementById(\"close-btn\");\n             const bannerContainer = document.getElementById(\"ad-banner\");\n         \n             // Click event for the banner image\n             bannerImage.addEventListener(\"click\", () => {\n                 // Detect orientation and set the appropriate image\n                 const isPortrait = window.innerHeight > window.innerWidth;\n                 bannerImage.src = isPortrait\n                     ? \"https://cdn.melvad.com/melvad_320x480.png\"\n                     : \"https://cdn.melvad.com/melvad_480x320.png\";\n         \n                 // Add fullscreen styles\n                 bannerImage.classList.add(\"fullscreen-image\");\n         \n                 // Display the close button\n                 closeButton.style.display = \"block\";\n         \n                 // Redirect to the site when clicking the fullscreen image\n                 bannerImage.addEventListener(\"click\", () => {\n                     window.location.href = \"https://rtb.melvad.com/click/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A\";\n                 });\n             });\n         \n             // Click event for the close button\n             closeButton.addEventListener(\"click\", () => {\n                 // Hide the entire banner\n                 bannerContainer.style.display = \"none\";\n             });\n         });\n      </script>\n   </body>\n</html><img src=\"https://rtb.melvad.com/imp/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A\" width=\"1\" height=\"1\" border=\"0\"></div>",
+                  "adomain": [
+                    "melvad.com"
+                  ],
+                  "attr": [
+                    4
+                  ],
+                  "burl": "https://rtb.melvad.com/billing/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5934",
+                  "crid": "11287",
+                  "h": 250,
+                  "id": "11287",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A",
+                  "price": 1.9513028376,
+                  "w": 300
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11287",
+            "adm": "<div id=\"Melvad\"><html>\n   <head>\n      <meta charset=\"UTF-8\">\n      <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n      <style>\n         body {\n         margin: 0;\n         padding: 0;\n         display: flex;\n         justify-content: center;\n         align-items: center;\n         height: 100vh;\n         background-color: #f4f4f4;\n         }\n         .ad-container {\n         position: relative;\n         width: 300px;\n         height: 250px;\n         margin: 0 auto;\n         }\n         .ad-image {\n         width: 100%;\n         height: 100%;\n         cursor: pointer;\n         transition: all 0.3s ease-in-out;\n         }\n         .fullscreen-image {\n         position: fixed;\n         top: 0;\n         left: 0;\n         width: 100vw;\n         height: 100vh;\n         object-fit: cover;\n         z-index: 1000;\n         background: #000;\n         }\n         .close-btn {\n         position: fixed;\n         top: 10px;\n         right: 10px;\n         width: 32px;\n         height: 32px;\n         padding: 0;\n         border: none;\n         background: none;\n         z-index: 1100;\n         display: none;\n         cursor: pointer;\n         }\n         .close-btn img {\n         width: 100%;\n         height: 100%;\n         }\n      </style>\n   </head>\n   <body>\n      <div id=\"ad-banner\" class=\"ad-container\">\n         <img id=\"banner-image\" src=\"https://cdn.melvad.com/melvad_300x250.png\" class=\"ad-image\"/>\n         <button id=\"close-btn\" class=\"close-btn\">\n         <img src=\"https://cdn.melvad.com/close23.png\"/>\n         </button>\n      </div>\n      <script>\n         document.addEventListener(\"DOMContentLoaded\", () => {\n             const bannerImage = document.getElementById(\"banner-image\");\n             const closeButton = document.getElementById(\"close-btn\");\n             const bannerContainer = document.getElementById(\"ad-banner\");\n         \n             // Click event for the banner image\n             bannerImage.addEventListener(\"click\", () => {\n                 // Detect orientation and set the appropriate image\n                 const isPortrait = window.innerHeight > window.innerWidth;\n                 bannerImage.src = isPortrait\n                     ? \"https://cdn.melvad.com/melvad_320x480.png\"\n                     : \"https://cdn.melvad.com/melvad_480x320.png\";\n         \n                 // Add fullscreen styles\n                 bannerImage.classList.add(\"fullscreen-image\");\n         \n                 // Display the close button\n                 closeButton.style.display = \"block\";\n         \n                 // Redirect to the site when clicking the fullscreen image\n                 bannerImage.addEventListener(\"click\", () => {\n                     window.location.href = \"https://rtb.melvad.com/click/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A\";\n                 });\n             });\n         \n             // Click event for the close button\n             closeButton.addEventListener(\"click\", () => {\n                 // Hide the entire banner\n                 bannerContainer.style.display = \"none\";\n             });\n         });\n      </script>\n   </body>\n</html><img src=\"https://rtb.melvad.com/imp/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A\" width=\"1\" height=\"1\" border=\"0\"></div>",
+            "adomain": [
+              "melvad.com"
+            ],
+            "attr": [
+              4
+            ],
+            "burl": "https://rtb.melvad.com/billing/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A?ap=1.9513028376&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5934",
+            "crid": "11287",
+            "h": 250,
+            "id": "11287",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/xmS1uOea659HY5kp0dmLwQzkYtDmm4RiyQAwohq86_JxEpWRx7U7_144A8dFPmo1GEZOcLC85F-7LRzo71E_vJIKZmH0NvVd0EogkpxW1djsYAclWXqj-REvtXm0TItGXfj4jD2KQud7hWuB816M1_zQbbtujCsQyuy-E0E2TihQNt6EPsaL_p6dazQLDvV7EOZLzuqOEaKvBMLioj5S2upuFZsT2sBJZT5LInmfHGZhkrWuh6QurVlNqyF-j7QvgK40IinjKfWA_uk-6csJYAkNGxnnK9Yu6aRHCHH--p7jFqpe2GZ0rtW4WaNBFTVWsqgeO2hbBee_z2wXVkI8vVde4csBwSl4fLZcWZq487pIzbsYPhCneDKn2K1M499ii5k6sW8_8Cqw2-mHzjkGiTcAwNO68qGo_yTNQJnkF8oBmxOyJRIl1OQ_HRJmK20xgWYZp51-j37oRMlDf58N2I2VaTwbvb4H-A",
+            "price": 1.9513028376,
+            "w": 300
+          },
+          "type": "banner"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}
