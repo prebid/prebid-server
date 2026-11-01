@@ -1,0 +1,240 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.rovio.baba",
+      "cat": [
+        "IAB9"
+      ],
+      "id": "9fu48u347ru34o",
+      "name": "Angry Birds 2",
+      "publisher": {
+        "id": "p-8e23ywepo3rr"
+      },
+      "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+    },
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37du34ajfj34h",
+    "imp": [
+      {
+        "banner": {
+          "api": [
+            5
+          ],
+          "battr": [
+            3,
+            4,
+            5
+          ],
+          "btype": [
+            1,
+            3,
+            4
+          ],
+          "format": [
+            {
+              "h": 50,
+              "w": 414
+            }
+          ],
+          "h": 50,
+          "mimes": [
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "text/html"
+          ],
+          "w": 414
+        },
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "secure": 1,
+        "tagid": "pdsu2389fdfj34"
+      }
+    ],
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "app": {
+            "bundle": "com.rovio.baba",
+            "cat": [
+              "IAB9"
+            ],
+            "id": "9fu48u347ru34o",
+            "name": "Angry Birds 2",
+            "publisher": {
+              "id": "p-8e23ywepo3rr"
+            },
+            "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+          },
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37du34ajfj34h",
+          "imp": [
+            {
+              "banner": {
+                "api": [
+                  5
+                ],
+                "battr": [
+                  3,
+                  4,
+                  5
+                ],
+                "btype": [
+                  1,
+                  3,
+                  4
+                ],
+                "format": [
+                  {
+                    "h": 50,
+                    "w": 414
+                  }
+                ],
+                "h": 50,
+                "mimes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "w": 414
+              },
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "secure": 1,
+              "tagid": "pdsu2389fdfj34"
+            }
+          ],
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37du34ajfj34h",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11284",
+                  "adm": "<div id=\"Melvad\"><html>\n   <head>\n      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n      <meta name=\"HandheldFriendly\" content=\"True\" />\n      <meta name=\"format-detection\" content=\"telephone=no\" />\n      <meta name=\"viewport\" content=\"user-scalable=no, width=device-width,initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0\"/>\n      <script type=\"text/javascript\" src=\"mraid.js\"></script>\n      <style type=\"text/css\">\n         html, body {\n         margin: 0;\n         padding: 0;\n         }\n         body {\n         overflow: hidden;\n         -ms-touch-action: none;\n         -webkit-touch-callout: none;\n         -webkit-user-select: none;\n         -khtml-user-select: none;\n         -moz-user-select: none;\n         -ms-user-select: none;\n         user-select: none;\n         -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n         width: 100%;\n         height: 100%;\n         }\n         #creative_body {\n         position: fixed;\n         top: 0;\n         left: 0;\n         right: 0;\n         bottom: 0;\n         background: #fff;\n         }\n         #expandUnit {\n\t\t height: 50px;\n         position: fixed;\n         bottom: 0px;\n         left: 0px;\n         right: 0px;\n         z-index: 99999998;\n         background: url('https://cdn.melvad.com/melvad_320x50.png') no-repeat center center #ffffff;\n         }\n         #expandUnit2 {\n\t\t height: 50px;\n         position: fixed;\n         bottom: 0px;\n         left: 0px;\n         right: 0px;\n         display: none;\n         z-index: 99999997;\n         background: url('https://cdn.melvad.com/melvad_320x50.png') no-repeat center center #ffffff;\n         }\n         @media screen and (orientation: landscape) {\n         #expandUnit {\n         display: none;\n         }\n         #expandUnit2 {\n         display: block;\n         }\n         }\n      </style>\n   </head>\n   <body>\n      <div id=\"creative_body\">\n         <div id=\"expandUnit\"></div>\n         <div id=\"expandUnit2\"></div>\n      </div>\n      <script>\n         if (mraid.getState() === \"loading\") { \n         \tmraid.addEventListener(\"ready\", init); \n         }\n         \n         else { \n         \tinit();\n         }\n         \n         function init() {\n         \tmraid.useCustomClose(false);\n         \t\t\t\n         \tif (window.navigator.msPointerEnabled) {\n         \t\tdocument.addEventListener(\"MSPointerMove\", function(e) {\n         \t\t\te.preventDefault();\n         \t\t}, false);\n         \t};\n         \t\t\t\n         \tmraid.addEventListener(\"stateChange\", handleStateChangeEvent);\n         \n         \tdocument.getElementById(\"expandUnit\").addEventListener(\"click\", function() {\n         \t\tmraid.open(\"https://rtb.melvad.com/click/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\");\n         \t});\n         \n         \tdocument.getElementById(\"expandUnit2\").addEventListener(\"click\", function() {\n         \t\tmraid.open(\"https://rtb.melvad.com/click/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\");\n         \t});\n         }\n         \n         function handleStateChangeEvent(state) {\n         \tswitch (state) {\n         \tcase \"default\":\n         \t\tbreak;\n         \tcase \"hidden\":\n         \t\tbreak;\n         \t};\n         }\n      </script>\n   </body>\n</html><img src=\"https://rtb.melvad.com/imp/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\" width=\"1\" height=\"1\" border=\"0\"></div>",
+                  "adomain": [
+                    "melvad.com"
+                  ],
+                  "api": 5,
+                  "burl": "https://rtb.melvad.com/billing/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5934",
+                  "crid": "11284",
+                  "h": 50,
+                  "id": "11284",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ",
+                  "price": 1.9517991108,
+                  "w": 375
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11284",
+            "adm": "<div id=\"Melvad\"><html>\n   <head>\n      <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n      <meta name=\"HandheldFriendly\" content=\"True\" />\n      <meta name=\"format-detection\" content=\"telephone=no\" />\n      <meta name=\"viewport\" content=\"user-scalable=no, width=device-width,initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0\"/>\n      <script type=\"text/javascript\" src=\"mraid.js\"></script>\n      <style type=\"text/css\">\n         html, body {\n         margin: 0;\n         padding: 0;\n         }\n         body {\n         overflow: hidden;\n         -ms-touch-action: none;\n         -webkit-touch-callout: none;\n         -webkit-user-select: none;\n         -khtml-user-select: none;\n         -moz-user-select: none;\n         -ms-user-select: none;\n         user-select: none;\n         -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n         width: 100%;\n         height: 100%;\n         }\n         #creative_body {\n         position: fixed;\n         top: 0;\n         left: 0;\n         right: 0;\n         bottom: 0;\n         background: #fff;\n         }\n         #expandUnit {\n\t\t height: 50px;\n         position: fixed;\n         bottom: 0px;\n         left: 0px;\n         right: 0px;\n         z-index: 99999998;\n         background: url('https://cdn.melvad.com/melvad_320x50.png') no-repeat center center #ffffff;\n         }\n         #expandUnit2 {\n\t\t height: 50px;\n         position: fixed;\n         bottom: 0px;\n         left: 0px;\n         right: 0px;\n         display: none;\n         z-index: 99999997;\n         background: url('https://cdn.melvad.com/melvad_320x50.png') no-repeat center center #ffffff;\n         }\n         @media screen and (orientation: landscape) {\n         #expandUnit {\n         display: none;\n         }\n         #expandUnit2 {\n         display: block;\n         }\n         }\n      </style>\n   </head>\n   <body>\n      <div id=\"creative_body\">\n         <div id=\"expandUnit\"></div>\n         <div id=\"expandUnit2\"></div>\n      </div>\n      <script>\n         if (mraid.getState() === \"loading\") { \n         \tmraid.addEventListener(\"ready\", init); \n         }\n         \n         else { \n         \tinit();\n         }\n         \n         function init() {\n         \tmraid.useCustomClose(false);\n         \t\t\t\n         \tif (window.navigator.msPointerEnabled) {\n         \t\tdocument.addEventListener(\"MSPointerMove\", function(e) {\n         \t\t\te.preventDefault();\n         \t\t}, false);\n         \t};\n         \t\t\t\n         \tmraid.addEventListener(\"stateChange\", handleStateChangeEvent);\n         \n         \tdocument.getElementById(\"expandUnit\").addEventListener(\"click\", function() {\n         \t\tmraid.open(\"https://rtb.melvad.com/click/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\");\n         \t});\n         \n         \tdocument.getElementById(\"expandUnit2\").addEventListener(\"click\", function() {\n         \t\tmraid.open(\"https://rtb.melvad.com/click/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\");\n         \t});\n         }\n         \n         function handleStateChangeEvent(state) {\n         \tswitch (state) {\n         \tcase \"default\":\n         \t\tbreak;\n         \tcase \"hidden\":\n         \t\tbreak;\n         \t};\n         }\n      </script>\n   </body>\n</html><img src=\"https://rtb.melvad.com/imp/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ\" width=\"1\" height=\"1\" border=\"0\"></div>",
+            "adomain": [
+              "melvad.com"
+            ],
+            "api": 5,
+            "burl": "https://rtb.melvad.com/billing/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5934",
+            "crid": "11284",
+            "h": 50,
+            "id": "11284",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ",
+            "price": 1.9517991108,
+            "w": 375
+          },
+          "type": "banner"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.rovio.baba",
+      "cat": [
+        "IAB9"
+      ],
+      "id": "9fu48u347ru34o",
+      "name": "Angry Birds 2",
+      "publisher": {
+        "id": "p-8e23ywepo3rr"
+      },
+      "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+    },
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37934lssd34fgd",
+    "imp": [
+      {
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":4,\"required\":1,\"video\":{\"mimes\":[\"video/mp4\",\"video/webm\",\"video/mpeg\"],\"protocols\":[3]}},{\"id\":5,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":4,\"len\":11}},{\"id\":8,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
+        },
+        "secure": 1,
+        "tagid": "ierui234fdfdf"
+      }
+    ],
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "app": {
+            "bundle": "com.rovio.baba",
+            "cat": [
+              "IAB9"
+            ],
+            "id": "9fu48u347ru34o",
+            "name": "Angry Birds 2",
+            "publisher": {
+              "id": "p-8e23ywepo3rr"
+            },
+            "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+          },
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37934lssd34fgd",
+          "imp": [
+            {
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":4,\"required\":1,\"video\":{\"mimes\":[\"video/mp4\",\"video/webm\",\"video/mpeg\"],\"protocols\":[3]}},{\"id\":5,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":6,\"data\":{\"type\":3,\"len\":5}},{\"id\":7,\"data\":{\"type\":4,\"len\":11}},{\"id\":8,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                "ver": "1.2"
+              },
+              "secure": 1,
+              "tagid": "ierui234fdfdf"
+            }
+          ],
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37934lssd34fgd",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11295",
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Angry Birds 2\",\"len\":13}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"url\":\"https://cdn.melvad.com/files/dev/24jimkk3ddx.png\",\"w\":256,\"h\":256}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://cdn.melvad.com/files/dev/yjnctly1t13.png\",\"w\":1280,\"h\":720}},{\"id\":4,\"required\":1,\"video\":{\"vasttag\":\"<VAST version=\\\"3.0\\\" xmlns:xsi=\\\"http://www.w3.org/2001/XMLSchema-instance\\\" xsi:noNamespaceSchemaLocation=\\\"vast.xsd\\\"><Ad id=\\\"1\\\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11295]]></AdTitle><Impression id=\\\"1\\\"><![CDATA[https://rtb.melvad.com/imp/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Impression><Creatives><Creative id=\\\"1\\\" AdID=\\\"1\\\"><Linear skipoffset=\\\"00:00:05\\\"><Duration>00:00:59</Duration><TrackingEvents><Tracking event=\\\"complete\\\"><![CDATA[https://rtb.melvad.com/complete/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"close\\\"><![CDATA[https://rtb.melvad.com/close/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"creativeView\\\"><![CDATA[https://rtb.melvad.com/creativeView/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"resume\\\"><![CDATA[https://rtb.melvad.com/resume/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"mute\\\"><![CDATA[https://rtb.melvad.com/mute/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"unmute\\\"><![CDATA[https://rtb.melvad.com/unmute/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"firstQuartile\\\"><![CDATA[https://rtb.melvad.com/firstQuartile/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"midpoint\\\"><![CDATA[https://rtb.melvad.com/midpoint/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"pause\\\"><![CDATA[https://rtb.melvad.com/pause/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"start\\\"><![CDATA[https://rtb.melvad.com/start/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"thirdQuartile\\\"><![CDATA[https://rtb.melvad.com/thirdQuartile/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking></TrackingEvents><VideoClicks><ClickThrough id=\\\"1\\\"><![CDATA[https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru]]></ClickThrough><ClickTracking id=\\\"1\\\"><![CDATA[https://rtb.melvad.com/click/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></ClickTracking></VideoClicks><MediaFiles><MediaFile id=\\\"1\\\" delivery=\\\"progressive\\\" type=\\\"video/mp4\\\" bitrate=\\\"234\\\" width=\\\"1280\\\" height=\\\"720\\\" scalable=\\\"true\\\" maintainAspectRatio=\\\"true\\\"><![CDATA[https://cdn.melvad.com/files/dev/smsblll0nma.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>\"}},{\"id\":5,\"required\":1,\"data\":{\"type\":2,\"len\":13,\"value\":\"Angry Birds 2\"}},{\"id\":6,\"data\":{\"type\":3,\"value\":\"0\"}},{\"id\":7,\"data\":{\"type\":4,\"value\":\"0\"}},{\"id\":8,\"data\":{\"type\":12,\"len\":4,\"value\":\"Join\"}}],\"link\":{\"url\":\"https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru\",\"clicktrackers\":[\"https://rtb.melvad.com/click/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://rtb.melvad.com/imp/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC\"}]}}",
+                  "adomain": [
+                    "play.google.com"
+                  ],
+                  "bundle": "com.rovio.baba",
+                  "burl": "https://rtb.melvad.com/billing/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5935",
+                  "crid": "11295",
+                  "id": "11295",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC",
+                  "price": 1.9517991108,
+                  "protocol": 3
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11295",
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Angry Birds 2\",\"len\":13}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"url\":\"https://cdn.melvad.com/files/dev/24jimkk3ddx.png\",\"w\":256,\"h\":256}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://cdn.melvad.com/files/dev/yjnctly1t13.png\",\"w\":1280,\"h\":720}},{\"id\":4,\"required\":1,\"video\":{\"vasttag\":\"<VAST version=\\\"3.0\\\" xmlns:xsi=\\\"http://www.w3.org/2001/XMLSchema-instance\\\" xsi:noNamespaceSchemaLocation=\\\"vast.xsd\\\"><Ad id=\\\"1\\\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11295]]></AdTitle><Impression id=\\\"1\\\"><![CDATA[https://rtb.melvad.com/imp/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Impression><Creatives><Creative id=\\\"1\\\" AdID=\\\"1\\\"><Linear skipoffset=\\\"00:00:05\\\"><Duration>00:00:59</Duration><TrackingEvents><Tracking event=\\\"complete\\\"><![CDATA[https://rtb.melvad.com/complete/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"close\\\"><![CDATA[https://rtb.melvad.com/close/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"creativeView\\\"><![CDATA[https://rtb.melvad.com/creativeView/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"resume\\\"><![CDATA[https://rtb.melvad.com/resume/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"mute\\\"><![CDATA[https://rtb.melvad.com/mute/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"unmute\\\"><![CDATA[https://rtb.melvad.com/unmute/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"firstQuartile\\\"><![CDATA[https://rtb.melvad.com/firstQuartile/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"midpoint\\\"><![CDATA[https://rtb.melvad.com/midpoint/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"pause\\\"><![CDATA[https://rtb.melvad.com/pause/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"start\\\"><![CDATA[https://rtb.melvad.com/start/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking><Tracking event=\\\"thirdQuartile\\\"><![CDATA[https://rtb.melvad.com/thirdQuartile/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></Tracking></TrackingEvents><VideoClicks><ClickThrough id=\\\"1\\\"><![CDATA[https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru]]></ClickThrough><ClickTracking id=\\\"1\\\"><![CDATA[https://rtb.melvad.com/click/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC]]></ClickTracking></VideoClicks><MediaFiles><MediaFile id=\\\"1\\\" delivery=\\\"progressive\\\" type=\\\"video/mp4\\\" bitrate=\\\"234\\\" width=\\\"1280\\\" height=\\\"720\\\" scalable=\\\"true\\\" maintainAspectRatio=\\\"true\\\"><![CDATA[https://cdn.melvad.com/files/dev/smsblll0nma.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>\"}},{\"id\":5,\"required\":1,\"data\":{\"type\":2,\"len\":13,\"value\":\"Angry Birds 2\"}},{\"id\":6,\"data\":{\"type\":3,\"value\":\"0\"}},{\"id\":7,\"data\":{\"type\":4,\"value\":\"0\"}},{\"id\":8,\"data\":{\"type\":12,\"len\":4,\"value\":\"Join\"}}],\"link\":{\"url\":\"https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru\",\"clicktrackers\":[\"https://rtb.melvad.com/click/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://rtb.melvad.com/imp/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC\"}]}}",
+            "adomain": [
+              "play.google.com"
+            ],
+            "bundle": "com.rovio.baba",
+            "burl": "https://rtb.melvad.com/billing/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5935",
+            "crid": "11295",
+            "id": "11295",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/6pxLOjLseUcPd5QS78kF-sIVdf64FNTKKOo1bb-MGBXtuZ17m5bPLkH7ZuA99-doWXwTqgMCzW2-KrjBHLiM2dTpwGlIUO-KNf_EAHQQmIvE0FTpmIONEevKhhsINan-qUeIZc4Gu6nD0NrwzEEbrwQop_tgON8ZkiqnOCQFvvtyPK2n3BK22ZS_WPUpawwd_4H7TWZtZg7iW0_KlQ8miaq9VxWwxElH6BrY-S-H2JPCEH91NSoFy2K6eVxR9Es1pRSN7Rz54WogpemUlQ84Ut2qVUe12ZLXiEFTLyTHRbz1IL5k1fDZDWVNvqMH5YMw_Aa-GKDW_YHS0LwrcG7CfhSHzTCd4u3Kgqs1OcHlxT6d3aN3nCeCBpjJ3YG35UQ6tLsLud6qy39RLToiZRb48oWvmw0cCVG4xGB7D-Yul_eXry7NRtNPD0lN2jgj25WprYmHB9a1IQRsz6NvJFaA3gVFciuVuC81V2KCAvMqMZwKxO00Ku7qeCQXPcuT2NXandBTwOFxQJq6H3yWRGSQIjVUdZhxru8QWri8QJ3n4-smSEpLPQqbEXypVrL7CHt0C12crPXC",
+            "price": 1.9517991108,
+            "protocol": 3
+          },
+          "type": "native"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}
