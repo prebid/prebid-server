@@ -34,9 +34,15 @@ func TestInvalidParams(t *testing.T) {
 }
 
 var validParams = []string{
+	`{}`,
 	`{"placementId":"p123"}`,
 	`{"placementId":"p123", "bidfloor": 1.5}`,
 	`{"placementId":"p123", "bidfloor": 1.5, "bidfloorcur": "USD"}`,
+	`{"host":"srv"}`,
+	`{"host":"pool1"}`,
+	`{"placementId":"p123", "host":"pool10"}`,
+	`{"bidfloor": 1.5}`,
+	`{"placementId":"p123", "customKey": "customValue"}`,
 }
 
 var invalidParams = []string{
@@ -45,7 +51,16 @@ var invalidParams = []string{
 	`true`,
 	`5`,
 	`[]`,
-	`{}`,
 	`{"placementId": 123}`,
-	`{"bidfloor": 1.5}`,
+	`{"host":"evil.com/path?x=1"}`,
+	`{"host":"https://eu.scalibur.io"}`,
+	// The host param is a closed enum, so nothing outside the listed pools is
+	// accepted: no domains, ports, casing variants or unlisted pool names.
+	`{"host":"eu.scalibur.io"}`,
+	`{"host":"eu.evil.com"}`,
+	`{"host":"pool1:8080"}`,
+	`{"host":"POOL1"}`,
+	`{"host":""}`,
+	`{"host":"pool11"}`,
+	`{"host":"eu"}`,
 }
