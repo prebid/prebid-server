@@ -84,6 +84,7 @@ func serve(cfg *config.Configuration) error {
 		logger.Fatalf("prebid-server returned an error: %v", err)
 	}
 
+	currencyConverterTickerTask.Stop()
 	r.Shutdown()
 	return nil
 }

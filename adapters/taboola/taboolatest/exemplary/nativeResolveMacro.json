@@ -86,7 +86,8 @@
                   "cid": "cid",
                   "crid": "crid",
                   "lurl": "https://lurl.domain.com/",
-                  "nurl": "nurl.com&wp=${AUCTION_PRICE}"
+                  "nurl": "nurl.com&wp=${AUCTION_PRICE}",
+                  "burl": "https://burl.domain.com/?wp=${AUCTION_PRICE}"
                 }
               ],
               "seat": "1111"
@@ -116,7 +117,8 @@
             "cid": "cid",
             "crid": "crid",
             "lurl": "https://lurl.domain.com/",
-            "nurl": "nurl.com&wp=2.1"
+            "nurl": "nurl.com&wp=2.1",
+            "burl": "https://burl.domain.com/?wp=2.1"
           },
           "type": "native"
         }

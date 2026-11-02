@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -33,7 +34,7 @@ func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeBanner
 }
 
-func processImp(imp *openrtb2.Imp) error {
+func processImp(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
 	// get the triplelift extension
 	var ext adapters.ExtImpBidder
 	var tlext openrtb_ext.ExtImpTriplelift
@@ -47,13 +48,80 @@ func processImp(imp *openrtb2.Imp) error {
 		return fmt.Errorf("neither Banner nor Video object specified")
 	}
 	imp.TagID = tlext.InvCode
+
+	// parentId and publisherId are optional; when present forward them on imp.ext
+	if err := setImpExtFields(imp, map[string]*string{
+		"parentId":    tlext.ParentID,
+		"publisherId": tlext.PublisherID,
+	}); err != nil {
+		return err
+	}
 	// floor is optional
-	if tlext.Floor == nil {
-		return nil
-	} else {
+	if tlext.Floor != nil {
 		imp.BidFloor = *tlext.Floor
 	}
+	// Normalize bid floor to USD - TLX expects USD
+	if err := resolveBidFloorCurrency(imp, reqInfo); err != nil {
+		return err
+	}
 	// no error
+	return nil
+}
+
+// Normalize imp.BidFloor to USD
+func resolveBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 {
+		return nil
+	}
+	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		converted, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert bid floor from %s to USD: %s", imp.BidFloorCur, err.Error()),
+			}
+		}
+		imp.BidFloor = converted
+	}
+	imp.BidFloorCur = "USD"
+	return nil
+}
+
+// setImpExtFields writes the supplied optional string fields into imp.ext,
+// preserving all other imp.ext fields. Nil or empty values are skipped.
+func setImpExtFields(imp *openrtb2.Imp, fields map[string]*string) error {
+	pending := make(map[string]string, len(fields))
+	for key, value := range fields {
+		if value != nil && *value != "" {
+			pending[key] = *value
+		}
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+
+	var impExt map[string]json.RawMessage
+	if len(imp.Ext) > 0 {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+			return err
+		}
+	}
+	if impExt == nil {
+		impExt = make(map[string]json.RawMessage, len(pending))
+	}
+
+	for key, value := range pending {
+		encoded, err := jsonutil.Marshal(value)
+		if err != nil {
+			return err
+		}
+		impExt[key] = encoded
+	}
+
+	ext, err := jsonutil.Marshal(impExt)
+	if err != nil {
+		return err
+	}
+	imp.Ext = ext
 	return nil
 }
 
@@ -66,7 +134,7 @@ func (a *TripleliftAdapter) MakeRequests(request *openrtb2.BidRequest, extra *ad
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, extra); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
@@ -125,6 +193,9 @@ func (a *TripleliftAdapter) MakeBids(internalRequest *openrtb2.BidRequest, exter
 	var errs []error
 	count := getBidCount(bidResp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+	// Bids are always denominated in USD
+	bidResponse.Currency = "USD"
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
