@@ -5,6 +5,10 @@ endpoint: "https://g.ezoic.net/ezoic/prebid/adapter/ortb"
 maintainer:
   email: prebid@ezoic.com
 gvlVendorID: 347
+userSync:
+  iframe:
+    url: "https://g.ezoic.net/ezoic/prebid/adapter/usersync-frame?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "$UID"
 geoscope:
   - global
 openrtb:
