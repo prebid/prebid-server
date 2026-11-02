@@ -52,7 +52,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://pbs.bidelerate.com/openrtb2/auction",
+        "uri": "https://pbs.bidelerate.com/auction",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -67,30 +67,24 @@
               "bidfloorcur": "USD",
               "secure": 1,
               "ext": {
-                "bidder": {
-                  "placementId": "test-placement-2",
-                  "publisherId": "test-publisher-1",
-                  "floor": 2.0
+                "prebid": {
+                  "storedrequest": {
+                    "id": "test-placement-2"
+                  }
                 }
               }
             }
           ],
           "site": {
-            "domain": "example.com"
-          },
-          "ext": {
-            "prebid": {
-              "currency": {
-                "rates": {
-                  "GBP": {
-                    "USD": 1.3
-                  }
-                }
-              }
+            "domain": "example.com",
+            "publisher": {
+              "id": "test-publisher-1"
             }
           }
         },
-        "impIDs": ["valid-floor-imp"]
+        "impIDs": [
+          "valid-floor-imp"
+        ]
       },
       "mockResponse": {
         "status": 204

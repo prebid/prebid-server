@@ -1,6 +1,7 @@
 package adelerate
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -27,7 +28,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	validImps := make([]openrtb2.Imp, 0, len(request.Imp))
+	// PBS resolves stored impressions within one publisher account per request.
+	type publisherRequest struct {
+		publisherID string
+		imps        []openrtb2.Imp
+	}
+	var groups []publisherRequest
+	publishers := make(map[string]int)
 
 	for i := range request.Imp {
 		currImp := request.Imp[i]
@@ -45,6 +52,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			errs = append(errs, &errortypes.BadInput{
 				Message: fmt.Sprintf("invalid imp.ext for impression %s: %s", currImp.ID, err.Error()),
 			})
+			continue
+		}
+		if bidderExt.PlacementID == "" || bidderExt.PublisherID == "" {
+			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("missing placementId or publisherId for impression %s", currImp.ID)})
 			continue
 		}
 
@@ -68,24 +79,76 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			currImp.BidFloorCur = defaultCurrency
 		}
 
-		currImp.Secure = openrtb2.Int8Ptr(1)
+		if currImp.Secure == nil {
+			currImp.Secure = openrtb2.Int8Ptr(1)
+		}
 
-		validImps = append(validImps, currImp)
+		var impExt map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(currImp.Ext, &impExt); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		delete(impExt, "bidder")
+		// The caller's PBS configuration belongs to the outer auction. Demand
+		// bidder parameters must come from the Adelerate stored impression.
+		impExt["prebid"], _ = jsonutil.Marshal(struct {
+			StoredRequest openrtb_ext.ExtStoredRequest `json:"storedrequest"`
+		}{StoredRequest: openrtb_ext.ExtStoredRequest{ID: bidderExt.PlacementID}})
+		currImp.Ext, _ = jsonutil.Marshal(impExt)
+
+		group, exists := publishers[bidderExt.PublisherID]
+		if !exists {
+			group = len(groups)
+			publishers[bidderExt.PublisherID] = group
+			groups = append(groups, publisherRequest{publisherID: bidderExt.PublisherID})
+		}
+		groups[group].imps = append(groups[group].imps, currImp)
 	}
 
-	if len(validImps) == 0 {
-		return nil, errs
+	var requests []*adapters.RequestData
+	for _, group := range groups {
+		reqCopy := *request
+		reqCopy.Imp = group.imps
+		var err error
+		reqCopy.Ext, err = withoutPrebid(request.Ext)
+		if err != nil {
+			return nil, append(errs, &errortypes.BadInput{Message: fmt.Sprintf("invalid request.ext: %s", err)})
+		}
+		publisher := &openrtb2.Publisher{ID: group.publisherID}
+		if request.App != nil {
+			app := *request.App
+			app.Publisher = publisher
+			reqCopy.App = &app
+		} else if request.Site != nil {
+			site := *request.Site
+			site.Publisher = publisher
+			reqCopy.Site = &site
+		} else {
+			return nil, append(errs, &errortypes.BadInput{Message: "request must contain site or app"})
+		}
+		adapterReq, err := a.buildRequest(&reqCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		requests = append(requests, adapterReq)
 	}
+	return requests, errs
+}
 
-	reqCopy := *request
-	reqCopy.Imp = validImps
-
-	adapterReq, err := a.buildRequest(&reqCopy)
-	if err != nil {
-		return nil, append(errs, err)
+func withoutPrebid(ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return nil, nil
 	}
-
-	return []*adapters.RequestData{adapterReq}, errs
+	var fields map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(ext, &fields); err != nil {
+		return nil, err
+	}
+	delete(fields, "prebid")
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	return jsonutil.Marshal(fields)
 }
 
 func (a *adapter) buildRequest(request *openrtb2.BidRequest) (*adapters.RequestData, error) {
@@ -155,9 +218,14 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	case 0:
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid %s missing required mtype", bid.ID),
+		var ext openrtb_ext.ExtBid
+		if len(bid.Ext) > 0 && jsonutil.Unmarshal(bid.Ext, &ext) == nil && ext.Prebid != nil {
+			switch ext.Prebid.Type {
+			case openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeVideo, openrtb_ext.BidTypeNative:
+				return ext.Prebid.Type, nil
+			}
 		}
+		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s missing supported mtype or ext.prebid.type", bid.ID)}
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unsupported mtype %d for bid %s", bid.MType, bid.ID),
