@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Anzu Prebid Adapter Params",
+  "description": "A schema which validates params accepted by the Anzu Prebid adapter",
+  "type": "object",
+  "properties": {
+    "zone": {
+      "type": "string",
+      "enum": ["zone1", "zone2"],
+      "description": "Which Anzu bid endpoint to call: \"zone1\" or \"zone2\""
+    },
+    "queryString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^[A-Za-z0-9._~!$&'()*+,=:@/?%-]+$",
+      "description": "Query string for the chosen zone's endpoint, e.g. \"pid=123\" for zone1 or \"c=rtb&m=req&key=abc\" for zone2. Only characters valid in a URL query; no '#', ';' or spaces"
+    }
+  },
+  "required": ["zone", "queryString"]
+}

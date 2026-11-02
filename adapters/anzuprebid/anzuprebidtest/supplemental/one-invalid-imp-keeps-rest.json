@@ -1,0 +1,141 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "app-pub-1"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "zone3",
+            "queryString": "pid=0123456789abcdef0123456789abcdef"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "zone1",
+            "queryString": "pid=0123456789abcdef0123456789abcdef"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid zone \"zone3\" for imp imp-1: must be \"zone1\" or \"zone2\"",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://zone1.example.com/?pid=0123456789abcdef0123456789abcdef",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.game",
+            "publisher": {
+              "id": "app-pub-1"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": "zone1",
+                  "queryString": "pid=0123456789abcdef0123456789abcdef"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "anzuprebid",
+              "bid": [
+                {
+                  "id": "2",
+                  "impid": "imp-2",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "creative-2",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "2",
+            "impid": "imp-2",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "creative-2",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
