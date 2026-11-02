@@ -24,7 +24,7 @@
             "profile_id": "123456:prof_12345"
           },
           "tid": "imp-tid-xyz787",
-          "tidt": 1
+          "tidt": "2"
         }
       }
     ]
@@ -56,7 +56,7 @@
                 "network_id": "123456",
                 "profile_id": "123456:prof_12345",
                 "tid": "imp-tid-xyz787",
-                "tidt": 1
+                "tidt": 2
               }
             }
           ]

@@ -1,8 +1,10 @@
 package fwssp
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -26,8 +28,8 @@ type fwsspImpExt struct {
 
 type fwsspRequestImpExt struct {
 	Bidder openrtb_ext.ImpExtFWSSP `json:"bidder"`
-	TID    string                  `json:"tid,omitempty"`
-	TIDT   int                     `json:"tidt,omitempty"`
+	TID    json.RawMessage         `json:"tid,omitempty"`
+	TIDT   json.RawMessage         `json:"tidt,omitempty"`
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
@@ -40,18 +42,23 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			}}
 		}
 
-		var err error
-		if imp.Ext, err = jsonutil.Marshal(&fwsspImpExt{
+		var tid string
+		if err := json.Unmarshal(params.TID, &tid); err != nil {
+			tid = ""
+		}
+		ext, err := jsonutil.Marshal(&fwsspImpExt{
 			CustomSiteSectionId: params.Bidder.CustomSiteSectionId,
 			NetworkId:           params.Bidder.NetworkId,
 			ProfileId:           params.Bidder.ProfileId,
-			TID:                 params.TID,
-			TIDT:                params.TIDT,
-		}); err != nil {
+			TID:                 tid,
+			TIDT:                parseTIDT(params.TIDT),
+		})
+		if err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
 			}}
 		}
+		imp.Ext = ext
 	}
 
 	requestJSON, err := jsonutil.Marshal(request)
@@ -72,6 +79,27 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{requestData}, nil
+}
+
+func parseTIDT(value json.RawMessage) int {
+	if len(value) == 0 {
+		return 0
+	}
+
+	var tidt int
+	if err := json.Unmarshal(value, &tidt); err == nil {
+		return tidt
+	}
+
+	var tidtString string
+	if err := json.Unmarshal(value, &tidtString); err != nil {
+		return 0
+	}
+	tidt, err := strconv.Atoi(tidtString)
+	if err != nil {
+		return 0
+	}
+	return tidt
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
