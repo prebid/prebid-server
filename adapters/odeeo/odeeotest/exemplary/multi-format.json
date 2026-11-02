@@ -1,0 +1,148 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/article",
+      "publisher": {
+        "id": "pub-42"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "ip": "203.0.113.7",
+      "devicetype": 2
+    },
+    "tmax": 300,
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "audio": {
+          "mimes": ["audio/mp4"],
+          "minduration": 5,
+          "maxduration": 30
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": {
+          "tid": "imp-tid-xyz",
+          "gpid": "/1234/homepage#300x250",
+          "bidder": {
+            "sp": "123456789",
+            "tk": "a1b2c3d4"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.exchange.odeeo.io/v1/bidrequest/prebids2s",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "X-Openrtb-Version": ["2.6"],
+          "X-Odeeo-Sp": ["123456789"],
+          "X-Odeeo-Tk": ["a1b2c3d4"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/article",
+            "publisher": {
+              "id": "pub-42"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "ip": "203.0.113.7",
+            "devicetype": 2
+          },
+          "tmax": 300,
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "audio": {
+                "mimes": ["audio/mp4"],
+                "minduration": 5,
+                "maxduration": 30
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "ext": {
+                "tid": "imp-tid-xyz",
+                "gpid": "/1234/homepage#300x250"
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "odeeo",
+              "bid": [
+                {
+                  "id": "bid-001",
+                  "impid": "test-imp-id",
+                  "price": 2.5,
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
+                  "adid": "ad-456",
+                  "adomain": ["example-advertiser.com"],
+                  "crid": "creative-789",
+                  "cat": ["IAB1-1", "IAB1-6"],
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-001",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
+            "adid": "ad-456",
+            "adomain": ["example-advertiser.com"],
+            "crid": "creative-789",
+            "cat": ["IAB1-1", "IAB1-6"],
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}
