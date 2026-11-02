@@ -3,7 +3,16 @@
     "id": "test-request-id",
     "device": {
       "ip": "123.123.123.123",
-      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx"
+      "ifa": "zxcjbzxmc-zxcbmz-zxbcz-zxczx",
+      "ext": {
+        "atts": 0,
+        "prebid": {
+          "interstitial": {
+            "minwidthperc": 10,
+            "minheightperc": 20
+          }
+        }
+      }
     },
     "app": {
       "id": "1",
@@ -155,6 +164,7 @@
           "id": "test-request-id",
           "device": {
             "ext": {
+              "atts": 0,
               "rp": {
                 "pixelratio": 0
               }
