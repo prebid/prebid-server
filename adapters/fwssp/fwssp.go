@@ -1,8 +1,10 @@
 package fwssp
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -16,29 +18,47 @@ type adapter struct {
 	endpoint string
 }
 
+type fwsspImpExt struct {
+	CustomSiteSectionId string `json:"custom_site_section_id,omitempty"`
+	NetworkId           string `json:"network_id,omitempty"`
+	ProfileId           string `json:"profile_id,omitempty"`
+	TID                 string `json:"tid,omitempty"`
+	TIDT                int    `json:"tidt,omitempty"`
+}
+
+type fwsspRequestImpExt struct {
+	Bidder openrtb_ext.ImpExtFWSSP `json:"bidder"`
+	TID    json.RawMessage         `json:"tid,omitempty"`
+	TIDT   json.RawMessage         `json:"tidt,omitempty"`
+}
+
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	for i := 0; i < len(request.Imp); i++ {
 		imp := &request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
-		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		var params fwsspRequestImpExt
+		if err := jsonutil.Unmarshal(imp.Ext, &params); err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
 			}}
 		}
 
-		var impExt openrtb_ext.ImpExtFWSSP
-		if err := jsonutil.Unmarshal(bidderExt.Bidder, &impExt); err != nil {
-			return nil, []error{&errortypes.BadInput{
-				Message: fmt.Sprintf("Invalid imp.ext for impression index %d. Error Infomation: %s", i, err.Error()),
-			}}
+		var tid string
+		if err := json.Unmarshal(params.TID, &tid); err != nil {
+			tid = ""
 		}
-
-		var err error
-		if imp.Ext, err = jsonutil.Marshal(impExt); err != nil {
+		ext, err := jsonutil.Marshal(&fwsspImpExt{
+			CustomSiteSectionId: params.Bidder.CustomSiteSectionId,
+			NetworkId:           params.Bidder.NetworkId,
+			ProfileId:           params.Bidder.ProfileId,
+			TID:                 tid,
+			TIDT:                parseTIDT(params.TIDT),
+		})
+		if err != nil {
 			return nil, []error{&errortypes.BadInput{
 				Message: fmt.Sprintf("Unable to transfer requestImpExt to Json fomat, %s", err.Error()),
 			}}
 		}
+		imp.Ext = ext
 	}
 
 	requestJSON, err := jsonutil.Marshal(request)
@@ -59,6 +79,27 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 		ImpIDs:  openrtb_ext.GetImpIDs(request.Imp),
 	}
 	return []*adapters.RequestData{requestData}, nil
+}
+
+func parseTIDT(value json.RawMessage) int {
+	if len(value) == 0 {
+		return 0
+	}
+
+	var tidt int
+	if err := json.Unmarshal(value, &tidt); err == nil {
+		return tidt
+	}
+
+	var tidtString string
+	if err := json.Unmarshal(value, &tidtString); err != nil {
+		return 0
+	}
+	tidt, err := strconv.Atoi(tidtString)
+	if err != nil {
+		return 0
+	}
+	return tidt
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {
