@@ -307,12 +307,13 @@ func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 			errs = append(errs, moreErrs...)
 
 			if bidResponse != nil {
-				preserveOriginalSeats(httpInfo.response.Body, bidResponse, bidderRequest.BidderName)
 				reject := hookExecutor.ExecuteRawBidderResponseStage(bidResponse, string(bidder.BidderName))
 				if reject != nil {
 					errs = append(errs, reject)
 					continue
 				}
+				// after the hooks, which may replace bids or move them to other seats
+				preserveOriginalSeats(httpInfo.response.Body, bidResponse, bidderRequest.BidderName)
 				// Setup default currency as `USD` is not set in bid request nor bid response
 				if bidResponse.Currency == "" {
 					bidResponse.Currency = defaultCurrency
@@ -458,55 +459,113 @@ func (bidder *BidderAdapter) requestBid(ctx context.Context, bidderRequest Bidde
 	return seatBids, extraRespInfo, errs
 }
 
+// rawSeatBids is the part of an OpenRTB bidder response that preserveOriginalSeats needs; decoding only
+// these fields avoids parsing the whole response a second time.
+type rawSeatBids struct {
+	SeatBid []struct {
+		Seat string `json:"seat"`
+		Bid  []struct {
+			ID    string `json:"id"`
+			ImpID string `json:"impid"`
+		} `json:"bid"`
+	} `json:"seatbid"`
+}
+
 // preserveOriginalSeats copies seats from an OpenRTB bidder response into the
 // bid metadata. Adapters flatten seatbid.bid into BidderResponse.Bids, so the
-// association with the original seat would otherwise be lost. Bid IDs are used
-// to restore that association without requiring every OpenRTB adapter to do it.
-// Explicit metadata supplied by an adapter always takes precedence. Metadata
-// is unnecessary when the original and final seats are identical.
+// association with the original seat would otherwise be lost. It runs in core so
+// that no adapter has to do it. Each bid's original seat is found by, in order:
+//   - the only seat in the response, when there is just one (adapters may rewrite bid IDs);
+//   - its bid ID, when that ID belongs to a single seat;
+//   - its impression ID, when that impression was bid on by a single seat.
+//
+// Explicit metadata supplied by an adapter, in BidMeta or in bid.ext.prebid.meta,
+// always takes precedence. Metadata is unnecessary when the original and final
+// seats are identical.
 func preserveOriginalSeats(responseBody []byte, bidderResponse *adapters.BidderResponse, defaultSeat openrtb_ext.BidderName) {
-	var response openrtb2.BidResponse
+	if len(bidderResponse.Bids) == 0 {
+		return
+	}
+	var response rawSeatBids
 	if err := jsonutil.Unmarshal(responseBody, &response); err != nil {
 		return
 	}
 
+	onlySeat := ""
+	seatCount := 0
 	seatsByBidID := make(map[string]string)
-	ambiguousBidIDs := make(map[string]struct{})
+	seatsByImpID := make(map[string]string)
+	addUnique := func(seats map[string]string, key, seat string) {
+		if key == "" {
+			return
+		}
+		if existing, found := seats[key]; found && existing != seat {
+			seats[key] = "" // ambiguous: bid on by more than one seat
+		} else if !found {
+			seats[key] = seat
+		}
+	}
 	for _, seatBid := range response.SeatBid {
-		if seatBid.Seat == "" {
+		if seatBid.Seat == "" || len(seatBid.Bid) == 0 {
 			continue
+		}
+		if seatBid.Seat != onlySeat {
+			seatCount++
+			onlySeat = seatBid.Seat
 		}
 		for _, bid := range seatBid.Bid {
-			if bid.ID == "" {
-				continue
-			}
-			if existingSeat, exists := seatsByBidID[bid.ID]; exists && existingSeat != seatBid.Seat {
-				delete(seatsByBidID, bid.ID)
-				ambiguousBidIDs[bid.ID] = struct{}{}
-				continue
-			}
-			if _, ambiguous := ambiguousBidIDs[bid.ID]; !ambiguous {
-				seatsByBidID[bid.ID] = seatBid.Seat
-			}
+			addUnique(seatsByBidID, bid.ID, seatBid.Seat)
+			addUnique(seatsByImpID, bid.ImpID, seatBid.Seat)
 		}
+	}
+	if seatCount == 0 {
+		return
 	}
 
-	for i := range bidderResponse.Bids {
-		bid := bidderResponse.Bids[i]
-		if bid == nil || bid.Bid == nil || (bid.BidMeta != nil && bid.BidMeta.Seat != "") {
+	for _, typedBid := range bidderResponse.Bids {
+		if typedBid == nil || typedBid.Bid == nil {
 			continue
 		}
-		outputSeat := defaultSeat
-		if bid.Seat != "" {
-			outputSeat = bid.Seat
-		}
-		if seat := seatsByBidID[bid.Bid.ID]; seat != "" && seat != outputSeat.String() {
-			if bid.BidMeta == nil {
-				bid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
+		seat := onlySeat
+		if seatCount > 1 {
+			if seat = seatsByBidID[typedBid.Bid.ID]; seat == "" {
+				seat = seatsByImpID[typedBid.Bid.ImpID]
 			}
-			bid.BidMeta.Seat = seat
+		}
+		outputSeat := defaultSeat
+		if typedBid.Seat != "" {
+			outputSeat = typedBid.Seat
+		}
+		if seat == "" || seat == outputSeat.String() {
+			continue
+		}
+		if typedBid.BidMeta == nil {
+			typedBid.BidMeta = bidExtMeta(typedBid.Bid.Ext)
+		}
+		if typedBid.BidMeta == nil {
+			typedBid.BidMeta = &openrtb_ext.ExtBidPrebidMeta{}
+		}
+		if typedBid.BidMeta.Seat == "" {
+			typedBid.BidMeta.Seat = seat
 		}
 	}
+}
+
+// bidExtMeta returns the metadata an adapter left in bid.ext.prebid.meta, if any. Once a bid has BidMeta,
+// the exchange no longer reads bid.ext.prebid.meta, so it is carried over before a seat is added.
+func bidExtMeta(ext json.RawMessage) *openrtb_ext.ExtBidPrebidMeta {
+	if len(ext) == 0 {
+		return nil
+	}
+	var container struct {
+		Prebid *struct {
+			Meta *openrtb_ext.ExtBidPrebidMeta `json:"meta"`
+		} `json:"prebid"`
+	}
+	if err := jsonutil.Unmarshal(ext, &container); err != nil || container.Prebid == nil {
+		return nil
+	}
+	return container.Prebid.Meta
 }
 
 func addNativeTypes(bid *openrtb2.Bid, request *openrtb2.BidRequest) (*nativeResponse.Response, []error) {
