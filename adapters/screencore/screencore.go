@@ -53,11 +53,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
-		if screencoreExt.SspPlacementID == "" {
-			errs = append(errs, impError(imp.ID, fmt.Errorf("sspPlacementId is required")))
-			continue
-		}
-
 		endpoint, err := buildSspEndpoint(screencoreExt)
 		if err != nil {
 			errs = append(errs, impError(imp.ID, err))
@@ -141,9 +136,6 @@ func buildSspEndpoint(ext openrtb_ext.ImpExtScreencore) (string, error) {
 }
 
 func resolveRegionEndpoint(region string) (string, error) {
-	if region == "" {
-		return "", fmt.Errorf("region is required when sspPlacementId is provided")
-	}
 	endpoint, ok := regionEndpoints[region]
 	if !ok {
 		return "", fmt.Errorf("unsupported region %q, expected one of us/eu/asia", region)

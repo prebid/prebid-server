@@ -99,9 +99,49 @@
                 ]
             },
             "mockResponse": {
-                "status": 204
+                "status": 200,
+                "body": {
+                    "id": "test-request-id",
+                    "cur": "USD",
+                    "seatbid": [
+                        {
+                            "seat": "screencore",
+                            "bid": [
+                                {
+                                    "id": "test-bid-id",
+                                    "impid": "test-imp-id",
+                                    "price": 2.5,
+                                    "adm": "<VAST version=\"3.0\"></VAST>",
+                                    "crid": "test-crid",
+                                    "w": 1024,
+                                    "h": 576,
+                                    "mtype": 2
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
         }
     ],
-    "expectedBidResponses": []
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "test-bid-id",
+                        "impid": "test-imp-id",
+                        "price": 2.5,
+                        "adm": "<VAST version=\"3.0\"></VAST>",
+                        "crid": "test-crid",
+                        "w": 1024,
+                        "h": 576,
+                        "mtype": 2
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
 }
