@@ -292,14 +292,17 @@ func getBidMeta(bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidMeta {
 	}
 
 	buyerId := getBuyerIdFromExt(ext)
-	if buyerId <= 0 && ext.DspId <= 0 && ext.BrandId <= 0 {
+	if ext.BuyerId == "" && ext.DspId <= 0 && ext.BrandId <= 0 {
 		return nil
 	}
 
+	// buyer_id is the buyer's seat: it is passed as-is in meta.seat, and numeric values also keep
+	// filling advertiserId, as before
 	return &openrtb_ext.ExtBidPrebidMeta{
 		NetworkID:    ext.DspId,
 		AdvertiserID: buyerId,
 		BrandID:      ext.BrandId,
+		Seat:         ext.BuyerId,
 	}
 }
 
