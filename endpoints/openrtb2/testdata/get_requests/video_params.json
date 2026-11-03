@@ -1,0 +1,67 @@
+{
+  "description": "Video parameter mappings",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "api": [
+        1,
+        2
+      ],
+      "battr": [
+        1,
+        2
+      ],
+      "boxingallowed": 0,
+      "delivery": [
+        1
+      ],
+      "h": 480,
+      "linearity": 1,
+      "maxbitrate": 2000,
+      "maxextended": 0,
+      "maxseq": 3,
+      "mimes": [
+        "video/mp4",
+        "video/webm"
+      ],
+      "minbitrate": 200,
+      "mincpmpersec": 1.25,
+      "placement": 1,
+      "playbackend": 1,
+      "playbackmethod": [
+        1
+      ],
+      "plcmt": 2,
+      "poddur": 30,
+      "podid": "pod1",
+      "podseq": 0,
+      "pos": 0,
+      "protocols": [
+        1,
+        2,
+        3
+      ],
+      "rqddurs": [
+        5,
+        10,
+        15
+      ],
+      "sequence": 0,
+      "skip": 1,
+      "skipafter": 0,
+      "skipmin": 0,
+      "slotinpod": 0,
+      "startdelay": 0,
+      "w": 640
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026mindur=0\u0026maxdur=60\u0026w=640\u0026h=480\u0026skip=1\u0026skipmin=0\u0026skipafter=0\u0026startdelay=0\u0026linearity=1\u0026placement=1\u0026plcmt=2\u0026pos=0\u0026poddur=30\u0026podseq=0\u0026seq=0\u0026slotinpod=0\u0026minbr=200\u0026maxbr=2000\u0026maxex=0\u0026playbackend=1\u0026boxingallowed=0\u0026maxseq=3\u0026mincpms=1.25\u0026proto=1,2,3\u0026api=1,2\u0026delivery=1\u0026battr=1,2\u0026playbackmethod=1\u0026rqddurs=5,10,15\u0026mimes=video/mp4,video/webm\u0026podid=pod1",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

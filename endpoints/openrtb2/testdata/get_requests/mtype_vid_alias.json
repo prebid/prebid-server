@@ -1,0 +1,21 @@
+{
+  "description": "Stored-request and account aliases with video selection",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "h": 720,
+      "maxduration": 30,
+      "minduration": 5,
+      "w": 1280
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=vid\u0026mindur=5\u0026maxdur=30\u0026w=1280\u0026h=720",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

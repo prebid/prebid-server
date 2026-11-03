@@ -2023,6 +2023,7 @@ func TestExecuteExitpointStage(t *testing.T) {
 		activityControl privacy.ActivityControl
 	}
 	type args struct {
+		req      *openrtb_ext.RequestWrapper
 		response any
 		w        http.ResponseWriter
 	}
@@ -2388,7 +2389,7 @@ func TestExecuteExitpointStage(t *testing.T) {
 			e := NewHookExecutor(tt.fields.planBuilder, tt.fields.endpoint, tt.fields.metricEngine)
 			e.SetAccount(tt.fields.account)
 			e.SetActivityControl(tt.fields.activityControl)
-			newResponse := e.ExecuteExitpointStage(tt.args.response, tt.args.w)
+			newResponse, _ := e.ExecuteExitpointStage(tt.args.req, tt.args.response, tt.args.w)
 			assert.Equal(t, tt.expectedResponse, newResponse, "response is malformed")
 			assert.Equal(t, tt.expectedResponseHeaders, tt.args.w.Header(), "incorrect response headers")
 			assert.Equal(t, tt.expectedModuleContexts, e.moduleContexts, "Incorrect module contexts")

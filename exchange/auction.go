@@ -263,7 +263,7 @@ func (a *auction) doCache(ctx context.Context, cache prebid_cache_client.Client,
 						errs = append(errs, err)
 					}
 				}
-				if vast && topBid.BidType == openrtb_ext.BidTypeVideo {
+				if vast && isVASTBid(topBid.BidType) {
 					vastXML := makeVAST(topBid.Bid)
 					if jsonBytes, err := jsonutil.Marshal(vastXML); err == nil {
 						if useCustomCacheKey {

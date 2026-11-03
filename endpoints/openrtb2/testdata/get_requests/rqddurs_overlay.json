@@ -1,0 +1,32 @@
+{
+  "description": "rqddurs replaces the stored duration range (minduration/maxduration deleted via RFC 7396 null)",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "mimes": [
+        "video/mp4"
+      ],
+      "rqddurs": [
+        5,
+        10,
+        15
+      ]
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026rqddurs=5,10,15",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "maxduration": 60,
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 10
+        }
+      }
+    ],
+    "site": {}
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "description": "GET privacy: tcfc/gdpr_consent aliases, gdpr flag, usp string, gpp/gpp_sid, ip and ua are all written to the right OpenRTB destinations",
+  "httpMethod": "GET",
+  "query": "srid=stored-site&tcfc=test-consent-string&gdpr=1&usp=1YNN&gpp=DBABMA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA&gpp_sid=6&ua=Mozilla/5.0+TestBrowser&ip=192.0.2.1",
+  "generatedRequestId": "test-get-uuid-privacy",
+  "mockStoredRequests": {
+    "stored-site": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-privacy",
+    "seatbid": [
+      {
+        "bid": [
+          {"id": "appnexus-bid", "impid": "imp1", "price": 1.50}
+        ],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  }
+}

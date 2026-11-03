@@ -1,0 +1,37 @@
+{
+  "description": "addtl_consent goes into user.ext.ConsentedProvidersSettings.consented_providers",
+  "expected_bid_request": {
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testaddtl"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {},
+    "user": {
+      "ext": {
+        "ConsentedProvidersSettings": {
+          "consented_providers": "1~1.2.3"
+        }
+      }
+    }
+  },
+  "query": "srid=testaddtl\u0026addtl_consent=1~1.2.3",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

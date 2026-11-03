@@ -1,0 +1,35 @@
+{
+  "description": "All app-level and content params land on app.* and app.content.* when stored request declares app context",
+  "query": "srid=stored&pubid=app-publisher&bundle=com.example.app&name=Example&storeurl=https%3A%2F%2Fstore.example%2Fapp&cgenre=news&clang=en&crating=PG&ccat=IAB1%2CIAB2-1&ccattax=3&cseries=main-series&ctitle=Episode&curl=https%3A%2F%2Fcontent.example&clivestream=1",
+  "stored_bid_request": {
+    "app": {"id": "stored-app"},
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "app": {
+      "id": "stored-app",
+      "publisher": {"id": "app-publisher"},
+      "bundle": "com.example.app",
+      "name": "Example",
+      "storeurl": "https://store.example/app",
+      "content": {
+        "genre": "news",
+        "language": "en",
+        "contentrating": "PG",
+        "cat": ["IAB1", "IAB2-1"],
+        "cattax": 3,
+        "series": "main-series",
+        "title": "Episode",
+        "url": "https://content.example",
+        "livestream": 1
+      }
+    },
+    "imp": [{"id": "imp1"}],
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}
