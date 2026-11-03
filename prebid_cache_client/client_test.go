@@ -17,6 +17,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmptyPut(t *testing.T) {
@@ -301,4 +302,118 @@ func newHandler(numResponses int) http.HandlerFunc {
 		respBytes, _ := jsonutil.Marshal(resp)
 		w.Write(respBytes)
 	})
+}
+
+func TestEncodeValuesStringFields(t *testing.T) {
+	for _, field := range []string{"type", "key", "bidid", "bidder"} {
+		t.Run(field, func(t *testing.T) {
+			original := "quote\" backslash\\ newline\n tab\t null\x00 unicode\u2028 café"
+			value := Cacheable{Type: TypeJSON, Data: json.RawMessage(`{"raw": [1, true, null]}`), TTLSeconds: 300, Timestamp: 123}
+			switch field {
+			case "type":
+				value.Type = PayloadType(original)
+			case "key":
+				value.Key = original
+			case "bidid":
+				value.BidID = original
+			case "bidder":
+				value.Bidder = original
+			}
+			encoded, err := encodeValues([]Cacheable{value})
+			require.NoError(t, err)
+			var got struct {
+				Puts []Cacheable `json:"puts"`
+			}
+			require.NoError(t, json.Unmarshal(encoded, &got))
+			require.Len(t, got.Puts, 1)
+			assert.Equal(t, value, got.Puts[0])
+		})
+	}
+}
+
+func TestEncodeValuesKeyCannotAddPut(t *testing.T) {
+	values := []Cacheable{
+		{Type: TypeJSON, Data: json.RawMessage(`true`), Key: `safe"},{"type":"json","value":true,"key":"extra`},
+		{Type: TypeJSON, Data: json.RawMessage(`{"other":true}`), Key: "neighbor", TTLSeconds: 30},
+	}
+	encoded, err := encodeValues(values)
+	require.NoError(t, err)
+	var got struct {
+		Puts []Cacheable `json:"puts"`
+	}
+	require.NoError(t, json.Unmarshal(encoded, &got))
+	assert.Equal(t, values, got.Puts)
+}
+
+func TestEncodeValuesOptionalFields(t *testing.T) {
+	for _, number := range []int64{0, -1} {
+		encoded, err := encodeValues([]Cacheable{{Type: TypeJSON, Data: json.RawMessage(`{"n":1}`), TTLSeconds: number, Timestamp: number}})
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"puts":[{"type":"json","value":{"n":1}}]}`, string(encoded))
+	}
+}
+
+func TestPutJsonResponseEntries(t *testing.T) {
+	tests := []struct {
+		name, response string
+		ids            []string
+		errorText      string
+	}{
+		{name: "exact", response: `{"responses":[{"uuid":"first"},{"uuid":"second"}]}`, ids: []string{"first", "second"}},
+		{name: "fewer", response: `{"responses":[{"uuid":"first"}]}`, ids: []string{"first", ""}},
+		{name: "empty", response: `{"responses":[]}`, ids: []string{"", ""}},
+		{name: "excess", response: `{"responses":[{"uuid":"first"},{"uuid":"second"},{"uuid":"extra"}]}`, ids: []string{"", ""}, errorText: "more responses than requested"},
+		{name: "excess_invalid_entry", response: `{"responses":[{"uuid":"first"},{"uuid":"second"},{}]}`, ids: []string{"", ""}, errorText: "more responses than requested"},
+		{name: "excess_multiple", response: `{"responses":[{"uuid":"first"},{"uuid":"second"},{"uuid":"extra"},{"uuid":"another"}]}`, ids: []string{"", ""}, errorText: "more responses than requested"},
+		{name: "invalid_uuid", response: `{"responses":[{"uuid":123},{"uuid":"second"}]}`, ids: []string{"", "second"}, errorText: "at index 0"},
+		{name: "missing_uuid", response: `{"responses":[{}, {"uuid":"second"}]}`, ids: []string{"", "second"}, errorText: "bad value at index 0"},
+		{name: "missing_responses", response: `{}`, ids: []string{"", ""}, errorText: "Error interpreting"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(test.response))
+			}))
+			defer server.Close()
+			metricsMock := &metrics.MetricsEngineMock{}
+			metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
+			client := &clientImpl{httpClient: server.Client(), putUrl: server.URL, metrics: metricsMock}
+			var ids []string
+			var errs []error
+			require.NotPanics(t, func() {
+				ids, errs = client.PutJson(context.Background(), []Cacheable{
+					{Type: TypeJSON, Data: json.RawMessage(`true`)},
+					{Type: TypeJSON, Data: json.RawMessage(`false`)},
+				})
+			})
+			assert.Equal(t, test.ids, ids)
+			if test.errorText == "" {
+				assert.Empty(t, errs)
+			} else {
+				require.Len(t, errs, 1)
+				assert.Contains(t, errs[0].Error(), test.errorText)
+			}
+			metricsMock.AssertExpectations(t)
+		})
+	}
+}
+
+func BenchmarkEncodeValues(b *testing.B) {
+	for _, test := range []struct {
+		name  string
+		value Cacheable
+	}{
+		{name: "json", value: Cacheable{Type: TypeJSON, Data: json.RawMessage(`{"id":"bid-1","price":1.2}`), TTLSeconds: 300}},
+		{name: "vtrack", value: Cacheable{Type: TypeXML, Data: json.RawMessage(`"<VAST version=\"3.0\"></VAST>"`), TTLSeconds: 300, Key: "cache-key", BidID: "bid-id", Bidder: "bidder", Timestamp: 123456789}},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			values := []Cacheable{test.value}
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				if _, err := encodeValues(values); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

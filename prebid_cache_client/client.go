@@ -127,6 +127,10 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 
 	currentIndex := 0
 	processResponse := func(uuidObj []byte, _ jsonparser.ValueType, _ int, err error) {
+		if currentIndex >= len(uuidsToReturn) {
+			currentIndex++
+			return
+		}
 		if uuid, valueType, _, err := jsonparser.Get(uuidObj, "uuid"); err != nil {
 			logError(&errs, "Prebid Cache returned a bad value at index %d. Error was: %v. Response body was: %s", currentIndex, err, string(responseBody))
 		} else if valueType != jsonparser.String {
@@ -140,7 +144,12 @@ func (c *clientImpl) PutJson(ctx context.Context, values []Cacheable) (uuids []s
 		currentIndex++
 	}
 
-	if _, err := jsonparser.ArrayEach(responseBody, processResponse, "responses"); err != nil {
+	_, err = jsonparser.ArrayEach(responseBody, processResponse, "responses")
+	if currentIndex > len(values) {
+		logError(&errs, "Prebid Cache returned more responses than requested: got %d, expected %d", currentIndex, len(values))
+		return make([]string, len(values)), errs
+	}
+	if err != nil {
 		logError(&errs, "Error interpreting Prebid Cache response: %v\nResponse was: %s", err, string(responseBody))
 		return uuidsToReturn, errs
 	}
@@ -171,33 +180,28 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 		buffer.WriteByte(',')
 	}
 
-	buffer.WriteString(`{"type":"`)
-	buffer.WriteString(string(value.Type))
+	buffer.WriteString(`{"type":`)
+	writeJSONString(buffer, string(value.Type))
 	if value.TTLSeconds > 0 {
-		buffer.WriteString(`","ttlseconds":`)
+		buffer.WriteString(`,"ttlseconds":`)
 		buffer.WriteString(strconv.FormatInt(value.TTLSeconds, 10))
-		buffer.WriteString(`,"value":`)
-	} else {
-		buffer.WriteString(`","value":`)
 	}
+	buffer.WriteString(`,"value":`)
 	buffer.Write(value.Data)
 	if len(value.Key) > 0 {
-		buffer.WriteString(`,"key":"`)
-		buffer.WriteString(string(value.Key))
-		buffer.WriteString(`"`)
+		buffer.WriteString(`,"key":`)
+		writeJSONString(buffer, value.Key)
 	}
 
 	//vtrack specific
 	if len(value.BidID) > 0 {
-		buffer.WriteString(`,"bidid":"`)
-		buffer.WriteString(string(value.BidID))
-		buffer.WriteString(`"`)
+		buffer.WriteString(`,"bidid":`)
+		writeJSONString(buffer, value.BidID)
 	}
 
 	if len(value.Bidder) > 0 {
-		buffer.WriteString(`,"bidder":"`)
-		buffer.WriteString(string(value.Bidder))
-		buffer.WriteString(`"`)
+		buffer.WriteString(`,"bidder":`)
+		writeJSONString(buffer, value.Bidder)
 	}
 
 	if value.Timestamp > 0 {
@@ -207,4 +211,9 @@ func encodeValueToBuffer(value Cacheable, leadingComma bool, buffer *bytes.Buffe
 
 	buffer.WriteByte('}')
 	return nil
+}
+
+func writeJSONString(buffer *bytes.Buffer, value string) {
+	encoded, _ := json.Marshal(value) // Marshaling a string cannot fail.
+	buffer.Write(encoded)
 }
