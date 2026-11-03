@@ -114,6 +114,7 @@
                   "price": 0.5,
                   "adm": "some-test-ad",
                   "impid": "1",
+                  "mtype": 1,
                   "id": "1",
                   "h": 250,
                   "adomain": [
@@ -138,6 +139,7 @@
             "price": 0.5,
             "adm": "some-test-ad",
             "impid": "1",
+            "mtype": 1,
             "id": "1",
             "h": 250,
             "adomain": [
