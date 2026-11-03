@@ -265,6 +265,15 @@ type Privacy struct {
 	CCPA CCPA
 	GDPR GDPR
 	LMT  LMT
+	Geo  GeoPrivacy
+}
+
+// GeoPrivacy holds geo-related privacy configuration.
+type GeoPrivacy struct {
+	// USStatesWithSaleProhibition is a list of US state codes (e.g. "MD", "NJ", "CT", "VA", "OR")
+	// in which the sale of precise geolocation data is prohibited. When a user or device geo.region
+	// matches one of these states, lat/lon will be rounded and IP masked. Empty by default (opt-in).
+	USStatesWithSaleProhibition []string `mapstructure:"us_states_with_geo_prohibition"`
 }
 
 type GDPR struct {
