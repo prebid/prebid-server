@@ -51,22 +51,31 @@ func getAccountId(request *openrtb2.BidRequest) (int, error) {
 }
 
 func appendAccountIdToExt(request *openrtb2.BidRequest, accountId int) error {
-	var extMap map[string]any
+	extMap := make(map[string]jsonutil.RawMessage)
 	if len(request.Ext) > 0 {
 		if err := jsonutil.Unmarshal(request.Ext, &extMap); err != nil {
 			return err
 		}
 	}
-	if extMap == nil {
-		extMap = make(map[string]any)
+
+	prebidExt := make(map[string]jsonutil.RawMessage)
+	if rawPrebidExt, ok := extMap["prebid"]; ok {
+		if err := jsonutil.Unmarshal(rawPrebidExt, &prebidExt); err != nil {
+			prebidExt = make(map[string]jsonutil.RawMessage)
+		}
 	}
 
-	prebidExt, ok := extMap["prebid"].(map[string]any)
-	if !ok {
-		prebidExt = make(map[string]any)
+	accountIdJSON, err := jsonutil.Marshal(accountId)
+	if err != nil {
+		return err
 	}
-	prebidExt["accountid"] = accountId
-	extMap["prebid"] = prebidExt
+	prebidExt["accountid"] = accountIdJSON
+
+	updatedPrebidExt, err := jsonutil.Marshal(prebidExt)
+	if err != nil {
+		return err
+	}
+	extMap["prebid"] = updatedPrebidExt
 
 	updatedExt, err := jsonutil.Marshal(extMap)
 	if err != nil {
