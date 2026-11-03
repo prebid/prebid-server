@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Adfusion Adapter Params",
+  "description": "A schema which validates params accepted by the Adfusion adapter",
+  "type": "object",
+  "properties": {
+    "accountId": {
+      "type": "integer",
+      "description": "The account ID provided by AdFusion",
+      "example": 123
+    }
+  },
+
+  "required": ["accountId"]
+}

@@ -1,0 +1,109 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.app",
+      "name": "Example App"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "gpid": "/1234/app/banner",
+          "bidder": {
+            "accountId": 64
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.adfusion.example/auction",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.example.app",
+            "name": "Example App"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{"w": 320, "h": 50}]
+              },
+              "ext": {
+                "gpid": "/1234/app/banner",
+                "bidder": {
+                  "accountId": 64
+                }
+              }
+            }
+          ],
+          "ext": {
+            "prebid": {
+              "accountid": 64
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adfusion",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.25,
+                  "adm": "<div>ad</div>",
+                  "crid": "test-crid",
+                  "w": 320,
+                  "h": 50,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.25,
+            "adm": "<div>ad</div>",
+            "crid": "test-crid",
+            "w": 320,
+            "h": 50,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

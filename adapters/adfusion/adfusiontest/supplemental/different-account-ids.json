@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.pl/article",
+      "domain": "example.pl"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": 55
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": 56
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "all impressions must have the same accountId",
+      "comparison": "literal"
+    }
+  ]
+}
