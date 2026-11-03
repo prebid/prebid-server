@@ -1,0 +1,8 @@
+aliasOf: adkernel
+userSync:
+  redirect:
+    url: "https://sync.adkernel.com/user-sync?t=image&zone=313534&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{UID}"
+  iframe:
+    url: "https://sync.adkernel.com/user-sync?t=iframe&zone=313534&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{UID}"

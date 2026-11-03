@@ -1,0 +1,167 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id",
+    "imp": [
+      {
+        "id": "imp-id",
+        "ext": {
+          "bidder": {
+            "tenantId": "a",
+            "adUnitId": "b"
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisher-id"
+      },
+      "id": "site-id"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?pid=a",
+        "body": {
+          "id": "auction-req-id",
+          "imp": [
+            {
+              "id": "imp-id",
+              "ext": {
+                "bidder": {
+                  "tenantId": "a",
+                  "adUnitId": "b"
+                }
+              },
+              "banner": {
+                "w": 320,
+                "h": 480,
+                "pos": 7,
+                "mimes": [
+                  "image/jpg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "api": [
+                  5,
+                  7
+                ],
+                "vcm": 1,
+                "id": "1"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisher-id"
+            },
+            "id": "site-id"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "body": {
+          "id": "bid-resp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-item-id",
+                  "impid": "imp-id",
+                  "price": 0.04,
+                  "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+                  "adomain": [
+                    "example.com"
+                  ],
+                  "mtype": 1
+                }
+              ],
+              "seat": "seat-1"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "id": "bid-resp-id",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-item-id",
+            "impid": "imp-id",
+            "price": 0.04,
+            "adm": "<a href='https://advertiser.com/click' target='_blank'><img src='https://advertiser.com/banner.jpg' width='320' height='50' alt='Ad'></a>",
+            "adomain": [
+              "example.com"
+            ],
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

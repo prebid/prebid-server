@@ -225,6 +225,7 @@
                   "h": 0,
                   "exp": 0,
                   "qagmediarating": 0,
+                  "mtype": 4,
                   "ext": {
                     "event_notification_token": {
                       "payload": "4323.905895002584918328.1655998688532"
@@ -255,6 +256,7 @@
               "tripadvisor.com"
             ],
             "crid": "11116594",
+            "mtype": 4,
             "ext": {
               "event_notification_token": {
                 "payload": "4323.905895002584918328.1655998688532"

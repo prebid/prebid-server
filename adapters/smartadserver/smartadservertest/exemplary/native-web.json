@@ -217,6 +217,7 @@
                   "h": 0,
                   "exp": 0,
                   "qagmediarating": 0,
+                  "mtype": 4,
                   "ext": {
                     "event_notification_token": {
                       "payload": "3305.295938731865870037.1656056869251"
@@ -256,6 +257,7 @@
               "colruyt.be"
             ],
             "crid": "431321529",
+            "mtype": 4,
             "ext": {
               "event_notification_token": {
                 "payload": "3305.295938731865870037.1656056869251"

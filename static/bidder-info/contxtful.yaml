@@ -1,0 +1,20 @@
+maintainer:
+  email: "contact@contxtful.com"
+disabled: false
+endpoint: "https://prebid.receptivity.io/v1/pbs/{{.AccountID}}/bid"
+
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+userSync:
+  iframe:
+    url: "https://sync.receptivity.io/pbs/iframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}"
+    userMacro: "$UID"

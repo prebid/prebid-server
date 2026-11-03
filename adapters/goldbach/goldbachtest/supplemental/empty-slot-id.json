@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "id": "test-imp-123",
+        "banner": {
+          "h": 250,
+          "w": 300,
+          "pos": 0
+        },
+        "ext": {
+          "bidder": {
+            "slotId": "",
+            "publisherId": "de-example.ch"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://www.example.ch/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+    },
+    "id": "723f8906-7f59-4f50-bba9-ed9115ab1663"
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "publisherId and slotId are required",
+      "comparison": "literal"
+    },
+    {
+      "value": "no valid impression found",
+      "comparison": "literal"
+    }
+  ]
+}

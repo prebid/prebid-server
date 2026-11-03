@@ -3,7 +3,7 @@ package hookstage
 import (
 	"errors"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 )

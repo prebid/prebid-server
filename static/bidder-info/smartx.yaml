@@ -1,4 +1,6 @@
 endpoint: "https://bid.smartclip.net/bid/1005"
+openrtb:
+  version: 2.6
 maintainer:
   email: "bidding@smartclip.tv"
 gvlVendorID: 115

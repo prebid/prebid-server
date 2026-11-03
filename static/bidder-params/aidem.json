@@ -17,7 +17,7 @@
         "placementId": {
             "type": "string",
             "minLength": 1,
-            "description": "Unique publisher ttag ID"
+            "description": "Unique publisher tag ID"
         },
         "rateLimit": {
             "type": "number",
@@ -25,5 +25,8 @@
             "maximum": 1
         }
     },
-    "required": ["siteId", "publisherId"]
+    "required": [
+        "siteId",
+        "publisherId"
+    ]
 }

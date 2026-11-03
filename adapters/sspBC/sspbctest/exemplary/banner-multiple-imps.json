@@ -1,0 +1,257 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot1",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "005"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "tagid": "ad-test1"
+            },
+            {
+                "id": "slot2",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "037"
+                    }
+                },
+                "secure": 1,
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 600
+                        }
+                    ]
+                },
+                "tagid": "ad-test2"
+            }
+        ],
+        "site": {
+            "domain": "test.page",
+            "page": "https://test.page/",
+            "ref": "https://test.referer/"
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "body": {
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot1",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-test1",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "005"
+                                    }
+                                }
+                            },
+                            {
+                                "id": "slot2",
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 600
+                                        }
+                                    ]
+                                },
+                                "tagid": "ad-test2",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "037"
+                                    }
+                                }
+                            }
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
+                        },
+                        "user": {
+                            "ext": {
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
+                            }
+                        }
+                    },
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
+                    }
+                },
+                "impIDs":["slot1","slot2"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "adm": "<!--preformatted-->test_ad_1",
+                                    "nurl": "www.test.com",
+                                    "adomain": [
+                                        "sspbc-test"
+                                    ],
+                                    "crid": "1234",
+                                    "ext": {
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "005",
+                                        "tagid": "ad-test1"
+                                    },
+                                    "w": 300,
+                                    "h": 250,
+                                    "id": "response-005",
+                                    "impid": "slot1",
+                                    "price": 20,
+                                    "mtype": 1
+                                }
+                            ],
+                            "seat": "sspbc-test"
+                        },
+                        {
+                            "bid": [
+                                {
+                                    "adm": "<!--preformatted-->test_ad_2",
+                                    "nurl": "www.test.com",
+                                    "adomain": [
+                                        "sspbc-test"
+                                    ],
+                                    "crid": "5678",
+                                    "ext": {
+                                        "external": "1",
+                                        "platform": "prebidserver",
+                                        "pricepl": 0.123,
+                                        "pubid": "431",
+                                        "siteid": "237503",
+                                        "slotid": "037",
+                                        "tagid": "ad-test2"
+                                    },
+                                    "w": 300,
+                                    "h": 600,
+                                    "id": "response-037",
+                                    "impid": "slot2",
+                                    "price": 10,
+                                    "mtype": 1
+                                }
+                            ],
+                            "seat": "sspbc-test"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "id": "response-005",
+                        "impid": "slot1",
+                        "price": 20,
+                        "adm": "<!--preformatted-->test_ad_1",
+                        "nurl": "www.test.com",
+                        "adomain": [
+                            "sspbc-test"
+                        ],
+                        "crid": "1234",
+                        "w": 300,
+                        "h": 250,
+                        "ext": {
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "005",
+                            "tagid": "ad-test1"
+                        },
+                        "mtype": 1
+                    },
+                    "type": "banner"
+                },
+                {
+                    "bid": {
+                        "id": "response-037",
+                        "impid": "slot2",
+                        "price": 10,
+                        "adm": "<!--preformatted-->test_ad_2",
+                        "nurl": "www.test.com",
+                        "adomain": [
+                            "sspbc-test"
+                        ],
+                        "crid": "5678",
+                        "w": 300,
+                        "h": 600,
+                        "ext": {
+                            "external": "1",
+                            "platform": "prebidserver",
+                            "pricepl": 0.123,
+                            "pubid": "431",
+                            "siteid": "237503",
+                            "slotid": "037",
+                            "tagid": "ad-test2"
+                        },
+                        "mtype": 1
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

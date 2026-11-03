@@ -1,0 +1,9 @@
+aliasOf: adkernel
+gvlVendorID: 1320
+userSync:
+  redirect:
+    url: "https://sync.adkernel.com/user-sync?t=image&zone=284803&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{UID}"
+  iframe:
+    url: "https://sync.adkernel.com/user-sync?t=iframe&zone=284803&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "{UID}"

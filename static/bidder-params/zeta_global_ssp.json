@@ -4,5 +4,10 @@
   "description": "A schema which validates params accepted by the Zeta Global SSP adapter",
 
   "type": "object",
-  "properties": {}
+  "properties": {
+    "sid": {
+      "type": "integer",
+      "description": "An ID which identifies the publisher"
+    }
+  }
 }

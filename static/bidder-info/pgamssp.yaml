@@ -1,4 +1,5 @@
 endpoint: "http://us-east.pgammedia.com/pserver"
+gvlVendorID: 1353
 maintainer:
   email: "info@pgammedia.com"
 capabilities:

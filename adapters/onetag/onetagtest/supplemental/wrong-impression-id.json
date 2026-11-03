@@ -56,7 +56,12 @@
                     "w": 300,
                     "pos": 1
                   },
-                  "bidfloor": 0.05
+                  "bidfloor": 0.05,
+                  "ext": {
+                    "bidder": {
+                      "pubId": "386276e072"
+                    }
+                  }
                 }
             ],
             "site": {

@@ -1,0 +1,112 @@
+
+{
+  "mockBidRequest": {
+    "id": "mediaType_error",
+    "site": {
+      "page": "example.com",
+      "publisher": {
+        "id": "exco-publisherId"
+      }
+    },
+    "imp": [
+      {
+        "id": "mediaType_error_imp",
+        "video": {
+          "mimes": ["video/mp4", "video/webm"],
+          "w": 640,
+          "h": 360,
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId",
+            "tagId": "exco-video-tagId"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testjsonsample.com",
+        "body": {
+          "id": "mediaType_error",
+          "site": {
+            "page": "example.com",
+            "publisher": {
+              "id": "exco-publisherId"
+            }
+          },
+          "imp": [{
+            "id": "mediaType_error_imp",
+            "video": {
+              "mimes": ["video/mp4", "video/webm"],
+              "w": 640,
+              "h": 360,
+              "minduration": 5,
+              "maxduration": 30,
+              "protocols": [2, 3]
+            },
+            "tagid": "exco-video-tagId",
+            "ext": {
+              "bidder": {
+                "accountId": "exco-accountId",
+                "publisherId": "exco-publisherId",
+                "tagId": "exco-video-tagId"
+              }
+            }
+          }]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["mediaType_error_imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "mediaType_error",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "mediaType_error_imp",
+                  "price": 2.5,
+                  "adid": "9999",
+                  "adm": "<?xml version='1.0' encoding='UTF-8'?><VAST version='3.0'></VAST>",
+                  "cid": "5001",
+                  "crid": "9999",
+                  "mtype": 3
+                }
+              ],
+              "seat": "exco"
+            }
+          ],
+          "bidid": "mediaType_error",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unrecognized bid_ad_type in response from exco: 3",
+      "comparison": "literal"
+    }
+  ]
+}

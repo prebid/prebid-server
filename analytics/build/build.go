@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 
 	"github.com/benbjohnson/clock"
-	"github.com/golang/glog"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/analytics/agma"
-	"github.com/prebid/prebid-server/v2/analytics/clients"
-	"github.com/prebid/prebid-server/v2/analytics/filesystem"
-	"github.com/prebid/prebid-server/v2/analytics/pubstack"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/privacy"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/analytics/agma"
+	"github.com/prebid/prebid-server/v4/analytics/clients"
+	"github.com/prebid/prebid-server/v4/analytics/filesystem"
+	"github.com/prebid/prebid-server/v4/analytics/pubstack"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/privacy"
 )
 
 // Modules that need to be logged to need to be initialized here
@@ -23,7 +23,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if mod, err := filesystem.NewFileLogger(analytics.File.Filename); err == nil {
 			modules["filelogger"] = mod
 		} else {
-			glog.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
+			logger.Fatalf("Could not initialize FileLogger for file %v :%v", analytics.File.Filename, err)
 		}
 	}
 
@@ -40,7 +40,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["pubstack"] = pubstackModule
 		} else {
-			glog.Errorf("Could not initialize PubstackModule: %v", err)
+			logger.Errorf("Could not initialize PubstackModule: %v", err)
 		}
 	}
 
@@ -52,7 +52,7 @@ func New(analytics *config.Analytics) analytics.Runner {
 		if err == nil {
 			modules["agma"] = agmaModule
 		} else {
-			glog.Errorf("Could not initialize Agma Anayltics: %v", err)
+			logger.Errorf("Could not initialize Agma Anayltics: %v", err)
 		}
 	}
 
@@ -126,6 +126,13 @@ func (ea enabledAnalytics) LogNotificationEventObject(ne *analytics.Notification
 		if ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
 			module.LogNotificationEventObject(ne)
 		}
+	}
+}
+
+// Shutdown - correctly shutdown all analytics modules and wait for them to finish
+func (ea enabledAnalytics) Shutdown() {
+	for _, module := range ea {
+		module.Shutdown()
 	}
 }
 

@@ -1,8 +1,8 @@
 package dsa
 
 import (
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Writer is used to write the default DSA to the request (req.regs.ext.dsa)

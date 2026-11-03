@@ -1,0 +1,55 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {},
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version"
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version",
+        "ext": {
+          "bidder": {
+            "placement_id": "invalid"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "failed to parse ext for impression id 'test-imp-id-1'",
+      "comparison": "literal"
+    },
+    {
+      "value": "failed to parse ext for impression id 'test-imp-id-2'",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "mockBidRequest": {
+    "id": "err-imp-banner-nosize",
+    "imp": [
+      {
+        "id": "bad-imp-1",
+        "banner": {},
+        "ext": {
+          "bidder": {
+            "widgetId": "1"
+          }
+        }
+      }
+    ],
+    "site": { "page": "http://example.com", "ref": "http://example.com" },
+    "device": { "ua": "ua", "h": 100, "w": 200 }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://example.com/hb",
+        "body": {
+          "id": "err-imp-banner-nosize",
+          "ext": {
+            "nativery": {
+              "isAmp": false,
+              "widgetId": "1"
+            }
+          },
+          "imp": [
+            {
+              "id": "bad-imp-1",
+              "banner": {},
+              "ext": {
+                "bidder": {
+                  "widgetId": "1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "http://example.com",
+            "ref": "http://example.com"
+          },
+          "device": { "ua": "ua", "h": 100, "w": 200 }
+        },
+        "impIDs": ["bad-imp-1"]
+      },
+      "mockResponse": {
+        "status": 400,
+        "body": {}
+      }
+    }
+  ],
+  "expectedRequestCount": 1,
+  "expectedMakeRequestsErrors": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}

@@ -1,0 +1,135 @@
+{
+    "mockBidRequest": {
+        "id": "some-request-id",
+        "device": {
+            "ua": "test-user-agent",
+            "ip": "123.123.123.123",
+            "language": "en",
+            "dnt": 0
+        },
+        "tmax": 1000,
+        "site": {
+            "domain": "com.prebid",
+            "page": "test.com",
+            "publisher": {
+                "id": "123456789"
+            }
+        },
+        "imp": [
+            {
+                "id": "some-impression-id1",
+                "tagid": "tagid",
+                "banner": {
+                    "w": 320,
+                    "h": 50
+                },
+                "ext": {
+                    "bidder": {
+                        "sspid": "sspid"
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "headers": {
+                    "Content-Type": [
+                        "application/json;charset=utf-8"
+                    ],
+                    "Accept": [
+                        "application/json"
+                    ],
+                    "X-Openrtb-Version": [
+                        "2.5"
+                    ]
+                },
+                "uri": "https://api.imotech.tech/Ad/GetAdOut?sspid=sspid",
+                "body": {
+                    "id": "some-request-id",
+                    "device": {
+                        "ua": "test-user-agent",
+                        "ip": "123.123.123.123",
+                        "language": "en",
+                        "dnt": 0
+                    },
+                    "imp": [
+                        {
+                            "id": "some-impression-id1",
+                            "tagid": "tagid",
+                            "banner": {
+                                "w": 320,
+                                "h": 50
+                            },
+                            "ext": {
+                                "sspid": "sspid"
+                            }
+                        }
+                    ],
+                    "site": {
+                        "domain": "com.prebid",
+                        "page": "test.com",
+                        "publisher": {
+                            "id": "123456789"
+                        }
+                    },
+                    "tmax": 1000
+                },
+                "impIDs": [
+                    "some-impression-id1"
+                ]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "awesome-resp-id",
+                    "seatbid": [
+                        {
+                            "bid": [
+                                {
+                                    "id": "some-impression-id1",
+                                    "impid": "some-impression-id1",
+                                    "mtype": 1,
+                                    "price": 3.5,
+                                    "adm": "test_adm",
+                                    "adomain": [
+                                        "com.prebid"
+                                    ],
+                                    "crid": "20",
+                                    "w": 320,
+                                    "h": 50
+                                }
+                            ],
+                            "type": "banner",
+                            "seat": "bigoad"
+                        }
+                    ],
+                    "cur": "USD"
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "some-impression-id1",
+                        "impid": "some-impression-id1",
+                        "mtype": 1,
+                        "price": 3.5,
+                        "adm": "test_adm",
+                        "crid": "20",
+                        "adomain": [
+                            "com.prebid"
+                        ],
+                        "w": 320,
+                        "h": 50
+                    },
+                    "type": "banner"
+                }
+            ]
+        }
+    ]
+}

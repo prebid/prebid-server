@@ -1,9 +1,10 @@
 package yieldlab
 
 import (
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
 	"strconv"
 	"time"
+
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 type bidResponse struct {

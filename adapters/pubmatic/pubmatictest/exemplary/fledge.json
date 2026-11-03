@@ -47,7 +47,7 @@
               }
             }
           ],
-          "ext": {"prebid":{}}
+          "ext": {}
         },
         "impIDs":["test-imp-id"]
       },
@@ -67,6 +67,7 @@
                   "crid": "crid_10",
                   "h": 90,
                   "w": 728,
+                  "mtype": 1,
                   "ext": {}
                 }
               ]
@@ -123,9 +124,10 @@
             "crid": "crid_10",
             "w": 728,
             "h": 90,
+            "mtype": 1,
             "ext": {}
           },
-          "type": "banner"
+           "type": "banner"
         }
       ],
       "fledgeauctionconfigs": [

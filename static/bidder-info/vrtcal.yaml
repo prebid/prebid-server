@@ -21,4 +21,5 @@ userSync:
     url: "https://usync.vrtcal.com/i?ssp=1804&synctype=redirect&us_privacy={{.USPrivacy}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&surl={{.RedirectURL}}"
     userMacro: "$$VRTCALUSER$$"
 openrtb:
+  version: 2.6
   gpp-supported: true

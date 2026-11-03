@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Start.io Adapter Params",
+  "description": "A schema which validates params accepted by the Start.io adapter",
+  "type": "object",
+  "properties": {},
+  "required": []
+}

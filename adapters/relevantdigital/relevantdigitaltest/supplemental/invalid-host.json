@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 320,
+          "h": 50
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "testaccount",
+            "placementId": "testplacement",
+            "pbsHost": "evil.com/path?redirect=http://attacker.com#"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid Host",
+      "comparison": "literal"
+    }
+  ]
+}

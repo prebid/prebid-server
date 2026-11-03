@@ -3,7 +3,16 @@
   "config": {
     "mockBidders": [
       {"bidderName": "appnexus", "currency": "USD", "price": 0.00}
-    ]
+    ],
+    "bidderInfoOverrides":{
+        "appnexus": {
+          "capabilities": {
+            "dooh": {
+              "mediaTypes": ["banner"]
+            }
+          }
+        }
+    }
   },
   "mockBidRequest": {
     "id": "some-request-id",

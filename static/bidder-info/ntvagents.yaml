@@ -1,0 +1,11 @@
+aliasOf: "teqblaze"
+endpoint: "https://endpoint1.nativeagents.ai/pserver"
+maintainer:
+  email: "prebid@nativeagents.ai"
+userSync:
+  redirect:
+    url: "https://sync.nativeagents.ai/pbserver?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "[UID]"
+  iframe:
+    url: "https://sync.nativeagents.ai/pbserverIframe?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&pbserverUrl={{.RedirectURL}}"
+    userMacro: "[UID]"

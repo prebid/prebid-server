@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {},
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version",
+        "ext": {
+          "bidder": {
+            "member": 101,
+            "inv_code": "abc"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "displaymanagerver": "any-display-manager-version",
+        "ext": {
+          "bidder": {
+            "member": 102,
+            "inv_code": "abc"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "member id mismatch: all impressions must use the same member id",
+      "comparison": "literal"
+    }
+  ]
+}

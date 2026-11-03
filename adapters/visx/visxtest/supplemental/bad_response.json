@@ -56,7 +56,7 @@
 
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type visx.visxResponse",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

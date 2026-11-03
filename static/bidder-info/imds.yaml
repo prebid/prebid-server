@@ -15,7 +15,6 @@ capabilities:
       - banner
       - video
 userSync:
-  supportCors: true
   iframe:
     url: "https://ad-cdn.technoratimedia.com/html/usersync.html?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gppsid={{.GPPSID}}&cb={{.RedirectURL}}"
     userMacro: "[USER_ID]"

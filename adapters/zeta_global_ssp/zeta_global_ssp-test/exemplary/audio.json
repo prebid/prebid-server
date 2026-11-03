@@ -1,0 +1,140 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "http://www.example.com",
+      "domain": "www.example.com"
+    },
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "audio": {
+          "minduration": 5,
+          "maxduration": 30,
+          "minbitrate": 300,
+          "maxbitrate": 1500,
+          "api": [1, 2],
+          "protocols": [9, 10],
+          "mimes": [
+            "audio/aac",
+            "audio/mp4",
+            "audio/mpeg"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sid": 11
+          }
+        }
+      }
+    ],
+    "test": 1,
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://ssp.disqus.com/bid/prebid-server?sid=11",
+        "body": {
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "audio": {
+                "minduration": 5,
+                "maxduration": 30,
+                "minbitrate": 300,
+                "maxbitrate": 1500,
+                "api": [1, 2],
+                "protocols": [9, 10],
+                "mimes": [
+                  "audio/aac",
+                  "audio/mp4",
+                  "audio/mpeg"
+                ]
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "device": {
+            "ip": "123.123.123.123"
+          },
+          "test": 1,
+          "tmax": 500
+        },
+        "impIDs":["some-impression-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "price": 1.234,
+                  "adm": "<VAST>TAG</VAST>",
+                  "adomain": [
+                    "some-adomain"
+                  ],
+                  "cid": "1234",
+                  "crid": "2345",
+                  "ext": {
+                    "prebid": {
+                      "type": "audio"
+                    }
+                  }
+                }
+              ],
+              "seat": "zeta_global_ssp"
+            }
+          ],
+          "bidid": "some-bidid",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 1.234,
+            "adm": "<VAST>TAG</VAST>",
+            "adomain": [
+              "some-adomain"
+            ],
+            "cid": "1234",
+            "crid": "2345",
+            "ext": {
+              "prebid": {
+                "type": "audio"
+              }
+            }
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "mockBidRequest": {
+    "imp": [
+      {
+        "id": "test-imp-123",
+        "banner": {
+          "h": 250,
+          "w": 300,
+          "pos": 0
+        },
+        "ext": {
+          "bidder": {
+            "slotId": "12345678/de-example.ch/slot-id/some-page",
+            "publisherId": "de-example.ch",
+            "customTargeting": {
+              "key1": "value1",
+              "key2": ["value2", "value3"]
+            }
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://www.example.ch/"
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+    },
+    "id": "723f8906-7f59-4f50-bba9-ed9115ab1663"
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "uri": "https://gold.bach/prebid/adapter-endpoint",
+        "body": {
+          "imp": [
+            {
+              "ext": {
+                "goldbach": {
+                  "slotId": "12345678/de-example.ch/slot-id/some-page",
+                  "targetings": {
+                    "key1": ["value1"],
+                    "key2": ["value2", "value3"]
+                  }
+                }
+              },
+              "id": "test-imp-123",
+              "banner": {
+                "h": 250,
+                "w": 300,
+                "pos": 0
+              }
+            }
+          ],
+          "site": {
+            "page": "https://www.example.ch/"
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"
+          },
+          "ext": {
+            "goldbach": {
+              "publisherId": "de-example.ch"
+            }
+          },
+          "id": "723f8906-7f59-4f50-bba9-ed9115ab1663_de-example.ch"
+        },
+        "impIDs": ["test-imp-123"]
+      },
+      "mockResponse": {
+        "status": 201,
+        "headers": {},
+        "body": {
+          "id": "c04f2011-87e9-4cde-9152-78fa2a63078a",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-123",
+                  "price": 2.5,
+                  "adm": "test-ad-content",
+                  "adid": "456",
+                  "impid": "test-imp-123",
+                  "crid": "1234",
+                  "cid": "1234",
+                  "ext": {
+                    "prebid": {}
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "no media type for bid test-bid-123",
+      "comparison": "literal"
+    },
+    {
+      "value": "no valid bids found in response",
+      "comparison": "literal"
+    }
+  ]
+}

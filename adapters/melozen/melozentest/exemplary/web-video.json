@@ -1,0 +1,129 @@
+{
+    "mockBidRequest": {
+      "id": "web-video",
+      "tmax": 3000,
+      "imp": [
+        {
+          "id": "video-imp-id",
+          "ext": {
+            "bidder": {
+                "pubId": "386276e072"
+            }
+        },
+          "video": {
+            "w": 640,
+            "h": 480,
+            "mimes": ["video/mp4"],
+            "placement": 1
+          }
+        }
+      ],
+      "test": 0,
+      "site": {
+        "publisher": {
+          "id": "1"
+        },
+        "page": "https://some-site.com",
+        "ref": "https://some-site.com"
+      },
+      "device": {
+        "w": 1200,
+        "h": 900
+      }
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "https://example.com/rtb/v2/bid?publisher_id=386276e072",
+          "headers": {
+            "Content-Type": ["application/json;charset=utf-8"],
+            "Accept": ["application/json"]
+          },
+          "body": {
+            "id": "web-video",
+            "tmax": 3000,
+            "imp": [
+              {
+                "id": "video-imp-id",
+                "ext": {
+                    "bidder": {
+                        "pubId": "386276e072"
+                    }
+                },
+                "video": {
+                  "w": 640,
+                  "h": 480,
+                  "mimes": ["video/mp4"],
+                  "placement": 1
+                }
+              }
+            ],
+            "site": {
+              "publisher": {
+                "id": "1"
+              },
+              "page": "https://some-site.com",
+              "ref": "https://some-site.com"
+            },
+            "device": {
+              "w": 1200,
+              "h": 900
+            }
+          },
+          "impIDs":["video-imp-id"]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "web-video",
+            "cur": "USD",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "web-video",
+                    "impid": "video-imp-id",
+                    "crid": "some-creative-id",
+                    "adm": "<VAST>TAG</VAST>",
+                    "price": 20,
+                    "w": 640,
+                    "h": 480,
+                    "ext": {
+                      "prebid": {
+                        "type": "video"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "web-video",
+              "impid": "video-imp-id",
+              "crid": "some-creative-id",
+              "adm": "<VAST>TAG</VAST>",
+              "price": 20,
+              "w": 640,
+              "h": 480,
+              "ext": {
+                "prebid": {
+                  "type": "video"
+                }
+              }
+            },
+            "type": "video"
+          }
+        ]
+      }
+    ]
+  }
+  

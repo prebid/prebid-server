@@ -116,7 +116,13 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
+                    }
                 },
                 "impIDs":["test-imp-id-2","test-imp-id-3"]
             },
@@ -183,7 +189,7 @@
     ],
     "expectedMakeRequestsErrors": [
         {
-            "value": "json: cannot unmarshal number into Go struct field ExtImpIx.sid of type string",
+            "value": "cannot unmarshal openrtb_ext.ExtImpIx.Sid: expects \" or n, but found 1",
             "comparison": "literal"
         }
     ]

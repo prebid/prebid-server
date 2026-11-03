@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-basic",
+        "banner": {
+          "format": [
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "basic",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=145&endpoint=309&client=c4527281-5aa5-4c8e-bc53-a80bb3f99470",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://example.com",
+            "domain": "https://example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-basic",
+              "banner": {
+                "format": [
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "tagid": "basic",
+              "ext": {
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-basic"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

@@ -1,18 +1,19 @@
 package pubnative
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 )
 
 type PubnativeAdapter struct {
@@ -37,13 +38,13 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 	for _, imp := range request.Imp {
 		requestCopy := *request
 		var bidderExt adapters.ExtImpBidder
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		var pubnativeExt openrtb_ext.ExtImpPubnative
-		if err := json.Unmarshal(bidderExt.Bidder, &pubnativeExt); err != nil {
+		if err := jsonutil.Unmarshal(bidderExt.Bidder, &pubnativeExt); err != nil {
 			errs = append(errs, err)
 			continue
 		}
@@ -54,8 +55,13 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 			continue
 		}
 
+		if err := convertBidFloorCurrency(&imp, reqInfo); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
 		requestCopy.Imp = []openrtb2.Imp{imp}
-		reqJSON, err := json.Marshal(&requestCopy)
+		reqJSON, err := jsonutil.Marshal(&requestCopy)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
@@ -86,6 +92,21 @@ func checkRequest(request *openrtb2.BidRequest) error {
 		}
 	}
 
+	return nil
+}
+
+func convertBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, "USD") {
+		return nil
+	}
+
+	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+	if err != nil {
+		return err
+	}
+
+	imp.BidFloor = convertedValue
+	imp.BidFloorCur = "USD"
 	return nil
 }
 
@@ -145,7 +166,7 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	var parsedResponse openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &parsedResponse); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &parsedResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}

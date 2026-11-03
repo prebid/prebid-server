@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type Adapter struct {
@@ -62,13 +63,33 @@ func preprocess(request *openrtb2.BidRequest) error {
 			Message: "No Imps in Bid Request",
 		}
 	}
-	for i := 0; i < len(request.Imp); i++ {
-		var imp = &request.Imp[i]
-		var bidderExt adapters.ExtImpBidder
 
-		if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	// Process each impression in the bid request
+	//
+	// FIELD HANDLING BEHAVIOR:
+	// - PRESERVES: All non-bidder fields (gpid, prebid, schain, custom fields, etc.)
+	// - TRANSFORMS: Extracts bidder config from nested structure and flattens to root level
+	// - EXPLICITLY REMOVES: Only the 'bidder' wrapper key (contents are preserved but flattened)
+	//
+	// Example transformation:
+	// Input:  {"gpid": "/path", "bidder": {"placementId": 123}, "custom": "value"}
+	// Output: {"gpid": "/path", "placementId": 123, "custom": "value"}
+	for i := range request.Imp {
+		var imp = &request.Imp[i]
+
+		// Parse the original extension into a generic map to preserve all fields
+		var originalExt map[string]json.RawMessage
+		if err := jsonutil.Unmarshal(imp.Ext, &originalExt); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
+			}
+		}
+
+		// Extract the "bidder" field from the already parsed extension
+		bidderRaw, exists := originalExt["bidder"]
+		if !exists {
+			return &errortypes.BadInput{
+				Message: "bidder field not found in impression extension",
 			}
 		}
 
@@ -76,14 +97,40 @@ func preprocess(request *openrtb2.BidRequest) error {
 			return err
 		}
 
-		var extImp openrtb_ext.ExtImpCpmstar
-		if err := json.Unmarshal(bidderExt.Bidder, &extImp); err != nil {
+		// Create new extension object that preserves all original fields except 'bidder'
+		newExt := make(map[string]json.RawMessage)
+		for key, value := range originalExt {
+			if key != "bidder" {
+				newExt[key] = value
+			}
+		}
+
+		// Add bidder configuration fields directly to the root level
+		var bidderConfig map[string]interface{}
+		if err := jsonutil.Unmarshal(bidderRaw, &bidderConfig); err != nil {
 			return &errortypes.BadInput{
 				Message: err.Error(),
 			}
 		}
 
-		imp.Ext = bidderExt.Bidder
+		for key, value := range bidderConfig {
+			valueBytes, err := json.Marshal(value)
+			if err != nil {
+				return &errortypes.BadInput{
+					Message: err.Error(),
+				}
+			}
+			newExt[key] = valueBytes
+		}
+
+		// Marshal the new extension object
+		modifiedExt, err := json.Marshal(newExt)
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: err.Error(),
+			}
+		}
+		imp.Ext = modifiedExt
 	}
 
 	return nil
@@ -112,7 +159,7 @@ func (a *Adapter) MakeBids(bidRequest *openrtb2.BidRequest, unused *adapters.Req
 
 	var bidResponse openrtb2.BidResponse
 
-	if err := json.Unmarshal(responseData.Body, &bidResponse); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &bidResponse); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
 		}}

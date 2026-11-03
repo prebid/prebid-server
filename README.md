@@ -35,11 +35,16 @@ or compile a standalone binary using the command:
 ``` bash
 go build .
 ```
+**Note:** if building from source there are a couple dependencies to be aware of: 
+1. *Compile-time*. Some modules ship native code that requires `cgo` (comes with the `go` compiler) being enabled - by default it is and environment variable `CGO_ENABLED=1` do NOT set it to `0`.
+2. *Compile-time*. `cgo` depends on the C-compiler, which usually is `gcc`, but can be changed by setting the value of `CC` env var, f.e. `CC=clang`.  On ubuntu `gcc` can be installed via `sudo apt-get install gcc`. 
+3. *Runtime*. Some modules require `libatomic`.  On ubuntu it is installed by running `sudo apt-get install libatomic1`.  `libatomic1` is a dependency of `gcc`, so if you are building with `gcc` and running on the same machine, it is likely that `libatomic1` is already installed.   
+
 Ensure that you deploy the `/static` directory, as Prebid Server requires those files at startup.
 
 ## Developing
 
-Prebid Server requires [Go](https://go.dev) version 1.21 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
+Prebid Server requires [Go](https://go.dev) version 1.26.2 or newer. You can develop on any operating system that Go supports; however, please note that our helper scripts are written in bash.
 
 1. Clone The Repository
 ``` bash
@@ -86,6 +91,14 @@ An option for developing Prebid Server in a reproducible environment isolated fr
 ## Importing Prebid Server
 
 Prebid Server is not currently intended to be imported by other projects. Go Modules is used to manage dependencies, which also makes it possible to import Prebid Server packages. This is not supported. We offer no guarantees regarding the stability of packages and do not adhere to semantic versioning guidelines.
+
+## Swapping Global Dependencies
+
+Logger is a global side-effectful dependency that sometimes needs to be swapped to modify the behavior.  
+The `Logger` package contains an interface definition for unstructured logging with built-in `glog` implementation.
+The interface provides standard logging methods: `Debug`, `Info`, `Warn`, `Error`, and `Fatal`.
+The `glog` implementation is based on `github.com/golang/glog` package and serves as the concrete implementation for the logging interface.
+By default, the package uses the `glog` logger implementation.
 
 ## Contributing
 > [!IMPORTANT]

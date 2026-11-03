@@ -46,7 +46,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://prebid.smart-hub.io/pbserver?partnerName=partnertest&seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
+        "uri": "https://prebid.example.com/pbserver?partnerName=partnertest&seat=9Q20EdGxzgWdfPYShScl&token=zpl5iB5Ugpe9ofVTzi44WzfjZZYq1yer",
         "body": {
           "id": "id",
           "imp": [
@@ -101,7 +101,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type openrtb2.BidResponse",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ],

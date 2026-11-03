@@ -19,7 +19,7 @@
 
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal number into Go struct field ExtImpApacdex.siteId of type string",
+      "value": "cannot unmarshal openrtb_ext.ExtImpApacdex.SiteID: expects \" or n, but found 1",
       "comparison": "literal"
     }
   ]

@@ -132,14 +132,14 @@ type NonBidExt struct {
 
 // NonBid represnts the Non Bid Reason (statusCode) for given impression ID
 type NonBid struct {
-	ImpId      string    `json:"impid"`
-	StatusCode int       `json:"statuscode"`
-	Ext        NonBidExt `json:"ext"`
+	ImpId      string     `json:"impid"`
+	StatusCode int        `json:"statuscode"`
+	Ext        *NonBidExt `json:"ext,omitempty"`
 }
 
 // SeatNonBid is collection of NonBid objects with seat information
 type SeatNonBid struct {
 	NonBid []NonBid        `json:"nonbid"`
 	Seat   string          `json:"seat"`
-	Ext    json.RawMessage `json:"ext"`
+	Ext    json.RawMessage `json:"ext,omitempty"`
 }

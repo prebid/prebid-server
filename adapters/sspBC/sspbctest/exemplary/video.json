@@ -1,0 +1,133 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "slot",
+                "ext": {
+                    "bidder": {
+                        "siteId": "237503",
+                        "id": "005"
+                    }
+                },
+                "secure": 1,
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [2, 5],
+                    "w": 320,
+                    "h": 480
+                  },
+                "tagid": "ad-test1"
+            }
+        ],
+        "site": {
+            "domain": "test.page",
+            "page": "https://test.page/",
+            "ref": "https://test.referer/"
+        },
+        "regs": {
+            "ext": {
+                "gdpr": 1
+            }
+        },
+        "user": {
+            "ext": {
+                "consent": "test_consent"
+            },
+            "buyeruid": "test_user"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "body": {
+                    "bidRequest": {
+                        "id": "test-request",
+                        "imp": [
+                            {
+                                "id": "slot",
+                                "video": {
+                                    "mimes": ["video/mp4"],
+                                    "protocols": [2, 5],
+                                    "w": 320,
+                                    "h": 480
+                                  },
+                                "tagid": "ad-test1",
+                                "secure": 1,
+                                "ext": {
+                                    "bidder": {
+                                        "siteId": "237503",
+                                        "id": "005"
+                                    }
+                                }
+                            }
+                        ],
+                        "site": {
+                            "domain": "test.page",
+                            "page": "https://test.page/",
+                            "ref": "https://test.referer/"
+                        },
+                        "user": {
+                            "ext": {
+                                "consent": "test_consent"
+                            },
+                            "buyeruid": "test_user"
+                        },
+                        "regs": {
+                            "ext": {
+                                "gdpr": 1
+                            }
+                        }
+                    },
+                    "requestInfo": {
+                        "PbsEntryPoint": ""
+                    }
+                },
+                "impIDs":["slot"]
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "cur": "USD",
+                    "id": "test-request",
+                    "seatbid": [
+                        {
+                            "seat": "sspbc-test",
+                            "bid": [
+                                {
+                                    "adm": "test-video-ad",
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 2,
+                                    "w": 320,
+                                    "h": 480
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "currency": "USD",
+            "bids": [
+                {
+                    "bid": {
+                        "adm": "test-video-ad",
+                        "id": "response-005",
+                        "impid": "slot",
+                        "price": 20,
+                        "mtype": 2,
+                        "w": 320,
+                        "h": 480
+                    },
+                    "type": "video"
+                }
+            ]
+        }
+    ]
+}

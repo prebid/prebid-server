@@ -1,7 +1,7 @@
 {
     "expectedMakeRequestsErrors": [
         {
-            "value": "could not unmarshal openrtb_ext.ImpExtSeedingAlliance: json: cannot unmarshal number into Go struct field ImpExtSeedingAlliance.adUnitId of type string",
+            "value": "could not unmarshal openrtb_ext.ImpExtSeedingAlliance: cannot unmarshal openrtb_ext.ImpExtSeedingAlliance.AdUnitID: expects \" or n, but found 1",
             "comparison": "literal"
         }
     ],

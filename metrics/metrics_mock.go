@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -136,6 +136,14 @@ func (me *MetricsEngineMock) RecordAccountCacheResult(cacheResult CacheResult, i
 	me.Called(cacheResult, inc)
 }
 
+func (me *MetricsEngineMock) RecordFetcherResult(subsystem string, result FetcherResult) {
+	me.Called(subsystem, result)
+}
+
+func (me *MetricsEngineMock) RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration) {
+	me.Called(subsystem, operation, result, length)
+}
+
 // RecordPrebidCacheRequestTime mock
 func (me *MetricsEngineMock) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	me.Called(success, length)
@@ -173,6 +181,14 @@ func (me *MetricsEngineMock) RecordDebugRequest(debugEnabled bool, pubId string)
 
 func (me *MetricsEngineMock) RecordStoredResponse(pubId string) {
 	me.Called(pubId)
+}
+
+func (me *MetricsEngineMock) RecordGvlListRequest() {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordLiveGVLFetch(success bool) {
+	me.Called(success)
 }
 
 func (me *MetricsEngineMock) RecordAdsCertReq(success bool) {
@@ -225,4 +241,16 @@ func (me *MetricsEngineMock) RecordModuleExecutionError(labels ModuleLabels) {
 
 func (me *MetricsEngineMock) RecordModuleTimeout(labels ModuleLabels) {
 	me.Called(labels)
+}
+
+func (me *MetricsEngineMock) RecordAdapterThrottled(adapterName openrtb_ext.BidderName) {
+	me.Called(adapterName)
+}
+
+func (me *MetricsEngineMock) RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName) {
+	me.Called()
+}
+
+func (me *MetricsEngineMock) RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration) {
+	me.Called(adapterName, dialStartTime)
 }

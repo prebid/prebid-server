@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prebid/prebid-server/v2/currency"
+	"github.com/prebid/prebid-server/v4/currency"
 	"github.com/stretchr/testify/assert"
 )
 

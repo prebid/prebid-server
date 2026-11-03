@@ -1,0 +1,30 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-missing-params",
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-missing-params",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://publisher.us-adx-admixer.rtb-stack.com/prebid",
+            "tagId": "test-tag"
+          }
+        }
+      }
+    ]
+  },
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "route URL must contain client, endpoint, and ssp query parameters",
+      "comparison": "literal"
+    }
+  ]
+}

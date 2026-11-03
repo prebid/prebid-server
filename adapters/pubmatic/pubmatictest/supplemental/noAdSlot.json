@@ -38,7 +38,6 @@
             }
         }
     },
-
     "httpCalls": [{
         "expectedRequest": {
             "uri": "https://hbopenbid.pubmatic.com/translator?source=prebid-server",
@@ -72,8 +71,7 @@
                     "wrapper": {
                         "profile": 5123,
                         "version": 1
-                    },
-                    "prebid": {}
+                    }
                 }
             },
             "impIDs":["test-imp-id"]
@@ -95,6 +93,7 @@
                         "w": 300,
                         "h": 250,
                         "dealid": "test deal",
+                        "mtype": 1,
                         "ext": {
                             "dspid": 6,
                             "deal_channel": 1
@@ -120,12 +119,13 @@
                 "w": 300,
                 "h": 250,
                 "dealid": "test deal",
+                "mtype": 1,
                 "ext": {
                     "dspid": 6,
                     "deal_channel": 1
                 }
             },
-            "type": "banner"
+             "type": "banner"
         }]
     }]
 }

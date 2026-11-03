@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "MediaGo Adapter Params",
+  "description": "A schema which validates params accepted by the MediaGo adapter",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Publisher token，communicate with MediaGo to obtain it. This parameter expects all imps to be the same.",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "enum": ["US", "EU", "APAC"],
+      "description": "Server region for PBS request: US for US Region, EU for EU Region, APAC for APAC Region, default is US. This parameter expects all imps to be the same"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "The AD placement ID.",
+      "minLength": 1
+    }
+  },
+  "required": ["token"]
+}

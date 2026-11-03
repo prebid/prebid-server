@@ -7,18 +7,18 @@ import (
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/hooks/hookexecution"
-	"github.com/prebid/prebid-server/v2/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/hooks/hookexecution"
+	"github.com/prebid/prebid-server/v4/hooks/hookstage"
 )
 
 func handleRawBidderResponseHook(
 	cfg config,
 	payload hookstage.RawBidderResponsePayload,
-	moduleCtx hookstage.ModuleContext,
+	moduleCtx *hookstage.ModuleContext,
 ) (result hookstage.HookResult[hookstage.RawBidderResponsePayload], err error) {
 	bidder := payload.Bidder
-	blockAttrsVal, ok := moduleCtx[bidder]
+	blockAttrsVal, ok := moduleCtx.Get(bidder)
 	if !ok {
 		// if there are no blocking attributes for this bidder just pass empty blockingAttributes for further processing
 		// other values from config must still be checked
@@ -34,7 +34,7 @@ func handleRawBidderResponseHook(
 
 	// allowedBids will store all bids that have passed the attribute check
 	allowedBids := make([]*adapters.TypedBid, 0)
-	for _, bid := range payload.Bids {
+	for _, bid := range payload.BidderResponse.Bids {
 
 		failedChecksData := make(map[string]interface{})
 		bidMediaTypes := mediaTypesFromBid(bid)
@@ -77,8 +77,8 @@ func handleRawBidderResponseHook(
 	}
 
 	changeSet := hookstage.ChangeSet[hookstage.RawBidderResponsePayload]{}
-	if len(payload.Bids) != len(allowedBids) {
-		changeSet.RawBidderResponse().Bids().Update(allowedBids)
+	if len(payload.BidderResponse.Bids) != len(allowedBids) {
+		changeSet.RawBidderResponse().Bids().UpdateBids(allowedBids)
 		result.ChangeSet = changeSet
 	}
 

@@ -20,7 +20,7 @@
   },
   "expectedMakeRequestsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go value of type openrtb_ext.ExtImpZmaticoo",
+      "value": "expect { or n, but found \"",
       "comparison": "literal"
     }
   ]

@@ -118,7 +118,7 @@
 
   "expectedBidResponses": [
     {
-      "currency": "CUR",
+      "currency": "EUR",
       "bids": [
         {
           "bid":  {
@@ -153,7 +153,8 @@
           },
           "type": "video",
           "video" : {
-            "duration" : 10
+            "duration" : 10,
+            "primary_category": ""
           }
         }
       ]

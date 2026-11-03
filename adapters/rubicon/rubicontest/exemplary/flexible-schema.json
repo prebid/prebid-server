@@ -141,21 +141,13 @@
           "h": 576
         },
         "ext": {
-          "context": {
-            "data": {
-              "adserver": {
-                "name": "gam",
-                "adslot": "adSlotFromContextData"
-              },
-              "dataAttr1": "dataVal1",
-              "dataAttr2": "dataVal2"
-            }
-          },
           "data": {
             "adserver": {
               "name": "gam",
               "adslot": "adSlotFromData"
-            }
+            },
+            "dataAttr1": "dataVal1",
+            "dataAttr2": "dataVal2"
           },
           "bidder": {
             "video": {
@@ -164,7 +156,8 @@
             "siteId": "113932",
             "zoneId": "535510"
           },
-          "gpid": "gpid"
+          "gpid": "gpid",
+          "tid": "tid"
         }
       }
     ]
@@ -300,7 +293,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -316,7 +308,7 @@
               "ext": {
                 "rp": {
                   "target": {
-                    "dfp_ad_unit_code": "adSlotFromContextData",
+                    "dfp_ad_unit_code": "adSlotFromData",
                     "dataAttr1": [
                       "dataVal1"
                     ],
@@ -342,14 +334,9 @@
                     "attr5": [
                       "3"
                     ],
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ],
-                    "sectioncat": [
-                      "sectionCat1",
-                      "sectionCat2"
-                    ]
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -357,12 +344,15 @@
                   },
                   "zone_id": 535510
                 },
-                "gpid": "gpid"
+                "gpid": "gpid",
+                "tid": "tid"
               }
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -386,7 +376,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -409,7 +399,10 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "video"
+                "type": "video",
+                "meta": {
+                  "seat": "rubicon"
+                }
               }
             }
           },

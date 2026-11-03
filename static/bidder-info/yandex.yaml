@@ -7,6 +7,7 @@ capabilities:
     mediaTypes:
       - banner
       - native
+      - video
 userSync:
   redirect:
     url: https://yandex.ru/an/mapuid/yandex/?ssp-id=10500&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&location={{.RedirectURL}}

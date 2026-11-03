@@ -7,11 +7,13 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -76,13 +78,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 
 func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtKayzen, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Bidder extension not provided or can't be unmarshalled",
 		}
 	}
 	var kayzenExt openrtb_ext.ExtKayzen
-	if err := json.Unmarshal(bidderExt.Bidder, &kayzenExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &kayzenExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "Error while unmarshaling bidder extension",
 		}
@@ -91,6 +93,9 @@ func (a *adapter) getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtKayzen, e
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtKayzen) (string, error) {
+	if !urlutil.IsSafeHost(params.Zone) {
+		return "", &errortypes.BadInput{Message: "Invalid Zone"}
+	}
 	endpointParams := macros.EndpointTemplateParams{
 		ZoneID:    params.Zone,
 		AccountID: params.Exchange,
@@ -118,7 +123,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}

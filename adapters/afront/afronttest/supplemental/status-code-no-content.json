@@ -1,0 +1,79 @@
+{
+  "mockBidRequest": {
+    "id": "req-id",
+    "tmax": 1000,
+    "user": {
+      "buyeruid": "test-user"
+    },
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "3998392"
+      }
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "tagid": "ogTAGID",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "minduration": 120,
+          "maxduration": 150
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "accountId",
+            "sourceId": "sourceId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://snt1.afront.io/?rsd=sourceId&sk=accountId",
+        "body": {
+          "id": "req-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "tagid": "ogTAGID",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 120,
+                "maxduration": 150,
+                "w": 640,
+                "h": 480
+              }
+            }
+          ],
+          "site": {
+            "page": "test.com",
+            "publisher": {
+              "id": "3998392"
+            }
+          },
+          "user": {
+            "buyeruid": "test-user"
+          },
+          "tmax": 1000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}

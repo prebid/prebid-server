@@ -11,14 +11,16 @@ import (
 	"time"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
-const TAPPX_BIDDER_VERSION = "1.5"
+const TAPPX_BIDDER_VERSION = "1.6"
 const TYPE_CNN = "prebid"
 
 type TappxAdapter struct {
@@ -34,6 +36,7 @@ type Bidder struct {
 
 type Ext struct {
 	Bidder `json:"bidder"`
+	GPID   string `json:"gpid,omitempty"`
 }
 
 // Builder builds a new instance of the Tappx adapter for the given bidder with the given config.
@@ -57,13 +60,13 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}
 
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(request.Imp[0].Ext, &bidderExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing bidderExt object",
 		}}
 	}
 	var tappxExt openrtb_ext.ExtImpTappx
-	if err := json.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &tappxExt); err != nil {
 		return nil, []error{&errortypes.BadInput{
 			Message: "Error parsing tappxExt parameters",
 		}}
@@ -116,7 +119,9 @@ func (a *TappxAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapt
 	}}, []error{}
 }
 
-// Builds enpoint url based on adapter-specific pub settings from imp.ext
+// Builds endpoint url based on adapter-specific pub settings from imp.ext.
+// NOTE: The deprecated "host" param (params.Host) is intentionally unused here.
+// If it is ever reintroduced, it MUST be validated with urlutil.IsSafeHost to prevent SSRF.
 func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test int) (string, error) {
 
 	if params.Endpoint == "" {
@@ -130,7 +135,6 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 			Message: "Tappx key undefined",
 		}
 	}
-
 	isNewEndpoint, err := regexp.Match(`^(zz|vz)[0-9]{3,}([a-z]{2,3}|test)$`, []byte(params.Endpoint))
 	if err != nil {
 		return "", &errortypes.BadInput{
@@ -139,8 +143,17 @@ func (a *TappxAdapter) buildEndpointURL(params *openrtb_ext.ExtImpTappx, test in
 	}
 	var tappxHost string
 	if isNewEndpoint {
+		// Defense-in-depth: the runtime regex above is stricter than IsSafeHost,
+		// so this check is currently unreachable. It guards against future relaxation
+		// of the regex inadvertently allowing SSRF via subdomain injection.
+		if !urlutil.IsSafeHost(params.Endpoint) {
+			return "", &errortypes.BadInput{
+				Message: "Invalid Tappx endpoint",
+			}
+		}
 		tappxHost = params.Endpoint + ".pub.tappx.com/rtb/"
 	} else {
+		// endpoint is used as a path segment on fixed domain: ssp.api.tappx.com/rtb/v2/{endpoint}
 		tappxHost = "ssp.api.tappx.com/rtb/v2/"
 	}
 
@@ -198,7 +211,7 @@ func (a *TappxAdapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRe
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 

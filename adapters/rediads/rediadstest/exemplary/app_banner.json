@@ -1,0 +1,136 @@
+{
+  "mockBidRequest": {
+      "id": "test-request-id",
+      "device": {
+          "ip": "123.123.123.123",
+          "ua": "iPad"
+      },
+      "app": {
+          "id": "1",
+          "bundle": "com.rediads.testrediadsapplication"
+      },
+      "imp": [
+          {
+              "id": "test-imp-id",
+              "tagid": "234",
+              "banner": {
+                  "format": [
+                      {
+                          "w": 300,
+                          "h": 250
+                      },
+                      {
+                          "w": 300,
+                          "h": 600
+                      }
+                  ]
+              },
+              "ext": {
+                  "bidder": {
+                      "account_id": "999",
+                      "slot": "234"
+                  }
+              }
+          }
+      ]
+  },
+  "httpCalls": [
+      {
+          "expectedRequest": {
+              "uri": "https://fake.test.io/pserver",
+              "body": {
+                  "id": "test-request-id",
+                  "imp": [
+                      {
+                          "id": "test-imp-id",
+                          "tagid": "234",
+                          "banner": {
+                              "format": [
+                                  {
+                                      "w": 300,
+                                      "h": 250
+                                  },
+                                  {
+                                      "w": 300,
+                                      "h": 600
+                                  }
+                              ]
+                          },
+                          "ext": {
+                          }
+                      }
+                  ],
+                  "app": {
+                      "id": "1",
+                      "bundle": "com.rediads.testrediadsapplication",
+                      "publisher": {
+                        "id": "999"
+                      }
+                  },
+                  "device": {
+                      "ip": "123.123.123.123",
+                      "ua": "iPad"
+                  }
+              },
+              "impIDs":["test-imp-id"]
+          },
+          "mockResponse": {
+              "status": 200,
+              "body": {
+                  "id": "test-request-id",
+                  "seatbid": [
+                      {
+                          "bid": [
+                              {
+                                  "id": "test_bid_id",
+                                  "impid": "test-imp-id",
+                                  "price": 0.27543,
+                                  "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://fake.test.io/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                                  "cid": "test_cid",
+                                  "crid": "test_crid",
+                                  "dealid": "test_dealid",
+                                  "mtype": 1,
+                                  "w": 300,
+                                  "h": 250,
+                                  "ext": {
+                                      "prebid": {
+                                          "type": "banner"
+                                      }
+                                  }
+                              }
+                          ],
+                          "seat": "rediads"
+                      }
+                  ],
+                  "cur": "USD"
+              }
+          }
+      }
+  ],
+  "expectedBidResponses": [
+      {
+          "bids": [
+              {
+                  "bid": {
+                      "id": "test_bid_id",
+                      "impid": "test-imp-id",
+                      "price": 0.27543,
+                      "adm": "<iframe id=\"adm-banner-16\" width=\"300\" height=\"250\" frameborder=\"0\" marginheight=\"0\" marginwidth=\"0\" style=\"{overflow:hidden}\" src=\"https://fake.test.io/pserver&k=882b2510ed6d6c94fa69c99aa522a708\"></iframe>",
+                      "cid": "test_cid",
+                      "crid": "test_crid",
+                      "dealid": "test_dealid",
+                      "mtype": 1,
+                      "w": 300,
+                      "h": 250,
+                      "ext": {
+                          "prebid": {
+                              "type": "banner"
+                          }
+                      }
+                  },
+                  "type": "banner"
+              }
+          ]
+      }
+  ]
+}

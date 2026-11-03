@@ -59,23 +59,20 @@ func (err *BadInput) Severity() Severity {
 	return SeverityFatal
 }
 
-// BlacklistedApp should be used when a request App.ID matches an entry in the BlacklistedApps
-// environment variable array
-//
-// These errors will be written to  http.ResponseWriter before canceling execution
-type BlacklistedApp struct {
+// BlockedApp should be used when a request App.ID matches an entry in the BlockedApp configuration.
+type BlockedApp struct {
 	Message string
 }
 
-func (err *BlacklistedApp) Error() string {
+func (err *BlockedApp) Error() string {
 	return err.Message
 }
 
-func (err *BlacklistedApp) Code() int {
-	return BlacklistedAppErrorCode
+func (err *BlockedApp) Code() int {
+	return BlockedAppErrorCode
 }
 
-func (err *BlacklistedApp) Severity() Severity {
+func (err *BlockedApp) Severity() Severity {
 	return SeverityFatal
 }
 
@@ -178,6 +175,25 @@ func (err *BidderTemporarilyDisabled) Code() int {
 }
 
 func (err *BidderTemporarilyDisabled) Severity() Severity {
+	return SeverityWarning
+}
+
+// BidderThrottled is used when a bidder is temporarily disabled due to throttling.
+// This is a per request throttling, so subsequent requests may be allowed.
+// The initial usecase is to flag bidders that are temporarily disabled due to high error rates or other issues.
+type BidderThrottled struct {
+	Message string
+}
+
+func (err *BidderThrottled) Error() string {
+	return err.Message
+}
+
+func (err *BidderThrottled) Code() int {
+	return BidderTemporarilyThrottledErrorCode
+}
+
+func (err *BidderThrottled) Severity() Severity {
 	return SeverityWarning
 }
 

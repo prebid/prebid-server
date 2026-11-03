@@ -1,0 +1,65 @@
+{
+  "mockBidRequest": {
+    "id": "testRequestNoBid",
+    "site": {
+      "page": "https://publisher-website.com/web"
+    },
+    "imp": [
+      {
+        "id": "testImpressionId",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "testPlacementId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test-request.com/prebid",
+        "body": {
+          "id": "testRequestNoBid",
+          "site": {
+            "page": "https://publisher-website.com/web"
+          },
+          "imp": [
+            {
+              "id": "testImpressionId",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "testPlacementId"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "testImpressionId"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

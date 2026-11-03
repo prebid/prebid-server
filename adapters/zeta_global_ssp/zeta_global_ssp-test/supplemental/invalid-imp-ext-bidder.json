@@ -1,0 +1,42 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "http://www.example.com",
+      "domain": "www.example.com"
+    },
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": ""
+        }
+      }
+    ],
+    "test": 1,
+    "tmax": 500
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp.ext.bidder not provided or cannot be unmarshalled",
+      "comparison": "literal"
+    }
+  ]
+}

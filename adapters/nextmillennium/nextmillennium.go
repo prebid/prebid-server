@@ -6,11 +6,15 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/version"
 )
+
+const NM_ADAPTER_VERSION = "v1.0.1"
 
 type adapter struct {
 	endpoint string
@@ -32,7 +36,11 @@ type nmExtPrebid struct {
 	Server        *server                  `json:"server,omitempty"`
 }
 type nmExtNMM struct {
-	NmmFlags []string `json:"nmmFlags,omitempty"`
+	NmmFlags       []string `json:"nmmFlags,omitempty"`
+	AdSlots        []string `json:"adSlots,omitempty"`
+	AllowedAds     []string `json:"allowedAds,omitempty"`
+	ServerVersion  string   `json:"server_version,omitempty"`
+	AdapterVersion string   `json:"nm_version,omitempty"`
 }
 type nextMillJsonExt struct {
 	Prebid         nmExtPrebid `json:"prebid"`
@@ -74,13 +82,13 @@ func getImpressionsInfo(imps []openrtb2.Imp) (resImps []*openrtb_ext.ImpExtNextM
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ImpExtNextMillennium, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 	var nextMillenniumExt openrtb_ext.ImpExtNextMillennium
-	if err := json.Unmarshal(bidderExt.Bidder, &nextMillenniumExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &nextMillenniumExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: err.Error(),
 		}
@@ -148,6 +156,10 @@ func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params *openrtb_ext
 		DataCenter:  serverParams.DataCenter,
 		ExternalUrl: serverParams.ExternalUrl,
 	}
+	ext.NextMillennium.AdapterVersion = NM_ADAPTER_VERSION
+	ext.NextMillennium.ServerVersion = version.Ver
+	ext.NextMillennium.AllowedAds = params.AllowedAds
+	ext.NextMillennium.AdSlots = params.AdSlots
 	jsonExt, err := json.Marshal(ext)
 	if err != nil {
 		return &bidRequest
@@ -169,7 +181,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		msg = fmt.Sprintf("Bad server response: %d", err)
 		return nil, []error{&errortypes.BadServerResponse{Message: msg}}
 	}
@@ -200,7 +212,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	var info nmExtNMM
 	if config.ExtraAdapterInfo != "" {
-		if err := json.Unmarshal([]byte(config.ExtraAdapterInfo), &info); err != nil {
+		if err := jsonutil.Unmarshal([]byte(config.ExtraAdapterInfo), &info); err != nil {
 			return nil, fmt.Errorf("invalid extra info: %v", err)
 		}
 	}

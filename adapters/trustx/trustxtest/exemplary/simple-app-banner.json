@@ -1,0 +1,146 @@
+{
+  "mockBidRequest": {
+    "id": "test-request",
+    "imp": [
+      {
+        "id": "test-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "data": {
+            "adserver": {
+              "adslot": "test_ad_slot"
+            }
+          },
+          "bidder": {
+            "uid": 1234
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "app-bundle"
+    },
+    "device": {
+      "ua": "ua",
+      "ip": "123.123.123.123"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ],
+          "User-Agent": [
+            "ua"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
+          ]
+        },
+        "uri": "https://test.localhost.com",
+        "body": {
+          "id": "test-request",
+          "imp": [
+            {
+              "id": "test-imp",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "gpid": "test_ad_slot",
+                "data": {
+                  "adserver": {
+                    "adslot": "test_ad_slot"
+                  }
+                },
+                "bidder": {
+                  "uid": 1234
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "ua",
+            "ip": "123.123.123.123"
+          },
+          "app": {
+            "bundle": "app-bundle"
+          }
+        },
+        "impIDs": [
+          "test-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "2315f4a3-f2c4-8cac-69de-985272e1d706",
+                  "crid": "4235d4b1-e2a6-9bbb-a34c-766714c2d221",
+                  "price": 10,
+                  "impid": "test-imp",
+                  "adm": "<img src=\"demo ad\" width=\"300\" height=\"250\">",
+                  "mtype": 1,
+                  "ext": {
+                    "bidder": {
+                      "trustx": {
+                        "networkName": "test-network"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "seat": "trustx"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "2315f4a3-f2c4-8cac-69de-985272e1d706",
+            "crid": "4235d4b1-e2a6-9bbb-a34c-766714c2d221",
+            "price": 10,
+            "impid": "test-imp",
+            "adm": "<img src=\"demo ad\" width=\"300\" height=\"250\">",
+            "mtype": 1,
+            "ext": {
+              "bidder": {
+                "trustx": {
+                  "networkName": "test-network"
+                }
+              }
+            }
+          },
+          "meta": {
+            "networkName": "test-network"
+          },
+          "type": "banner"
+        }
+      ],
+      "seat": "trustx"
+    }
+  ]
+}

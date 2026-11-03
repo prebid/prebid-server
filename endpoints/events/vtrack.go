@@ -9,17 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	accountService "github.com/prebid/prebid-server/v2/account"
-	"github.com/prebid/prebid-server/v2/analytics"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/metrics"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/stored_requests"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
+	accountService "github.com/prebid/prebid-server/v4/account"
+	"github.com/prebid/prebid-server/v4/analytics"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/logger"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/stored_requests"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const (
@@ -213,7 +213,7 @@ func (v *vtrackEndpoint) handleVTrackRequest(ctx context.Context, req *BidCacheR
 
 	// handle pbs caching errors
 	if len(errs) != 0 {
-		glog.Errorf("Error(s) updating vast: %v", errs)
+		logger.Errorf("Error(s) updating vast: %v", errs)
 		return nil, errs
 	}
 

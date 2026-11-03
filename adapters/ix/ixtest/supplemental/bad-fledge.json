@@ -70,6 +70,12 @@
                         "publisher": {
                             "id": "569749"
                         }
+                    },
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
                     }
                 },
                 "impIDs":["test-imp-id"]
@@ -128,7 +134,7 @@
     ],
     "expectedMakeBidsErrors": [
         {
-            "value": "json: cannot unmarshal number into Go struct field auctionConfig.protectedAudienceAuctionConfigs.bidId of type string",
+            "value": "cannot unmarshal ix.auctionConfig.BidId: expects \" or n, but found 1",
             "comparison": "literal"
         }
     ]

@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "err-imp-ext",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": "THIS_IS_NOT_VALID_JSON"
+        }
+      }
+    ],
+    "site": {
+      "page": "http://example.com",
+      "ref": "http://example.com"
+    },
+    "device": {
+      "ua": "ua",
+      "h": 100,
+      "w": 200
+    }
+  },
+  "expectedRequestCount": 0,
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found",
+      "comparison": "startswith"
+    }
+  ],
+  "expectedMakeBidsErrors": [],
+  "expectedBidResponses": []
+}

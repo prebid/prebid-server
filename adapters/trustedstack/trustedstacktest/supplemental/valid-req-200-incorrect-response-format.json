@@ -114,7 +114,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "json: cannot unmarshal string into Go struct field Bid.seatbid.bid.price of type float64",
+      "value": "cannot unmarshal openrtb2.Bid.Price: invalid number",
       "comparison": "literal"
     }
   ]

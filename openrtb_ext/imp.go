@@ -43,6 +43,8 @@ type ExtImpPrebid struct {
 
 	Options *Options `json:"options,omitempty"`
 
+	AdUnitCode string `json:"adunitcode,omitempty"`
+
 	Passthrough json.RawMessage `json:"passthrough,omitempty"`
 
 	Floors *ExtImpPrebidFloors `json:"floors,omitempty"`

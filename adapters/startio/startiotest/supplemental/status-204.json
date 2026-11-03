@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "auction-req-id-8cd85aed-25a6-4db0",
+    "imp": [
+      {
+        "id": "imp-id-1-27b9e54b56de702",
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "startio": {}
+            }
+          }
+        },
+        "banner": {
+          "w": 320,
+          "h": 480,
+          "pos": 7,
+          "mimes": [
+            "image/jpg",
+            "image/gif",
+            "text/html"
+          ],
+          "format": [
+            {
+              "w": 320,
+              "h": 480
+            }
+          ],
+          "api": [
+            5,
+            7
+          ],
+          "vcm": 1,
+          "id": "1"
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "publisher": {
+        "id": "publisherid001"
+      },
+      "id": "4204204209"
+    },
+    "device": {
+      "ua": "Mozilla/5.0"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "uri": "http://localhost:8080/bidder/?identifier=test",
+        "body": {
+          "id": "auction-req-id-8cd85aed-25a6-4db0",
+          "imp": [
+            {
+              "id": "imp-id-1-27b9e54b56de702",
+              "ext": {
+                "prebid": {
+                  "bidder": {
+                    "startio": {}
+                  }
+                }
+              },
+              "banner": {
+                "w": 320,
+                "h": 480,
+                "pos": 7,
+                "mimes": [
+                  "image/jpg",
+                  "image/gif",
+                  "text/html"
+                ],
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 480
+                  }
+                ],
+                "api": [
+                  5,
+                  7
+                ],
+                "vcm": 1,
+                "id": "1"
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com",
+            "publisher": {
+              "id": "publisherid001"
+            },
+            "id": "4204204209"
+          },
+          "device": {
+            "ua": "Mozilla/5.0"
+          }
+        },
+        "impIDs": [
+          "imp-id-1-27b9e54b56de702"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

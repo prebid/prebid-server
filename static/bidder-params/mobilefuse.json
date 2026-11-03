@@ -7,18 +7,9 @@
         "placement_id": {
             "type": "integer",
             "description": "An ID which identifies this specific inventory placement"
-        },
-        "pub_id": {
-            "type": "integer",
-            "description": "An ID which identifies the publisher selling the inventory."
-        },
-        "tagid_src": {
-            "type": "string",
-            "description": "ext if passing publisher's ids, empty if passing MobileFuse IDs in placement_id field. Defaults to empty"
         }
     },
     "required": [
-        "placement_id",
-        "pub_id"
+        "placement_id"
     ]
 }

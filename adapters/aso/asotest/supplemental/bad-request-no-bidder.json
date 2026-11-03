@@ -18,8 +18,8 @@
   "expectedBidResponses": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "invalid bidderExt.Bidder, unexpected end of JSON input",
-      "comparison": "literal"
+      "value": "invalid bidderExt.Bidder, expect { or n, but found",
+      "comparison": "startswith"
     }
   ]
 }

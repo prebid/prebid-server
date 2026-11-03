@@ -42,3 +42,4 @@ Some examples include:
 - Does the code use any global, mutable state? [Inject dependencies](https://en.wikipedia.org/wiki/Dependency_injection) instead!
 - Can the code be organized into smaller, more modular pieces?
 - Is there dead code which can be deleted? Or TODO comments which should be resolved?
+- Look for code used by other adapters. Encourage adapter submitter to utilize common code. 

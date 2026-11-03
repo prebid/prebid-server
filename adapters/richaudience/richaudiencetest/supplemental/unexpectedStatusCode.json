@@ -40,7 +40,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "http://ortb.richaudience.com/ortb/?bidder=pbs",
+        "uri": "https://ortb.richaudience.com/ortb/?bidder=pbs",
         "body": {
           "id": "4d3f84eb-787b-42fb-a0cf-062690dadce3",
           "imp": [

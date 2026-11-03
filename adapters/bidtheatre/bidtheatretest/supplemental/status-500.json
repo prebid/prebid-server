@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 980,
+              "h": 240
+            },
+            {
+              "w": 980,
+              "h": 300
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "prebid.org"
+    },
+    "device": {
+      "ip": "81.227.82.28"
+    }
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 980,
+                    "h": 240
+                  },
+                  {
+                    "w": 980,
+                    "h": 300
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "73b20b3a-12a0-4869-b54e-8d42b55786ee"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "prebid.org"
+          },
+          "device": {
+            "ip": "81.227.82.28"
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}

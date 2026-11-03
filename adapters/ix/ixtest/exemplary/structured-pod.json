@@ -123,7 +123,13 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "ext": {
+                        "ixdiag": {
+                            "pbsp": "go",
+                            "pbsv": "unknown"
+                        }
+                    }
                 },
                 "impIDs":["test-imp-id-1","test-imp-id-2"]
             },

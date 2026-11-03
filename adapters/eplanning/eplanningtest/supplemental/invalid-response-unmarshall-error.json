@@ -48,8 +48,8 @@
 
     "expectedMakeBidsErrors": [
       {
-        "value": "Error unmarshaling HB response: json: cannot unmarshal string into Go struct field (hbResponseAd\\.sp\\.a\\.w|hbResponseAd\\.w) of type uint64",
-        "comparison": "regex"
+        "value": "Error unmarshaling HB response: cannot unmarshal eplanning.hbResponseAd.Width: unexpected character",
+        "comparison": "startswith"
       }
     ]
   }

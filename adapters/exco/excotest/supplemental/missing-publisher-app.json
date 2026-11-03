@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+    "id": "missing-publisher-app-success",
+    "app": {
+      "id": "test-app-id"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "accountId": "exco-accountId",
+            "publisherId": "exco-publisherId",
+            "tagId": "exco-tagId"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://testjsonsample.com",
+        "body": {
+          "id": "missing-publisher-app-success",
+          "app": {
+            "id": "test-app-id",
+            "publisher": {
+              "id": "exco-publisherId"
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{ "w": 300, "h": 250 }]
+              },
+              "tagid": "exco-tagId",
+              "ext": {
+                "bidder": {
+                  "publisherId": "exco-publisherId",
+                  "accountId": "exco-accountId",
+                  "tagId": "exco-tagId"
+                }
+              }
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "missing-publisher-app-success",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-imp-id",
+                  "impid": "test-imp-id",
+                  "price": 1.5,
+                  "adid": "1234",
+                  "adm": "<html><body>Ad Content</body></html>",
+                  "cid": "5678",
+                  "crid": "1234",
+                  "mtype": 1
+                }
+              ],
+              "seat": "exco"
+            }
+          ],
+          "bidid": "missing-publisher-app-success",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-imp-id",
+            "impid": "test-imp-id",
+            "price": 1.5,
+            "adid": "1234",
+            "adm": "<html><body>Ad Content</body></html>",
+            "cid": "5678",
+            "crid": "1234",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -85,6 +85,6 @@
       }
     }
   },
-  "expectedReturnCode": 503,
+  "expectedReturnCode": 403,
   "expectedErrorMessage": "Invalid request: Prebid-server has disabled Account ID: disabled_acct, please reach out to the prebid server host.\n"
 }

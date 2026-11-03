@@ -1,0 +1,176 @@
+{
+    "mockBidRequest": {
+      "id": "some-request-id",
+      "device": {
+        "ua": "test-user-agent",
+        "ip": "123.123.123.123",
+        "language": "en",
+        "dnt": 0
+      },
+      "tmax": 500,
+      "user": {
+        "buyeruid": "2-some-user"
+      },
+      "app": {
+        "publisher": {
+          "id": "123456789"
+        },
+        "cat": [
+          "IAB22-1"
+        ],
+        "bundle": "com.app.awesome",
+        "name": "Awesome App",
+        "domain": "awesomeapp.com",
+        "id": "123456789",
+        "ext": {
+          "prebid": {
+            "source": "test",
+            "version": "1.0.0"
+          }
+        }
+      },
+      "imp": [
+        {
+          "id": "some-imp-id",
+          "tagid": "some-tag-id",
+          "banner": {
+            "format":[
+              {
+                "w": 320,
+                "h": 50
+              }
+            ]
+          },
+          "ext": {
+            "bidder": {
+              "placementId": "some-placement-id",
+              "viewabilityPercentage": 0.6
+            }
+          }
+        }
+      ]
+    },
+    "httpCalls": [
+      {
+        "expectedRequest": {
+          "uri": "http://example.com?dc=us-west-2",
+          "body": {
+            "id": "some-request-id",
+            "device": {
+              "ua": "test-user-agent",
+              "ip": "123.123.123.123",
+              "language": "en",
+              "dnt": 0
+            },
+            "imp": [
+              {
+                "id": "some-imp-id",
+                "tagid": "some-tag-id",
+                "banner": {
+                  "w": 320,
+                  "h": 50,
+                  "format": [
+                    {
+                      "w": 320,
+                      "h": 50
+                    }
+                  ]
+                },
+                "displaymanagerver": "test-1.0.0",
+                "ext": {
+                  "connatix": {
+                    "placementId": "some-placement-id",
+                    "viewabilityPercentage": 0.6
+                  }
+                }
+              }
+            ],
+            "app": {
+              "id": "123456789",
+              "name": "Awesome App",
+              "bundle": "com.app.awesome",
+              "domain": "awesomeapp.com",
+              "cat": [
+                "IAB22-1"
+              ],
+              "publisher": {
+                "id": "123456789"
+              },
+              "ext": {
+                "prebid": {
+                  "source": "test",
+                  "version": "1.0.0"
+                }
+              }
+            },
+            "user": {
+              "buyeruid": "2-some-user"
+            },
+            "tmax": 500
+          },
+          "impIDs": [
+            "some-imp-id"
+          ]
+        },
+        "mockResponse": {
+          "status": 200,
+          "body": {
+            "id": "test-response-id",
+            "seatbid": [
+              {
+                "bid": [
+                  {
+                    "id": "some-bid-id",
+                    "impid": "some-imp-id",
+                    "price": 0.52,
+                    "adm": "some-test-ad",
+                    "adomain": [
+                      "test.com"
+                    ],
+                    "crid": "112233",
+                    "w": 320,
+                    "h": 50,
+                    "ext": {
+                      "connatix": {
+                        "mediaType": "banner"
+                      }
+                    }
+                  }
+                ],
+                "seat": "connatix",
+                "group": 0
+              }
+            ],
+            "cur": "USD"
+          }
+        }
+      }
+    ],
+    "expectedBidResponses": [
+      {
+        "currency": "USD",
+        "bids": [
+          {
+            "bid": {
+              "id": "some-bid-id",
+              "impid": "some-imp-id",
+              "price": 0.52,
+              "adm": "some-test-ad",
+              "crid": "112233",
+              "adomain": [
+                "test.com"
+              ],
+              "w": 320,
+              "h": 50,
+              "ext": {
+                "connatix": {
+                  "mediaType": "banner"
+                }
+              }
+            },
+            "type": "banner"
+          }
+        ]
+      }
+    ]
+  }

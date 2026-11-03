@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "AdUp Tech adapter params",
+    "description": "A schema which validates params accepted by the AdUp Tech adapter",
+    "type": "object",
+  
+    "properties": {
+      "publisher": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Unique publisher identifier."
+      },
+      "placement": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Unique placement identifier per publisher."
+      },
+      "query": {
+        "type": "string",
+        "description": "Semicolon separated list of keywords."
+      },
+      "adtest": {
+        "type": "boolean",
+        "description": "Deactivates tracking of impressions and clicks. **Should only be used for testing purposes!**"
+      },
+      "debug": {
+        "type": "boolean",
+        "description": "Enables debug mode. **Should only be used for testing purposes!**"
+      },
+      "ext": {
+        "type": "object",
+        "description": "Additional parameters to be included in the request."
+      }
+    },
+  
+    "required": ["publisher", "placement"]
+  }

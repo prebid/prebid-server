@@ -1,0 +1,20 @@
+endpoint: "https://prebidsrvr.kueezrtb.com/openrtb/"
+maintainer:
+  email: "rtb@kueez.com"
+gvlVendorID: 1165
+endpointCompression: gzip
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://sync.kueezrtb.com/api/user/html/62ce79e7dd15099534ae5e04?pbs=true&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    userMacro: ${userId}
+openrtb:
+  gpp_supported: true

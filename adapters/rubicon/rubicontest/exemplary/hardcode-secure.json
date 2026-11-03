@@ -303,7 +303,6 @@
                 "placement": 3,
                 "ext": {
                   "rp": {
-                    "size_id": 203
                   }
                 },
                 "mimes": [
@@ -320,10 +319,9 @@
                 "rp": {
                   "target": {
                     "pbadslot": "pbadslot",
-                    "pagecat": [
-                      "val1",
-                      "val2"
-                    ]
+                    "pbs_login": "xuser",
+                    "pbs_url": "http://hosturl.com",
+                    "pbs_version": ""
                   },
                   "track": {
                     "mint": "",
@@ -363,7 +361,7 @@
                   }
                 }
               ],
-              "seat": "adman"
+              "seat": "rubicon"
             }
           ],
           "cur": "USD"
@@ -387,7 +385,8 @@
             "ext": {
               "prebid": {
                 "meta": {
-                  "networkId": 123
+                  "networkId": 123,
+                  "seat": "rubicon"
                 },
                 "type": "video"
               }

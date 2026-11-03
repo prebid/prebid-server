@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "account_id": "123",
+            "endpoint": "evil.com/path?redirect=http://attacker.com#"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "test.com",
+      "publisher": {
+        "id": "pub1"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Invalid endpoint",
+      "comparison": "literal"
+    }
+  ]
+}

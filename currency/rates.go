@@ -20,6 +20,22 @@ func NewRates(conversions map[string]map[string]float64) *Rates {
 	}
 }
 
+// FindIntermediateConversionRate returns the conversion rate between two currencies
+// if a valid conversion exists in the provided rates container.
+// Otherwise, it returns a ConversionNotFoundError.
+func FindIntermediateConversionRate(r *Rates, from, to currency.Unit) (float64, error) {
+	for _, conversions := range r.Conversions {
+		toRate, hasToRate := conversions[to.String()]
+		fromRate, hasFromRate := conversions[from.String()]
+
+		if hasToRate && hasFromRate {
+			return toRate / fromRate, nil
+		}
+	}
+
+	return 0, ConversionNotFoundError{FromCur: from.String(), ToCur: to.String()}
+}
+
 // GetRate returns the conversion rate between two currencies or:
 //   - An error if one of the currency strings is not well-formed
 //   - An error if any of the currency strings is not a recognized currency code.
@@ -46,7 +62,9 @@ func (r *Rates) GetRate(from, to string) (float64, error) {
 			// In case we have an entry TO -> FROM
 			return 1 / conversion, nil
 		}
-		return 0, ConversionNotFoundError{FromCur: fromUnit.String(), ToCur: toUnit.String()}
+
+		// Try to find currency rates via intermediate currency
+		return FindIntermediateConversionRate(r, fromUnit, toUnit)
 	}
 	return 0, errors.New("rates are nil")
 }

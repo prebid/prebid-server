@@ -86,7 +86,8 @@
               "tagid": "123456",
               "ext": {
                 "bidder": {
-                  "tagid": "123456"
+                  "tagid": "123456",
+                  "anotherid": "654321"
                 }
               }
             }

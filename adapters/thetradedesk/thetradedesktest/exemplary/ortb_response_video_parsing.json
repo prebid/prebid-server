@@ -1,0 +1,285 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "instl": 0,
+        "ext": {
+          "gpid": "/1030006,22910642311/bakewithzoha/recipe",
+          "bidder": {
+            "publisherId": "123456"
+          }
+        },
+        "id": "test-imp-id",
+        "bidfloorcur": "USD",
+        "bidfloor": 1.72,
+        "tagid": "pbs-local/preroll",
+        "video": {
+          "minduration": 5,
+          "startdelay": 0,
+          "api": [1, 2],
+          "w": 300,
+          "h": 169,
+          "mimes": [
+            "application/javascript",
+            "video/mp4",
+            "video/webm"
+          ],
+          "protocols": [2, 3, 5, 6, 7, 8],
+          "maxduration": 30,
+          "placement": 3,
+          "plcmt": 4,
+          "skip": 1,
+          "content": {
+            "channel": {
+              "name": "Bake",
+              "domain": "https://ttd-bake.com/chicken-lasagna/"
+            },
+            "context": 5,
+            "genre": "Food & Drink",
+            "cattax": 1,
+            "cat": ["IAB8", "IAB8", "IAB8-8"]
+          },
+          "playbackmethod": [2]
+        }
+      }
+    ],
+    "cur": ["USD"],
+    "site": {
+      "publisher": {
+        "id": "123456"
+      },
+      "mobile": 1,
+      "privacypolicy": 1,
+      "page": "https://example.com/chicken-lasagna/",
+      "domain": "ttd-bake.com",
+      "ref": "https://example.com/?s=easy+lasagna",
+      "id": "20619",
+      "name": "Bake With Zoha"
+    },
+    "device": {
+      "js": 1,
+      "w": 1680,
+      "h": 1050,
+      "osv": "NT 10.0",
+      "os": "Windows",
+      "dnt": 0,
+      "language": "en",
+      "ip": "66.129.221.46",
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+      "sua": {
+        "source": 1,
+        "platform": {
+          "brand": "Windows"
+        },
+        "browsers": [
+          {
+            "brand": "Google Chrome",
+            "version": ["135"]
+          }
+        ],
+        "mobile": 0
+      },
+      "devicetype": 2
+    },
+    "test": 0,
+    "source": {
+      "fd": 1,
+      "pchain": "1363c924529b3998:20619",
+      "ext": {
+        "schain": {
+          "ver": "1.0",
+          "complete": 1,
+          "nodes": [
+            {
+              "asi": "example.com",
+              "sid": "050fd4e480110f1b92d451b879e6c780",
+              "hp": 1,
+              "rid": "4555b7da05efd4d4"
+            }
+          ]
+        }
+      }
+    },
+    "bcat": ["211", "211", "181", "524", "271", "514"],
+    "cattax": 6,
+    "tmax": 750
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://direct.adsrvr.org/bid/bidder/ttd",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "pbs-local/preroll",
+              "bidfloorcur": "USD",
+              "bidfloor": 1.72,
+              "video": {
+                "minduration": 5,
+                "maxduration": 30,
+                "api": [1,2],
+                "mimes": [
+                  "application/javascript",
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "placement": 3,
+                "protocols": [2, 3, 5, 6, 7, 8  ],
+                "w": 300,
+                "h": 169,
+                "playbackmethod": [2],
+                "plcmt": 4,
+                "skip": 1,
+                "startdelay": 0
+              },
+              "ext": {
+                "gpid": "/1030006,22910642311/bakewithzoha/recipe",
+                "bidder": {
+                  "publisherId": "123456"
+                }
+              }
+            }
+          ],
+          "cur": ["USD"],
+          "site": {
+            "publisher": {
+              "id": "123456"
+            },
+            "mobile": 1,
+            "privacypolicy": 1,
+            "page": "https://example.com/chicken-lasagna/",
+            "domain": "ttd-bake.com",
+            "ref": "https://example.com/?s=easy+lasagna",
+            "id": "20619",
+            "name": "Bake With Zoha"
+          },
+          "device": {
+            "js": 1,
+            "w": 1680,
+            "h": 1050,
+            "osv": "NT 10.0",
+            "os": "Windows",
+            "dnt": 0,
+            "language": "en",
+            "ip": "66.129.221.46",
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "sua": {
+              "source": 1,
+              "platform": {
+                "brand": "Windows"
+              },
+              "browsers": [
+                {
+                  "brand": "Google Chrome",
+                  "version": ["135"]
+                }
+              ],
+              "mobile": 0
+            },
+            "devicetype": 2
+          },
+          "source": {
+            "fd": 1,
+            "pchain": "1363c924529b3998:20619",
+            "ext": {
+              "schain": {
+                "ver": "1.0",
+                "complete": 1,
+                "nodes": [
+                  {
+                    "asi": "example.com",
+                    "sid": "050fd4e480110f1b92d451b879e6c780",
+                    "hp": 1,
+                    "rid": "4555b7da05efd4d4"
+                  }
+                ]
+              }
+            }
+          },
+          "bcat": ["211", "211", "181", "524", "271", "514"],
+          "cattax": 6,
+          "tmax": 750
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-imp-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "test-imp-id",
+                  "price": 0.1,
+                  "adm": "some-test-valid-adm",
+                  "cid": "test-imp-id-ortb-cid",
+                  "crid": "creative-123",
+                  "adomain": [
+                    "ttd-ortb.com"
+                  ],
+                  "w": 640,
+                  "h": 360,
+                  "cat": [
+                    "286",
+                    "287",
+                    "313"
+                  ],
+                  "cattax": 6,
+                  "mtype": 2,
+                  "dur": 30
+                }
+              ],
+              "seat": "5038"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "cid": "test-imp-id-ortb-cid",
+            "adm": "some-test-valid-adm",
+            "w": 640,
+            "h": 360,
+            "dur": 30,
+            "mtype": 2,
+            "adomain": [
+              "ttd-ortb.com"
+            ],
+            "cattax": 6,
+            "cat": [
+              "286",
+              "287",
+              "313"
+            ]
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
+

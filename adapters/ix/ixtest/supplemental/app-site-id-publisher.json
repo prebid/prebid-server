@@ -69,7 +69,9 @@
                     },
                     "ext": {
                         "ixdiag": {
-                          "pbjsv": "7.0.0"
+                            "pbjsv": "7.0.0",
+                            "pbsp": "go",
+                            "pbsv": "unknown"
                         },
                         "prebid": {
                           "channel": {

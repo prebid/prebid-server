@@ -1,7 +1,7 @@
 {
   "expectedMakeRequestsErrors": [{
-    "value": "Invalid imp.ext for impression index 0. Error Infomation: unexpected end of JSON input",
-    "comparison": "literal"
+    "value": "Invalid imp.ext for impression index 0. Error Infomation: expect { or n, but found",
+    "comparison": "startswith"
   }],
   "mockBidRequest": {
     "app": {

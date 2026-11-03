@@ -12,11 +12,13 @@ import (
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
 
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type adapter struct {
@@ -54,14 +56,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 		}
 
 		var bidderExt adapters.ExtImpBidder
-		err := json.Unmarshal(impression.Ext, &bidderExt)
+		err := jsonutil.Unmarshal(impression.Ext, &bidderExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 
 		var impressionExt openrtb_ext.ExtImpBidmachine
-		err = json.Unmarshal(bidderExt.Bidder, &impressionExt)
+		err = jsonutil.Unmarshal(bidderExt.Bidder, &impressionExt)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -137,7 +139,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData
 	}
 
 	var bidResponse openrtb2.BidResponse
-	err := json.Unmarshal(responseData.Body, &bidResponse)
+	err := jsonutil.Unmarshal(responseData.Body, &bidResponse)
 	if err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: err.Error(),
@@ -183,6 +185,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 const UndefinedMediaType = openrtb_ext.BidType("")
 
 func (a *adapter) buildEndpointURL(params openrtb_ext.ExtImpBidmachine) (string, error) {
+	if !urlutil.IsSafeHost(params.Host) {
+		return "", &errortypes.BadInput{Message: "Failed to create final URL with provided host"}
+	}
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	uriString, errMacros := macros.ResolveMacros(a.endpoint, endpointParams)
 	if errMacros != nil {

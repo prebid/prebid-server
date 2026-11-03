@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 type TripleliftNativeAdapter struct {
@@ -33,34 +35,126 @@ type TripleliftNativeExtInfo struct {
 	PublisherWhitelistMap map[string]struct{}
 }
 
+type ExtImpData struct {
+	TagCode string `json:"tag_code"`
+}
+
+type ExtImp struct {
+	*adapters.ExtImpBidder
+	Data *ExtImpData `json:"data,omitempty"`
+}
+
 func getBidType(ext TripleliftRespExt) openrtb_ext.BidType {
 	return openrtb_ext.BidTypeNative
 }
 
-func processImp(imp *openrtb2.Imp) error {
+func processImp(imp *openrtb2.Imp, request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) error {
 	// get the triplelift extension
-	var ext adapters.ExtImpBidder
+	var ext ExtImp
 	var tlext openrtb_ext.ExtImpTriplelift
-	if err := json.Unmarshal(imp.Ext, &ext); err != nil {
+
+	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
 		return err
 	}
-	if err := json.Unmarshal(ext.Bidder, &tlext); err != nil {
+	if err := jsonutil.Unmarshal(ext.Bidder, &tlext); err != nil {
 		return err
 	}
 	if imp.Native == nil {
 		return fmt.Errorf("no native object specified")
 	}
-	if tlext.InvCode == "" {
-		return fmt.Errorf("no inv_code specified")
+
+	if ext.Data != nil && len(ext.Data.TagCode) > 0 && (msnInSite(request) || msnInApp(request)) {
+		imp.TagID = ext.Data.TagCode
+	} else {
+		imp.TagID = tlext.InvCode
 	}
-	imp.TagID = tlext.InvCode
+
+	// parentId and publisherId are optional; when present forward them on imp.ext
+	if err := setImpExtFields(imp, map[string]*string{
+		"parentId":    tlext.ParentID,
+		"publisherId": tlext.PublisherID,
+	}); err != nil {
+		return err
+	}
+
 	// floor is optional
-	if tlext.Floor == nil {
+	if tlext.Floor != nil {
+		imp.BidFloor = *tlext.Floor
+	}
+
+	// Normalize bid floor to USD
+	if err := resolveBidFloorCurrency(imp, reqInfo); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Normalize imp.BidFloor to USD
+func resolveBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 {
 		return nil
 	}
-	imp.BidFloor = *tlext.Floor
-	// no error
+	if imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
+		converted, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+		if err != nil {
+			return &errortypes.BadInput{
+				Message: fmt.Sprintf("Unable to convert bid floor from %s to USD: %s", imp.BidFloorCur, err.Error()),
+			}
+		}
+		imp.BidFloor = converted
+	}
+	imp.BidFloorCur = "USD"
 	return nil
+}
+
+// setImpExtFields writes the supplied optional string fields into imp.ext,
+// preserving all other imp.ext fields. Nil or empty values are skipped.
+func setImpExtFields(imp *openrtb2.Imp, fields map[string]*string) error {
+	pending := make(map[string]string, len(fields))
+	for key, value := range fields {
+		if value != nil && *value != "" {
+			pending[key] = *value
+		}
+	}
+	if len(pending) == 0 {
+		return nil
+	}
+
+	var impExt map[string]json.RawMessage
+	if len(imp.Ext) > 0 {
+		if err := jsonutil.Unmarshal(imp.Ext, &impExt); err != nil {
+			return err
+		}
+	}
+	if impExt == nil {
+		impExt = make(map[string]json.RawMessage, len(pending))
+	}
+
+	for key, value := range pending {
+		encoded, err := jsonutil.Marshal(value)
+		if err != nil {
+			return err
+		}
+		impExt[key] = encoded
+	}
+
+	ext, err := jsonutil.Marshal(impExt)
+	if err != nil {
+		return err
+	}
+	imp.Ext = ext
+	return nil
+}
+
+// msnInApp returns whether msn.com is in request.app.publisher.domain
+func msnInApp(request *openrtb2.BidRequest) bool {
+	return request.App != nil && request.App.Publisher != nil && request.App.Publisher.Domain == "msn.com"
+}
+
+// msnInSite returns whether msn.com is in request.site.publisher.domain
+func msnInSite(request *openrtb2.BidRequest) bool {
+	return request.Site != nil && request.Site.Publisher != nil && request.Site.Publisher.Domain == "msn.com"
 }
 
 // Returns the effective publisher ID
@@ -68,7 +162,7 @@ func effectivePubID(pub *openrtb2.Publisher) string {
 	if pub != nil {
 		if pub.Ext != nil {
 			var pubExt openrtb_ext.ExtPublisher
-			err := json.Unmarshal(pub.Ext, &pubExt)
+			err := jsonutil.Unmarshal(pub.Ext, &pubExt)
 			if err == nil && pubExt.Prebid != nil && pubExt.Prebid.ParentAccount != nil && *pubExt.Prebid.ParentAccount != "" {
 				return *pubExt.Prebid.ParentAccount
 			}
@@ -89,7 +183,7 @@ func (a *TripleliftNativeAdapter) MakeRequests(request *openrtb2.BidRequest, ext
 	var validImps []openrtb2.Imp
 	// pre-process the imps
 	for _, imp := range tlRequest.Imp {
-		if err := processImp(&imp); err == nil {
+		if err := processImp(&imp, request, extra); err == nil {
 			validImps = append(validImps, imp)
 		} else {
 			errs = append(errs, err)
@@ -155,12 +249,15 @@ func (a *TripleliftNativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest,
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info", response.StatusCode)}}
 	}
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 	var errs []error
 	count := getBidCount(bidResp)
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(count)
+
+	// Bids are always denominated in USD
+	bidResponse.Currency = "USD"
 
 	for _, sb := range bidResp.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
@@ -202,7 +299,7 @@ func getExtraInfo(v string) (TripleliftNativeExtInfo, error) {
 	}
 
 	var extraInfo TripleliftNativeExtInfo
-	if err := json.Unmarshal([]byte(v), &extraInfo); err != nil {
+	if err := jsonutil.Unmarshal([]byte(v), &extraInfo); err != nil {
 		return extraInfo, fmt.Errorf("invalid extra info: %v", err)
 	}
 

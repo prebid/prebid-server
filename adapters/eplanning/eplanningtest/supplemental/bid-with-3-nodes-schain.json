@@ -1,0 +1,106 @@
+{
+  "mockBidRequest": {
+	"id": "test-request-id",
+	"source": {
+	  "ext": {
+		"schain": {
+		  "ver": "1.0",
+		  "complete": 1,
+		  "nodes": [
+			{
+			  "asi": "exchange1.com",
+			  "sid": "1234",
+			  "hp": 1,
+			  "ext": "text"
+			},
+			{
+			  "asi": "exchange2.com",
+			  "sid": "abcd",
+			  "hp": 1,
+			  "ext": 1
+			},
+			{
+			  "asi": "exchange3.com",
+			  "sid": "abcdf",
+			  "hp": 1,
+			  "ext": 1
+			}
+		  ]
+		}
+	  }
+	},
+	"imp": [
+	  {
+		"id": "test-imp-id",
+		"banner": {
+		  "format": [
+			{
+			  "w": 300,
+			  "h": 250
+			},
+			{
+			  "w": 300,
+			  "h": 600
+			}
+		  ]
+		},
+		"ext": {
+		  "bidder": {
+			"ci": "12345"
+		  }
+		}
+	  }
+	]
+  },
+	"httpCalls": [
+	{
+	  "expectedRequest": {
+		"uri": "http://rtb.e-planning.net/pbs/1/12345/1/FILE/ROS?e=300x250%3A300x250&ncb=1&ur=FILE",
+		"body": {},
+		"impIDs":["test-imp-id"]
+	  },
+	  "mockResponse": {
+		"status": 200,
+		"body": {
+		  "sI": { "k": "12345" },
+		  "sec": "ROS",
+		  "sp": [
+			{
+			  "k": "300x250",
+			  "a": [{
+				"i": "123456789abcdef",
+				"pr": "0.5",
+				"adm": "<div>test</div>",
+				"crid": "abcdef123456789",
+				"id": "adid12345",
+				"w": 300,
+				"h": 250
+			  }]
+			}
+		  ]
+		}
+	  }
+	}
+  ],
+
+  "expectedBidResponses": [
+	{
+	  "currency": "USD",
+	  "bids": [
+		{
+		  "bid": {
+			"id": "123456789abcdef",
+			"impid": "test-imp-id",
+			"price": 0.5,
+			"adm": "<div>test</div>",
+			"adid": "adid12345",
+			"crid": "abcdef123456789",
+			"w": 300,
+			"h": 250
+		  },
+		  "type": "banner"
+		}
+	  ]
+	}
+  ]
+}

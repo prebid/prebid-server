@@ -1,0 +1,99 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 123,
+            "siteId": 456
+          }
+        }
+      }
+    ],
+    "tmax": 500
+  },
+  "httpcalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://localhost/bid/4",
+        "body": {
+          "id": "test-req-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "akcelo": {
+                  "adUnitId": 123,
+                  "siteId": 456
+                }
+              }
+            }
+          ],
+          "site": {
+            "publisher": {
+              "ext": {
+                "prebid": {
+                  "parentAccount": "456"
+                }
+              }
+            }
+          },
+          "tmax": 500
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1,
+                  "adm": "<div>test</div>",
+                  "crid": "test-creative-id",
+                  "mtype": 4
+                }
+              ]
+            }
+          ],
+          "bidid": "test-seatbid-id",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1,
+            "adm": "<div>test</div>",
+            "crid": "test-creative-id",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

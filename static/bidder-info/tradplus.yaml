@@ -1,0 +1,15 @@
+endpoint: "https://{{.ZoneID}}adx.tradplusad.com/{{.AccountID}}/pserver"
+
+maintainer:
+  email: "tpxcontact@tradplus.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - native
+      - video

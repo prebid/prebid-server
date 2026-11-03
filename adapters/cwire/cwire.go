@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 /*
@@ -80,7 +81,7 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	}
 
 	var resp openrtb2.BidResponse
-	if err := json.Unmarshal(httpRes.Body, &resp); err != nil {
+	if err := jsonutil.Unmarshal(httpRes.Body, &resp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: fmt.Sprintf("Error while decoding response, err: %s", err),
 		}}
@@ -90,12 +91,28 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 	bidderResponse.Currency = resp.Cur
 	for _, sb := range resp.SeatBid {
 		for i := range sb.Bid {
+			bidType, err := getBidType(sb.Bid[i])
+			if err != nil {
+				return nil, []error{err}
+			}
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
-				BidType: openrtb_ext.BidTypeBanner,
+				BidType: bidType,
 			})
 		}
 	}
 
 	return bidderResponse, nil
+}
+
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	// determinate media type by bid response field mtype
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	}
+
+	return "", fmt.Errorf("could not define media type for C Wire impression: %s", bid.ImpID)
 }

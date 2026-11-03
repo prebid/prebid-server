@@ -8,16 +8,22 @@ import (
 )
 
 type testStruct struct {
-	Myint    int    `mapstructure:"this_int"`
-	Mystring string `mapstructure:"mystring"`
-	Flag     bool
-	Sub      innerStruct `mapstructure:"sub"`
-	Caps     map[string]string
+	Myint          int    `mapstructure:"this_int"`
+	Mystring       string `mapstructure:"mystring"`
+	Flag           bool
+	Sub            innerStruct `mapstructure:"sub"`
+	Caps           map[string]string
+	NestedStruct   *nestedStruct
+	NillableStruct *nestedStruct
 }
 
 type innerStruct struct {
 	int1     int    `mapstructure:"int1"`
 	password string `mapstructure:"password"`
+}
+
+type nestedStruct struct {
+	var1 string
 }
 
 var expected string = `this_int: 5
@@ -26,6 +32,7 @@ mystring: foobar
 sub.int1: 3
 sub.password: <REDACTED>
 ((Caps))[Alabama]: Montgomery
+((NestedStruct)).((var1)): abc
 `
 
 func TestBasic(t *testing.T) {
@@ -46,6 +53,8 @@ func TestBasic(t *testing.T) {
 		Caps: map[string]string{
 			"Alabama": "Montgomery",
 		},
+		NestedStruct:   &nestedStruct{var1: "abc"},
+		NillableStruct: nil,
 	}
 
 	logStructWithLogger(reflect.ValueOf(testCfg), "", mylogger)

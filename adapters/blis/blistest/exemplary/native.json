@@ -1,0 +1,129 @@
+{
+    "mockBidRequest": {
+        "id": "123456789",
+        "imp": [
+            {
+                "id": "testimp",
+                "native": {
+                    "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}},{\"id\":3,\"data\":{\"type\":2}}]}",
+                    "ver": "1.2"
+                },
+                "bidfloor": 0.98,
+                "bidfloorcur": "USD",
+                "ext": {
+                    "bidder": {
+                        "spid": "999"
+                    }
+                }
+            }
+        ],
+        "cur": ["USD"],
+        "site": {
+            "publisher": {
+                "domain": "example.com"
+            },
+            "page": "http://lh.example.com/prebid_server_kitchen_sink.html?pbjs_debug=true",
+            "cat": ["site-cat"]
+        },
+        "device": {
+            "w": 1434,
+            "h": 686,
+            "geo": {
+                "country": "USA"
+            },
+            "ip": "8.8.8.8"
+        }
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "https://example.endpoint/999",
+                "headers": {
+                    "X-Supply-Partner-Id": ["999"]
+                },
+                "impIDs": ["testimp"],
+                "body": {
+                    "id": "123456789",
+                    "imp": [
+                        {
+                            "id": "testimp",
+                            "native": {
+                                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"img\":{\"type\":3,\"wmin\":100,\"hmin\":100}},{\"id\":3,\"data\":{\"type\":2}}]}",
+                                "ver": "1.2"
+                            },
+                            "bidfloor": 0.98,
+                            "bidfloorcur": "USD",
+                            "ext": {
+                                "bidder": {
+                                    "spid": "999"
+                                }
+                            }
+                        }
+                    ],
+                    "site": {
+                        "cat": ["site-cat"],
+                        "page": "http://lh.example.com/prebid_server_kitchen_sink.html?pbjs_debug=true",
+                        "publisher": {
+                            "domain": "example.com"
+                        }
+                    },
+                    "device": {
+                        "geo": {
+                            "country": "USA"
+                        },
+                        "ip": "8.8.8.8",
+                        "h": 686,
+                        "w": 1434
+                    },
+                    "cur": ["USD"]
+                }
+            },
+            "mockResponse": {
+                "status": 200,
+                "body": {
+                    "id": "123456789",
+                    "seatbid": [
+                        {
+                            "seat": "None",
+                            "bid": [
+                                {
+                                    "id": "1",
+                                    "impid": "testimp",
+                                    "price": 1.3,
+                                    "crid": "9999999",
+                                    "adomain": ["example.com"],
+                                    "cid": "999999",
+                                    "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Native Ad Title\"}},{\"id\":2,\"img\":{\"url\":\"https://adserverexample.com/image.jpg\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Sponsored\"}}],\"link\":{\"url\":\"https://clickexample.com\"},\"imptrackers\":[\"https://trackingexample.com/pixel?wp=${AUCTION_PRICE}\"]}}",
+                                    "cat": ["IAB3-1"],
+                                    "burl": "https://trackingexample.com/pixel?wp=${AUCTION_PRICE}",
+                                    "mtype": 4
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "expectedBidResponses": [
+        {
+            "bids": [
+                {
+                    "bid": {
+                        "id": "1",
+                        "impid": "testimp",
+                        "price": 1.3,
+                        "crid": "9999999",
+                        "adomain": ["example.com"],
+                        "cid": "999999",
+                        "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Native Ad Title\"}},{\"id\":2,\"img\":{\"url\":\"https://adserverexample.com/image.jpg\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Sponsored\"}}],\"link\":{\"url\":\"https://clickexample.com\"},\"imptrackers\":[\"https://trackingexample.com/pixel?wp=1.3\"]}}",
+                        "cat": ["IAB3-1"],
+                        "burl": "https://trackingexample.com/pixel?wp=1.3",
+                        "mtype": 4
+                    },
+                    "type": "native"
+                }
+            ]
+        }
+    ]
+}

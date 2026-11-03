@@ -11,21 +11,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prebid/prebid-server/v2/analytics"
-	analyticsBuild "github.com/prebid/prebid-server/v2/analytics/build"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/exchange"
-	"github.com/prebid/prebid-server/v2/hooks"
-	"github.com/prebid/prebid-server/v2/metrics"
-	metricsConfig "github.com/prebid/prebid-server/v2/metrics/config"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	"github.com/prebid/prebid-server/v2/ortb"
-	"github.com/prebid/prebid-server/v2/prebid_cache_client"
-	"github.com/prebid/prebid-server/v2/privacy"
-	"github.com/prebid/prebid-server/v2/stored_requests/backends/empty_fetcher"
-	"github.com/prebid/prebid-server/v2/util/jsonutil"
-	"github.com/prebid/prebid-server/v2/util/ptrutil"
+	"github.com/prebid/prebid-server/v4/analytics"
+	analyticsBuild "github.com/prebid/prebid-server/v4/analytics/build"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/exchange"
+	"github.com/prebid/prebid-server/v4/hooks"
+	"github.com/prebid/prebid-server/v4/metrics"
+	metricsConfig "github.com/prebid/prebid-server/v4/metrics/config"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/ortb"
+	"github.com/prebid/prebid-server/v4/prebid_cache_client"
+	"github.com/prebid/prebid-server/v4/privacy"
+	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/ptrutil"
 
 	"github.com/prebid/openrtb/v20/adcom1"
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -156,7 +156,7 @@ func TestCreateBidExtensionTargeting(t *testing.T) {
 	require.NotNil(t, ex.lastRequest, "The request never made it into the Exchange.")
 
 	// assert targeting set to default
-	expectedRequestExt := `{"prebid":{"cache":{"vastxml":{}},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"mediatypepricegranularity":{},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"publisher":"","withcategory":true}}}}`
+	expectedRequestExt := `{"prebid":{"cache":{"vastxml":{}},"targeting":{"pricegranularity":{"precision":2,"ranges":[{"min":0,"max":20,"increment":0.1}]},"includebidderkeys":true,"includewinners":true,"includebrandcategory":{"primaryadserver":1,"withcategory":true}}}}`
 	assert.JSONEq(t, expectedRequestExt, string(ex.lastRequest.Ext))
 }
 
@@ -813,16 +813,16 @@ func TestHandleError(t *testing.T) {
 			giveErrors: []error{
 				&errortypes.AccountDisabled{},
 			},
-			wantCode:          503,
-			wantMetricsStatus: metrics.RequestStatusBlacklisted,
+			wantCode:          http.StatusForbidden,
+			wantMetricsStatus: metrics.RequestStatusBlockedApp,
 		},
 		{
-			description: "Blocked app - return 503 with blocked metrics status",
+			description: "Blocked app - return 403 with blocked metrics status",
 			giveErrors: []error{
-				&errortypes.BlacklistedApp{},
+				&errortypes.BlockedApp{},
 			},
-			wantCode:          503,
-			wantMetricsStatus: metrics.RequestStatusBlacklisted,
+			wantCode:          http.StatusForbidden,
+			wantMetricsStatus: metrics.RequestStatusBlockedApp,
 		},
 		{
 			description: "Account required error - return 400 with bad input metrics status",
@@ -1091,14 +1091,11 @@ func TestCCPA(t *testing.T) {
 		if ex.lastRequest == nil {
 			t.Fatalf("%s: The request never made it into the exchange.", test.description)
 		}
-		extRegs := &openrtb_ext.ExtRegs{}
-		if err := jsonutil.UnmarshalValid(ex.lastRequest.Regs.Ext, extRegs); err != nil {
-			t.Fatalf("%s: Failed to unmarshal reg.ext in request to the exchange: %v", test.description, err)
-		}
+
 		if test.expectConsentString {
-			assert.Len(t, extRegs.USPrivacy, 4, test.description+":consent")
+			assert.Len(t, ex.lastRequest.Regs.USPrivacy, 4, test.description+":consent")
 		} else if test.expectEmptyConsent {
-			assert.Empty(t, extRegs.USPrivacy, test.description+":consent")
+			assert.Empty(t, ex.lastRequest.Regs.USPrivacy, test.description+":consent")
 		}
 
 		// Validate HTTP Response
@@ -1150,13 +1147,48 @@ func TestVideoEndpointAppendBidderNames(t *testing.T) {
 }
 
 func TestFormatTargetingKey(t *testing.T) {
-	res := formatTargetingKey(openrtb_ext.HbCategoryDurationKey, "appnexus")
-	assert.Equal(t, "hb_pb_cat_dur_appnex", res, "Tergeting key constructed incorrectly")
+	res := formatTargetingKey(openrtb_ext.CategoryDurationKey, "appnexus")
+	assert.Equal(t, "_pb_cat_dur_appnexus", res, "Tergeting key constructed incorrectly")
 }
 
 func TestFormatTargetingKeyLongKey(t *testing.T) {
-	res := formatTargetingKey(openrtb_ext.HbpbConstantKey, "20.00")
-	assert.Equal(t, "hb_pb_20.00", res, "Tergeting key constructed incorrectly")
+	res := formatTargetingKey(openrtb_ext.PbKey, "20.00")
+	assert.Equal(t, "_pb_20.00", res, "Tergeting key constructed incorrectly")
+}
+
+func TestFindTargetingByKey(t *testing.T) {
+	tests := []struct {
+		name             string
+		targetingMap     map[string]string
+		keyWithoutPrefix string
+		expectedResult   string
+	}{
+		{
+			name: "Correct match",
+			targetingMap: map[string]string{
+				"hb_key": "hb_key12345454",
+			},
+			keyWithoutPrefix: "_key12345454",
+			expectedResult:   "hb_key12345454",
+		},
+		{
+			name: "Dismatching",
+			targetingMap: map[string]string{
+				"hb_key": "hb_key12345454",
+			},
+			keyWithoutPrefix: "12345454",
+			expectedResult:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := findTargetingByKey(tt.targetingMap, tt.keyWithoutPrefix)
+			if result != tt.expectedResult {
+				t.Errorf("expected %v, got %v", tt.expectedResult, result)
+			}
+		})
+	}
 }
 
 func TestVideoAuctionResponseHeaders(t *testing.T) {
@@ -1241,7 +1273,7 @@ func mockDepsWithMetrics(t *testing.T, ex *mockExchangeVideo) (*endpointDeps, *m
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		metrics,
 		mockModule,
 		map[string]string{},
@@ -1282,6 +1314,8 @@ func (m *mockAnalyticsModule) LogAmpObject(ao *analytics.AmpObject, _ privacy.Ac
 func (m *mockAnalyticsModule) LogNotificationEventObject(ne *analytics.NotificationEvent, _ privacy.ActivityControl) {
 }
 
+func (m *mockAnalyticsModule) Shutdown() {}
+
 func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 	return &endpointDeps{
 		fakeUUIDGenerator{},
@@ -1290,7 +1324,7 @@ func mockDeps(t *testing.T, ex *mockExchangeVideo) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		&mockAccountFetcher{data: mockVideoAccountData},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1315,7 +1349,7 @@ func mockDepsAppendBidderNames(t *testing.T, ex *mockExchangeAppendBidderNames) 
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1342,7 +1376,7 @@ func mockDepsNoBids(t *testing.T, ex *mockExchangeVideoNoBids) *endpointDeps {
 		&mockVideoStoredReqFetcher{},
 		&mockVideoStoredReqFetcher{},
 		empty_fetcher.EmptyFetcher{},
-		&config.Configuration{MaxRequestSize: maxSize},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: true}, MaxRequestSize: maxSize},
 		&metricsConfig.NilMetricsEngine{},
 		analyticsBuild.New(&config.Analytics{}),
 		map[string]string{},
@@ -1513,4 +1547,38 @@ func TestVideoRequestValidationFailed(t *testing.T) {
 
 	assert.Equal(t, 500, recorder.Code, "Should catch error in request")
 	assert.Equal(t, "Critical error while running the video endpoint:  request.tmax must be nonnegative. Got -2", errorMessage, "Incorrect request validation message")
+}
+
+func TestVideoEndpointDisabled(t *testing.T) {
+	ex := &mockExchangeVideo{}
+	req := httptest.NewRequest("POST", "/openrtb2/video", strings.NewReader("{}"))
+	recorder := httptest.NewRecorder()
+
+	deps := &endpointDeps{
+		fakeUUIDGenerator{},
+		ex,
+		ortb.NewRequestValidator(openrtb_ext.BuildBidderMap(), map[string]string{}, mockBidderParamValidator{}),
+		&mockVideoStoredReqFetcher{},
+		&mockVideoStoredReqFetcher{},
+		&mockAccountFetcher{data: mockVideoAccountData},
+		&config.Configuration{Video: config.Video{EnableDeprecatedEndpoint: false}, MaxRequestSize: maxSize},
+		&metricsConfig.NilMetricsEngine{},
+		analyticsBuild.New(&config.Analytics{}),
+		map[string]string{},
+		false,
+		[]byte{},
+		openrtb_ext.BuildBidderMap(),
+		ex.cache,
+		regexp.MustCompile(`[<>]`),
+		hardcodedResponseIPValidator{response: true},
+		empty_fetcher.EmptyFetcher{},
+		hooks.EmptyPlanBuilder{},
+		nil,
+		openrtb_ext.NormalizeBidderName,
+	}
+
+	deps.VideoAuctionEndpoint(recorder, req, nil)
+
+	assert.Equal(t, http.StatusNotImplemented, recorder.Code, "Expected 501 status code when video endpoint is disabled")
+	assert.Equal(t, "The video endpoint is deprecated and will be removed in 5.0. You may re-enable it via the host configuration setting video.enable_deprecated_endpoint", recorder.Body.String(), "Unexpected error message")
 }

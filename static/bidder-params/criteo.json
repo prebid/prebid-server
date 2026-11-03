@@ -23,6 +23,16 @@
             "type": "integer",
             "description": "Impression's network ID, preferred.",
             "minimum": 0
+        },
+        "pubid": {
+            "type": "string",
+            "description": "Impression's publisher ID.",
+            "minLength": 1
+        },
+        "uid": {
+            "type": "integer",
+            "description": "Impression's ad unit id.",
+            "minimum": 0
         }
     },
     "anyOf": [

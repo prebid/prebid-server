@@ -6,7 +6,8 @@ import (
 	"github.com/prebid/go-gdpr/api"
 	"github.com/prebid/go-gdpr/consentconstants"
 	tcf2 "github.com/prebid/go-gdpr/vendorconsent/tcf2"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/metrics"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 const noBidder openrtb_ext.BidderName = ""
@@ -19,8 +20,10 @@ type permissionsImpl struct {
 	fetchVendorList        VendorListFetcher
 	gdprDefaultValue       string
 	hostVendorID           int
+	metrics                metrics.MetricsEngine
 	nonStandardPublishers  map[string]struct{}
 	purposeEnforcerBuilder PurposeEnforcerBuilder
+	validGVLVendorIDs      *LiveGVLVendorIDs
 	vendorIDs              map[openrtb_ext.BidderName]uint16
 	// request-specific
 	aliasGVLIDs map[string]uint16
@@ -46,7 +49,7 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 	}
 
 	id, ok := p.vendorIDs[bidder]
-	if ok {
+	if ok && p.isValidVendorID(id) {
 		vendorExceptions := p.cfg.PurposeVendorExceptions(consentconstants.Purpose(1))
 		_, vendorException := vendorExceptions[string(bidder)]
 		return p.allowSync(ctx, id, bidder, vendorException)
@@ -56,33 +59,36 @@ func (p *permissionsImpl) BidderSyncAllowed(ctx context.Context, bidder openrtb_
 }
 
 // AuctionActivitiesAllowed determines whether auction activities are permitted for a given bidder
-func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
+func (p *permissionsImpl) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
 	if _, ok := p.nonStandardPublishers[p.publisherID]; ok {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.gdprSignal != SignalYes {
-		return AllowAll, nil
+		return AllowAll
 	}
+
 	if p.consent == "" {
-		return p.defaultPermissions(), nil
+		return p.defaultPermissions()
 	}
+
 	pc, err := parseConsent(p.consent)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorID, _ := p.resolveVendorID(bidderCoreName, bidder)
 	vendor, err := p.getVendor(ctx, vendorID, *pc)
 	if err != nil {
-		return p.defaultPermissions(), err
+		return p.defaultPermissions()
 	}
+
 	vendorInfo := VendorInfo{vendorID: vendorID, vendor: vendor}
-
-	permissions = AuctionPermissions{}
-	permissions.AllowBidRequest = p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo)
-	permissions.PassGeo = p.allowGeo(bidderCoreName, pc.consentMeta, vendor)
-	permissions.PassID = p.allowID(bidderCoreName, pc.consentMeta, vendorInfo)
-
-	return permissions, nil
+	return AuctionPermissions{
+		AllowBidRequest: p.allowBidRequest(bidderCoreName, pc.consentMeta, vendorInfo),
+		PassGeo:         p.allowGeo(bidderCoreName, pc.consentMeta, vendor),
+		PassID:          p.allowID(bidderCoreName, pc.consentMeta, vendorInfo),
+	}
 }
 
 // defaultPermissions returns a permissions object that denies passing user IDs while
@@ -102,15 +108,32 @@ func (p *permissionsImpl) defaultPermissions() AuctionPermissions {
 }
 
 // resolveVendorID gets the vendor ID for the specified bidder from either the alias GVL IDs
-// provided in the request or from the bidder configs loaded at startup
+// provided in the request or from the bidder configs loaded at startup. If the resolved ID
+// is not present in the latest Global Vendor List, it returns 0 and false.
 func (p *permissionsImpl) resolveVendorID(bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (id uint16, ok bool) {
 	if id, ok = p.aliasGVLIDs[string(bidder)]; ok {
+		if !p.isValidVendorID(id) {
+			return 0, false
+		}
 		return id, ok
 	}
 
 	id, ok = p.vendorIDs[bidderCoreName]
+	if ok && !p.isValidVendorID(id) {
+		return 0, false
+	}
 
 	return id, ok
+}
+
+// isValidVendorID checks whether the given vendor ID exists in the latest Global Vendor List.
+// If the valid set is nil (e.g. the GVL fetch failed), all IDs are considered valid
+// as a safe fallback.
+func (p *permissionsImpl) isValidVendorID(id uint16) bool {
+	if p.validGVLVendorIDs == nil {
+		return true
+	}
+	return p.validGVLVendorIDs.Contains(id)
 }
 
 // allowSync computes cookie sync activity legal basis for a given bidder using the enforcement
@@ -196,7 +219,7 @@ func (p *permissionsImpl) allowID(bidder openrtb_ext.BidderName, consentMeta tcf
 
 // getVendor retrieves the GVL vendor information for a particular bidder
 func (p *permissionsImpl) getVendor(ctx context.Context, vendorID uint16, pc parsedConsent) (api.Vendor, error) {
-	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion)
+	vendorList, err := p.fetchVendorList(ctx, pc.specVersion, pc.listVersion, p.metrics)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +245,6 @@ func (a AlwaysAllow) HostCookiesAllowed(ctx context.Context) (bool, error) {
 func (a AlwaysAllow) BidderSyncAllowed(ctx context.Context, bidder openrtb_ext.BidderName) (bool, error) {
 	return true, nil
 }
-func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) (permissions AuctionPermissions, err error) {
-	return AllowAll, nil
+func (a AlwaysAllow) AuctionActivitiesAllowed(ctx context.Context, bidderCoreName openrtb_ext.BidderName, bidder openrtb_ext.BidderName) AuctionPermissions {
+	return AllowAll
 }

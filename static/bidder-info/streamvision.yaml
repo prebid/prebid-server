@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.adops.streamvisionmedia.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

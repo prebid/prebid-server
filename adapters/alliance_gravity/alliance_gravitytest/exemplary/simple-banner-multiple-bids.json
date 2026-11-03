@@ -1,0 +1,213 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id-multiple-bids",
+    "site": {
+      "id": "site-id",
+      "page": "criteo.com"
+    },
+    "device": {
+      "os": "android",
+      "ip": "1.2.3.4",
+      "ua": "random user agent"
+    },
+    "imp": [
+      {
+        "id": "imp-id-123",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "srid": "abc"
+          }
+        }
+      },
+      {
+        "id": "imp-id-456",
+        "banner": {
+          "format": [
+            {
+              "w": 160,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "srid": "def"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://endpoint",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Referer": [
+            "criteo.com"
+          ],
+          "User-Agent": [
+            "random user agent"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ]
+        },
+        "body": {
+          "id": "test-request-id-multiple-bids",
+          "site": {
+            "id": "site-id",
+            "page": "criteo.com"
+          },
+          "device": {
+            "os": "android",
+            "ip": "1.2.3.4",
+            "ua": "random user agent"
+          },
+          "imp": [
+            {
+              "id": "imp-id-123",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {},
+                "prebid": {
+                  "storedrequest": {
+                    "id": "abc"
+                  }
+                }
+              }
+            },
+            {
+              "id": "imp-id-456",
+              "banner": {
+                "format": [
+                  {
+                    "w": 160,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {},
+                "prebid": {
+                  "storedrequest": {
+                    "id": "def"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-id-123",
+          "imp-id-456"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id",
+                  "impid": "imp-id-123",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "<div>Test Ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "bid": [
+                {
+                  "id": "test-slot-id2",
+                  "impid": "imp-id-1232",
+                  "price": 0.5,
+                  "crid": "creative-123",
+                  "adm": "<div>Test Ad</div>",
+                  "w": 160,
+                  "h": 600,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-slot-id",
+            "impid": "imp-id-123",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<div>Test Ad</div>",
+            "w": 300,
+            "h": 250,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "test-slot-id2",
+            "impid": "imp-id-1232",
+            "price": 0.5,
+            "crid": "creative-123",
+            "adm": "<div>Test Ad</div>",
+            "w": 160,
+            "h": 600,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

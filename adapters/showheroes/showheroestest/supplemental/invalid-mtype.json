@@ -1,0 +1,141 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "id": "site-id",
+      "page": "showheroes.com",
+      "publisher": {
+        "id": "123456"
+      }
+    },
+    "device": {
+      "os": "android",
+      "ip": "91.199.242.236",
+      "ua": "random user agent"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "unitId": "123456"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.showheroes.com/api/v1/bid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "id": "site-id",
+            "page": "showheroes.com",
+            "publisher": {
+              "id": "123456"
+            }
+          },
+          "device": {
+            "os": "android",
+            "ip": "91.199.242.236",
+            "ua": "random user agent"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "unitId": "123456"
+                },
+                "params": {
+                  "unitId": "123456"
+                }
+              }
+            }
+          ],
+          "source": {
+            "ext": {
+              "pbs": {
+                "pbsp": "go",
+                "pbsv": "unknown"
+              }
+            }
+          }
+        },
+        "impIDs":["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 0.1,
+                  "crid": "creative-123",
+                  "adm": "<VAST version='3.0'><Ad id='123'><InLine><AdSystem>ShowHeroes</AdSystem></InLine></Ad></VAST>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 5
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 0.1,
+            "crid": "creative-123",
+            "adm": "<VAST version='3.0'><Ad id='123'><InLine><AdSystem>ShowHeroes</AdSystem></InLine></Ad></VAST>",
+            "w": 300,
+            "h": 250,
+            "mtype": 5
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -5,11 +5,17 @@
   "type": "object",
   "properties": {
     "cp": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
       "description": "An ID which identifies the publisher selling the impression"
     },
     "ct": {
-      "type": "integer",
+      "type": [
+        "integer",
+        "string"
+      ],
       "description": "An ID which identifies the ad slot being sold"
     }
   },

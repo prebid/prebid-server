@@ -1,0 +1,40 @@
+{
+  "description": "Bid request where a request.user.eids.uids array element is missing its id field",
+  "mockBidRequest": {
+    "id": "anyRequestID",
+    "site": {
+      "page": "prebid.org",
+      "publisher": {
+        "id": "anyPublisher"
+      }
+    },
+    "imp": [{
+      "id": "anyImpID",
+      "ext": {
+        "appnexus": {
+          "placementId": 42
+        }
+      },
+      "banner": {
+        "format": [{
+            "w": 300,
+            "h": 250
+          },
+          {
+            "w": 300,
+            "h": 300
+          }
+        ]
+      }
+    }],
+    "tmax": 1000,
+    "user": {
+    "eids": [{
+        "source": "source1",
+        "uids": []
+    }]
+}
+  },
+  "expectedReturnCode": 200,
+  "expectedErrorMessage": "request.user.eids[0] (source: source1) removed due to empty uids"
+}

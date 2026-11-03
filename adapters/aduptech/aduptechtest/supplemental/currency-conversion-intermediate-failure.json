@@ -1,0 +1,46 @@
+{
+    "mockBidRequest": {
+      "id": "test-request-id",
+      "site": {
+          "page": "https://good.site/url"
+      },
+      "imp": [{
+          "id": "test-imp-id", 
+          "bidfloor": 1.0,
+          "bidfloorcur": "AUD",
+          "banner": {
+              "format": [{
+                  "w": 300,
+                  "h": 250
+              }]
+          },
+          "ext": {
+            "bidder": {
+                "publisher": "123456",
+                "placement": "234567"
+            }
+          }
+    }],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 0.05
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+   },
+    "httpCalls": [],
+    "expectedBidResponses": [],
+    "expectedMakeRequestsErrors": [
+      {
+        "value": "Currency conversion rate not found from 'AUD' to 'EUR'. Error converting from 'AUD' to 'USD': Currency conversion rate not found: 'AUD' => 'USD'",
+        "comparison": "literal"
+      }
+    ]
+  }
+  

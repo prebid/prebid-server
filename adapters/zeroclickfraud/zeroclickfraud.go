@@ -8,11 +8,13 @@ import (
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
 )
 
 type ZeroClickFraudAdapter struct {
@@ -92,7 +94,7 @@ func (a *ZeroClickFraudAdapter) MakeBids(
 
 	var bidResp openrtb2.BidResponse
 
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
@@ -130,13 +132,13 @@ func splitImpressions(imps []openrtb2.Imp) (map[openrtb_ext.ExtImpZeroClickFraud
 
 func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpZeroClickFraud, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Missing bidder ext: %s", err.Error()),
 		}
 	}
 	var zeroclickfraudExt openrtb_ext.ExtImpZeroClickFraud
-	if err := json.Unmarshal(bidderExt.Bidder, &zeroclickfraudExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &zeroclickfraudExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("Cannot Resolve host or sourceId: %s", err.Error()),
 		}
@@ -148,7 +150,7 @@ func getBidderParams(imp *openrtb2.Imp) (*openrtb_ext.ExtImpZeroClickFraud, erro
 		}
 	}
 
-	if len(zeroclickfraudExt.Host) < 1 {
+	if !urlutil.IsSafeHost(zeroclickfraudExt.Host) {
 		return nil, &errortypes.BadInput{
 			Message: "Invalid/Missing Host",
 		}

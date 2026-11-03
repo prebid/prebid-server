@@ -12,12 +12,16 @@
     "host": {
       "type": "string",
       "minLength": 1,
-      "description": "An ID which identifies the TrafficGate host"
+      "description": "An ID which identifies the TrafficGate host",
+      "pattern": "^[a-zA-Z0-9.-]+(:[0-9]+)?$"
     },
     "customParams": {
       "type": "object",
       "description": "User-defined targeting key-value pairs."
     }
   },
-  "required" : [ "placementId", "host" ]
+  "required": [
+    "placementId",
+    "host"
+  ]
 }

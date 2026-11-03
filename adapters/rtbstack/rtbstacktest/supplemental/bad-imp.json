@@ -1,0 +1,29 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-error",
+    "site": {
+      "page": "https://example.com",
+      "domain": "https://example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-invalid",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": "invalid-json"
+      }
+    ]
+  },
+
+  "httpCalls": [],
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ],
+
+  "expectedBidResponses": []
+}

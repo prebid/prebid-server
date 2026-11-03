@@ -1,7 +1,12 @@
 endpoint: "https://targeting.unrulymedia.com/unruly_prebid_server"
+geoscope:
+  - global
 maintainer:
   email: "prebidsupport@unrulygroup.com"
 gvlVendorID: 36
+openrtb:
+  version: 2.6
+  gpp-supported: true
 capabilities:
   app:
     mediaTypes:

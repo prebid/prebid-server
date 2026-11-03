@@ -1,0 +1,143 @@
+{
+  "mockBidRequest": {
+    "cur": ["USD"],
+    "id": "some-request-id",
+    "site": {
+      "page": "http://tester.go.sonobi.com",
+      "domain": "sonobi.com"
+    },
+    "device": {
+      "ip": "123.123.123.123"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":2,\"plcmtcnt\":3,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":600,\"hmin\":600}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":3000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":60}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}},{\"id\":10,\"required\":0,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"privacy\":1}",
+          "ver": "1.2",
+          "battr": [
+            1,
+            2,
+            6,
+            7,
+            8,
+            9,
+            10,
+            14
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "TagID": "/7780971/apex_3pdm_integration"
+          }
+        }
+      }
+    ],
+    "test": 1,
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "uri": "https://apex.go.sonobi.com/prebid?partnerid=71d9d3d8af",
+        "body": {
+          "cur": ["USD"],
+          "id": "some-request-id",
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":2,\"plcmtcnt\":3,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":1000}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":600,\"hmin\":600}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":3000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":60}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}},{\"id\":10,\"required\":0,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1,2]},{\"event\":2,\"methods\":[1]}],\"privacy\":1}",
+                "ver": "1.2",
+                "battr": [
+                  1,
+                  2,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  14
+                ]
+              },
+              "tagid": "/7780971/apex_3pdm_integration",
+              "ext": {
+                "bidder": {
+                  "TagID": "/7780971/apex_3pdm_integration"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "sonobi.com",
+            "page": "http://tester.go.sonobi.com"
+          },
+          "device": {
+            "ip": "123.123.123.123"
+          },
+          "test": 1,
+          "tmax": 500
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "some-impression-id",
+                  "price": 2.8649999999999998,
+                  "adm": "test-markup",
+                  "adomain": [
+                    "sonobi.com"
+                  ],
+                  "cid": "house",
+                  "crid": "sandbox"
+
+                }
+              ],
+              "seat": "sonobi"
+            }
+          ],
+          "bidid": "sandbox_642305097",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "some-impression-id",
+            "price": 2.8649999999999998,
+            "adm": "test-markup",
+            "adomain": [
+              "sonobi.com"
+            ],
+            "cid": "house",
+            "crid": "sandbox"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

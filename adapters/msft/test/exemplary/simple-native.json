@@ -1,0 +1,139 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "any-domain.org",
+      "page": "any-page"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "native": {
+          "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+          "ver": "1.1"
+        },
+        "ext": {
+          "bidder": {
+            "placement_id": 1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "domain": "any-domain.org",
+            "page": "any-page"
+          },
+          "ext": {
+            "appnexus": {
+              "hb_source": 5
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "native": {
+                "request": "{\"ver\":\"1.1\",\"context\":1,\"contextsubtype\":11,\"plcmttype\":4,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":500}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"wmin\":1,\"hmin\":1}},{\"id\":3,\"required\":0,\"data\":{\"type\":1,\"len\":200}},{\"id\":4,\"required\":0,\"data\":{\"type\":2,\"len\":15000}},{\"id\":5,\"required\":0,\"data\":{\"type\":6,\"len\":40}},{\"id\":6,\"required\":0,\"data\":{\"type\":500}}]}",
+                "ver": "1.1"
+              },
+              "ext": {
+                "appnexus": {
+                  "placement_id": 1
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "bid-id",
+                  "impid": "test-imp-id",
+                  "price": 0.500000,
+                  "adid": "any-adid",
+                  "adm": "{\"assets\":[{\"id\": 2,\"img\":{\"url\":\"http://any-url.com/some-creative.jpg\",\"w\": 3000,\"h\": 2250,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"id\": 1,\"title\":{\"text\":\"This is an example Prebid Native creative\"}},{\"id\": 3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\": 4,\"data\":{\"value\":\"This is a Prebid Native Creative. There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://any-url.com/any-link\"},\"imptrackers\":[\"http://any-url.com/any-tracker\"],\"jstracker\":\"<script src=\\\"http://www.dummyurl.js\\\"></script>\"}",
+                  "adomain": [
+                    "appnexus.com"
+                  ],
+                  "iurl": "http://nym1-ib.adnxs.com/cr?id=101",
+                  "cid": "any-cid",
+                  "crid": "any-crid",
+                  "h": 250,
+                  "w": 300,
+                  "ext": {
+                    "appnexus": {
+                      "brand_id": 1,
+                      "brand_category_id": 1,
+                      "auction_id": 123456789,
+                      "bid_ad_type": 3,
+                      "bidder_id": 2,
+                      "ranking_price": 0.000000,
+                      "deal_priority": 5
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "any-bidid",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-id",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "{\"assets\":[{\"id\": 2,\"img\":{\"url\":\"http://any-url.com/some-creative.jpg\",\"w\": 3000,\"h\": 2250,\"ext\":{\"appnexus\":{\"prevent_crop\":0}}}},{\"id\": 1,\"title\":{\"text\":\"This is an example Prebid Native creative\"}},{\"id\": 3,\"data\":{\"value\":\"Prebid.org\"}},{\"id\": 4,\"data\":{\"value\":\"This is a Prebid Native Creative. There are many like it, but this one is mine.\"}}],\"link\":{\"url\":\"http://any-url.com/any-link\"},\"imptrackers\":[\"http://any-url.com/any-tracker\"],\"jstracker\":\"<script src=\\\"http://www.dummyurl.js\\\"></script>\"}",
+            "adid": "any-adid",
+            "adomain": [
+              "appnexus.com"
+            ],
+            "iurl": "http://nym1-ib.adnxs.com/cr?id=101",
+            "cid": "any-cid",
+            "crid": "any-crid",
+            "w": 300,
+            "h": 250,
+            "cat": [
+              "IAB20-3"
+            ],
+            "ext": {
+              "appnexus": {
+                "brand_id": 1,
+                "brand_category_id": 1,
+                "auction_id": 123456789,
+                "bid_ad_type": 3,
+                "bidder_id": 2,
+                "ranking_price": 0.000000,
+                "deal_priority": 5
+              }
+            }
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

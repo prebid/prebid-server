@@ -42,7 +42,7 @@
   "httpCalls": [],
   "expectedMakeRequestsErrors": [
     {
-      "value": "Failed to deserialize DriftPixel extension: json: cannot unmarshal array into Go value of type openrtb_ext.ExtDriftPixel",
+      "value": "Failed to deserialize DriftPixel extension: expect { or n, but found [",
       "comparison": "literal"
     }
   ]

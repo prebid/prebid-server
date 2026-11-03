@@ -7,12 +7,10 @@ capabilities:
     mediaTypes:
       - banner
       - video
-      - native
   site:
     mediaTypes:
       - banner
       - video
-      - native
 userSync:
   redirect:
     url: https://gum.aidemsrv.com/prebid_sync?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&redirect={{.RedirectURL}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}

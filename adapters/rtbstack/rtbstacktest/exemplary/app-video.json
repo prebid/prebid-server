@@ -1,0 +1,188 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid.app"
+    },
+    "device": {
+      "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+    },
+    "imp": [
+      {
+        "id": "imp-app-video-small",
+        "video": {
+          "w": 640,
+          "h": 360,
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            5
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-video-small",
+            "customParams": {
+              "foo": "bar"
+            }
+          }
+        }
+      },
+      {
+        "id": "imp-app-video-large",
+        "video": {
+          "w": 1280,
+          "h": 720,
+          "mimes": [
+            "video/mp4",
+            "video/webm"
+          ],
+          "minduration": 10,
+          "maxduration": 60,
+          "protocols": [
+            2,
+            5,
+            6
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "route": "https://testsite.us-adx-admixer.rtb-stack.com/prebid?client=c4527281-5aa5-4c8e-bc53-a80bb3f99470&endpoint=309&ssp=145",
+            "tagId": "app-video-large",
+            "customParams": {}
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://us-adx-admixer.rtb-stack.com/pbs?ssp=145&endpoint=309&client=c4527281-5aa5-4c8e-bc53-a80bb3f99470",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid.app"
+          },
+          "device": {
+            "ifa": "ec943cb9-61ec-460f-a925-6489c3fcc4e3"
+          },
+          "imp": [
+            {
+              "id": "imp-app-video-small",
+              "video": {
+                "w": 640,
+                "h": 360,
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  5
+                ]
+              },
+              "tagid": "app-video-small",
+              "ext": {
+                "customParams": {
+                  "foo": "bar"
+                }
+              }
+            },
+            {
+              "id": "imp-app-video-large",
+              "video": {
+                "w": 1280,
+                "h": 720,
+                "mimes": [
+                  "video/mp4",
+                  "video/webm"
+                ],
+                "minduration": 10,
+                "maxduration": 60,
+                "protocols": [
+                  2,
+                  5,
+                  6
+                ]
+              },
+              "tagid": "app-video-large",
+              "ext": {}
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-app-video-small",
+          "imp-app-video-large"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "rtbstack",
+              "bid": [
+                {
+                  "id": "bid-app-video-small-1",
+                  "impid": "imp-app-video-small",
+                  "price": 3.0,
+                  "adm": "<VAST version='3.0'>App Small Video Ad</VAST>",
+                  "crid": "crid-app-video-small-1",
+                  "mtype": 2
+                },
+                {
+                  "id": "bid-app-video-large-1",
+                  "impid": "imp-app-video-large",
+                  "price": 5.5,
+                  "adm": "<VAST version='3.0'>App Large Video Ad</VAST>",
+                  "crid": "crid-app-video-large-1",
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-app-video-small-1",
+            "impid": "imp-app-video-small",
+            "price": 3.0,
+            "adm": "<VAST version='3.0'>App Small Video Ad</VAST>",
+            "crid": "crid-app-video-small-1",
+            "mtype": 2
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-app-video-large-1",
+            "impid": "imp-app-video-large",
+            "price": 5.5,
+            "adm": "<VAST version='3.0'>App Large Video Ad</VAST>",
+            "crid": "crid-app-video-large-1",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -170,7 +170,8 @@
                         "price": 12.34,
                         "adm": "creativeContent",
                         "crid": "81325690",
-                        "w": 300
+                        "w": 300,
+                        "h": 600
                     },
                     "type": "banner"
                 }

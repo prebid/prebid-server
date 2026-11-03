@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Display.io Adapter Params",
+  "description": "A schema which validates params accepted by the Display.io adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": {
+      "type": "string",
+      "description": "Publisher Id"
+    },
+    "inventoryId": {
+      "type": "string",
+      "description": "Inventory Id"
+    },
+    "placementId": {
+      "type": "string",
+      "description": "Placement Id"
+    }
+  },
+  "required": [
+    "publisherId",
+    "inventoryId",
+    "placementId"
+  ]
+}

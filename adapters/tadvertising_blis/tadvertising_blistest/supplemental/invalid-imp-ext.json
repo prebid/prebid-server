@@ -1,0 +1,17 @@
+{
+    "mockBidRequest": {
+        "id": "test-request",
+        "imp": [
+            {
+                "id": "test-imp"
+            }
+        ]
+    },
+
+    "expectedMakeRequestsErrors": [
+        {
+            "value": "Invalid imp.ext for impression",
+            "comparison": "startswith"
+        }
+    ]
+}

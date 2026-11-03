@@ -1,0 +1,2 @@
+endpoint: "http://ads-pbs.scotty.orangeclickmedia.com/openrtb/{{.PublisherID}}?host={{.Host}}"
+aliasOf: "limelightDigital"

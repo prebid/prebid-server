@@ -1,0 +1,2 @@
+endpoint: "https://felixads-prebid.attekmi.co/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+aliasOf: "smarthub"

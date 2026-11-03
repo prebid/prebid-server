@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
 )
 
 // Labels defines the labels that can be attached to the metrics.
@@ -13,6 +13,7 @@ type Labels struct {
 	PubID         string // exchange specific ID, so we cannot compile in values
 	CookieFlag    CookieFlag
 	RequestStatus RequestStatus
+	RequestSize   int
 }
 
 // AdapterLabels defines the labels that can be attached to the adapter metrics.
@@ -139,6 +140,8 @@ type DemandSource string
 // ImpMediaType : Media type described in the "imp" JSON object  TODO is this still needed?
 type ImpMediaType string
 
+type EndpointType string
+
 // RequestType : Request type enumeration
 type RequestType string
 
@@ -196,6 +199,40 @@ func RequestTypes() []RequestType {
 	}
 }
 
+// Endpoint type constants
+const (
+	EndpointAuction EndpointType = "auction"
+	EndpointVideo   EndpointType = "video"
+	EndpointAmp     EndpointType = "amp"
+)
+
+func EndpointTypes() []EndpointType {
+	return []EndpointType{
+		EndpointAuction,
+		EndpointVideo,
+		EndpointAmp,
+	}
+}
+
+func GetEndpointFromRequestType(requestType RequestType) EndpointType {
+	var requestEndpoint EndpointType
+
+	switch requestType {
+	case ReqTypeORTB2Web:
+		fallthrough
+	case ReqTypeORTB2App:
+		fallthrough
+	case ReqTypeORTB2DOOH:
+		requestEndpoint = EndpointAuction
+	case ReqTypeAMP:
+		requestEndpoint = EndpointAmp
+	case ReqTypeVideo:
+		requestEndpoint = EndpointVideo
+	}
+
+	return requestEndpoint
+}
+
 // The media types described in the "imp" json objects
 const (
 	ImpTypeBanner ImpMediaType = "banner"
@@ -234,7 +271,7 @@ const (
 	RequestStatusBadInput         RequestStatus = "badinput"
 	RequestStatusErr              RequestStatus = "err"
 	RequestStatusNetworkErr       RequestStatus = "networkerr"
-	RequestStatusBlacklisted      RequestStatus = "blacklistedacctorapp"
+	RequestStatusBlockedApp       RequestStatus = "blockedapp"
 	RequestStatusQueueTimeout     RequestStatus = "queuetimeout"
 	RequestStatusAccountConfigErr RequestStatus = "acctconfigerr"
 )
@@ -245,7 +282,7 @@ func RequestStatuses() []RequestStatus {
 		RequestStatusBadInput,
 		RequestStatusErr,
 		RequestStatusNetworkErr,
-		RequestStatusBlacklisted,
+		RequestStatusBlockedApp,
 		RequestStatusQueueTimeout,
 		RequestStatusAccountConfigErr,
 	}
@@ -300,6 +337,60 @@ func CacheResults() []CacheResult {
 	return []CacheResult{
 		CacheHit,
 		CacheMiss,
+	}
+}
+
+// FetcherResult is the outcome of a Fetchers 2.0 (fetcher) cache lookup.
+type FetcherResult string
+
+const (
+	// FetcherResultHit is a value served from the positive cache without a backend call.
+	FetcherResultHit FetcherResult = "hit"
+	// FetcherResultMiss is a lookup that had to go to the backend source.
+	FetcherResultMiss FetcherResult = "miss"
+	// FetcherResultNegative is a not-found served from the negative cache without a backend call.
+	FetcherResultNegative FetcherResult = "negative"
+)
+
+// FetcherResults returns the possible fetcher cache lookup outcomes.
+func FetcherResults() []FetcherResult {
+	return []FetcherResult{
+		FetcherResultHit,
+		FetcherResultMiss,
+		FetcherResultNegative,
+	}
+}
+
+// FetcherBackendResult is the outcome of a fetcher upstream (source) fetch.
+type FetcherBackendResult string
+
+const (
+	// FetcherBackendOK is a successful backend fetch that returned a value.
+	FetcherBackendOK FetcherBackendResult = "ok"
+	// FetcherBackendNotFound is a definitive per-key not-found from the backend.
+	FetcherBackendNotFound FetcherBackendResult = "notfound"
+	// FetcherBackendError is a systemic backend failure (never cached).
+	FetcherBackendError FetcherBackendResult = "error"
+)
+
+// FetcherOperation is the fetcher operation that caused an upstream source call.
+type FetcherOperation string
+
+const (
+	// FetcherOperationGet is an on-demand read for one key.
+	FetcherOperationGet FetcherOperation = "get"
+	// FetcherOperationStart is the startup preload operation.
+	FetcherOperationStart FetcherOperation = "start"
+	// FetcherOperationBackgroundRefresh is an async refresh of a stale key.
+	FetcherOperationBackgroundRefresh FetcherOperation = "background_refresh"
+)
+
+// FetcherBackendResults returns the possible fetcher backend fetch outcomes.
+func FetcherBackendResults() []FetcherBackendResult {
+	return []FetcherBackendResult{
+		FetcherBackendOK,
+		FetcherBackendNotFound,
+		FetcherBackendError,
 	}
 }
 
@@ -361,7 +452,7 @@ const (
 	SyncerCookieSyncOK               SyncerCookieSyncStatus = "ok"
 	SyncerCookieSyncPrivacyBlocked   SyncerCookieSyncStatus = "privacy_blocked"
 	SyncerCookieSyncAlreadySynced    SyncerCookieSyncStatus = "already_synced"
-	SyncerCookieSyncTypeNotSupported SyncerCookieSyncStatus = "type_not_supported"
+	SyncerCookieSyncRejectedByFilter SyncerCookieSyncStatus = "rejected_by_filter"
 )
 
 // SyncerRequestStatuses returns possible syncer statuses.
@@ -370,7 +461,7 @@ func SyncerRequestStatuses() []SyncerCookieSyncStatus {
 		SyncerCookieSyncOK,
 		SyncerCookieSyncPrivacyBlocked,
 		SyncerCookieSyncAlreadySynced,
-		SyncerCookieSyncTypeNotSupported,
+		SyncerCookieSyncRejectedByFilter,
 	}
 }
 
@@ -451,6 +542,8 @@ type MetricsEngine interface {
 	RecordAccountCacheResult(cacheResult CacheResult, inc int)
 	RecordStoredDataFetchTime(labels StoredDataLabels, length time.Duration)
 	RecordStoredDataError(labels StoredDataLabels)
+	RecordFetcherResult(subsystem string, result FetcherResult)
+	RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration)
 	RecordPrebidCacheRequestTime(success bool, length time.Duration)
 	RecordRequestQueueTime(success bool, requestType RequestType, length time.Duration)
 	RecordTimeoutNotice(success bool)
@@ -459,6 +552,8 @@ type MetricsEngine interface {
 	RecordAdapterGDPRRequestBlocked(adapterName openrtb_ext.BidderName)
 	RecordDebugRequest(debugEnabled bool, pubId string)
 	RecordStoredResponse(pubId string)
+	RecordGvlListRequest()
+	RecordLiveGVLFetch(success bool)
 	RecordAdsCertReq(success bool)
 	RecordAdsCertSignTime(adsCertSignTime time.Duration)
 	RecordBidValidationCreativeSizeError(adapter openrtb_ext.BidderName, account string)
@@ -472,4 +567,7 @@ type MetricsEngine interface {
 	RecordModuleSuccessRejected(labels ModuleLabels)
 	RecordModuleExecutionError(labels ModuleLabels)
 	RecordModuleTimeout(labels ModuleLabels)
+	RecordAdapterThrottled(adapterName openrtb_ext.BidderName)
+	RecordAdapterConnectionDialError(adapterName openrtb_ext.BidderName)
+	RecordAdapterConnectionDialTime(adapterName openrtb_ext.BidderName, dialStartTime time.Duration)
 }

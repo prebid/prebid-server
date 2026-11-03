@@ -1,0 +1,203 @@
+{
+  "mockBidRequest": {
+    "id": "request_id",
+    "imp": [
+      {
+        "id": "imp_id1",
+        "banner": {
+          "w": 300,
+          "h": 600
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 1,
+            "auth": "tokenExample1"
+          }
+        }
+      },
+      {
+        "id": "imp_id2",
+        "banner": {
+          "w": 400,
+          "h": 800
+        },
+        "ext": {
+          "bidder": {
+            "adUnitId": 2,
+            "auth": "tokenExample2"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "www.example.com",
+      "page": "http://www.example.com"
+    },
+    "cur": [
+      "USD"
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+      "ip": "127.0.0.1"
+    },
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=1&auth=tokenExample1",
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id1",
+              "banner": {
+                "w": 300,
+                "h": 600
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": 1,
+                  "auth": "tokenExample1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id1",
+                  "impid": "imp_id1",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "adm001",
+                  "h": 600,
+                  "w": 300,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://example.com/auction?id=2&auth=tokenExample2",
+        "body": {
+          "id": "request_id",
+          "imp": [
+            {
+              "id": "imp_id2",
+              "banner": {
+                "w": 400,
+                "h": 800
+              },
+              "ext": {
+                "bidder": {
+                  "adUnitId": 2,
+                  "auth": "tokenExample2"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "www.example.com",
+            "page": "http://www.example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+            "ip": "127.0.0.1"
+          },
+          "tmax": 500
+        },
+        "impIDs":["imp_id2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "request_id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid_id2",
+                  "impid": "imp_id2",
+                  "price": 1.25,
+                  "crid": "crid",
+                  "adm": "adm001",
+                  "h": 800,
+                  "w": 400,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "bidid": "bid_id"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id1",
+            "impid": "imp_id1",
+            "price": 1.25,
+            "adm": "adm001",
+            "crid": "crid",
+            "w": 300,
+            "h": 600,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "bid_id2",
+            "impid": "imp_id2",
+            "price": 1.25,
+            "adm": "adm001",
+            "crid": "crid",
+            "w": 400,
+            "h": 800,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

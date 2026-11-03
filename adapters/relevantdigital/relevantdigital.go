@@ -10,12 +10,14 @@ import (
 
 	"github.com/buger/jsonparser"
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/macros"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
-	jsonpatch "gopkg.in/evanphx/json-patch.v4"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/macros"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
+	"github.com/prebid/prebid-server/v4/util/urlutil"
+	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
 type adapter struct {
@@ -56,7 +58,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 func patchBidRequestExt(prebidBidRequest *openrtb2.BidRequest, id string) error {
 	var bidRequestExt relevantExt
 	if len(prebidBidRequest.Ext) != 0 {
-		if err := json.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
+		if err := jsonutil.Unmarshal(prebidBidRequest.Ext, &bidRequestExt); err != nil {
 			return &errortypes.FailedToRequestBids{
 				Message: fmt.Sprintf("failed to unmarshal ext, %s", prebidBidRequest.Ext),
 			}
@@ -113,6 +115,11 @@ func setTMax(prebidBidRequest *openrtb2.BidRequest, pbsBufferMs int) {
 
 func createBidRequest(prebidBidRequest *openrtb2.BidRequest, params []*openrtb_ext.ExtRelevantDigital) ([]byte, error) {
 	bidRequestCopy := *prebidBidRequest
+	// Copy Imp slice so patchBidImpExt only mutates this outgoing request.
+	// MakeBids receives the same request and needs the original Imp[].Ext
+	// to read useSourceBidderCode from bidder params.
+	bidRequestCopy.Imp = make([]openrtb2.Imp, len(prebidBidRequest.Imp))
+	copy(bidRequestCopy.Imp, prebidBidRequest.Imp)
 
 	err := patchBidRequestExt(&bidRequestCopy, params[0].AccountId)
 	if err != nil {
@@ -158,13 +165,13 @@ func createJSONRequest(bidRequest *openrtb2.BidRequest) ([]byte, error) {
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtRelevantDigital, error) {
 	var bidderExt adapters.ExtImpBidder
-	if err := json.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "imp.ext not provided",
 		}
 	}
 	relevantExt := openrtb_ext.ExtRelevantDigital{PbsBufferMs: default_bufffer_ms}
-	if err := json.Unmarshal(bidderExt.Bidder, &relevantExt); err != nil {
+	if err := jsonutil.Unmarshal(bidderExt.Bidder, &relevantExt); err != nil {
 		return nil, &errortypes.BadInput{
 			Message: "ext.bidder not provided",
 		}
@@ -176,6 +183,9 @@ func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtRelevantDigital) (stri
 	params.Host = strings.ReplaceAll(params.Host, "http://", "")
 	params.Host = strings.ReplaceAll(params.Host, "https://", "")
 	params.Host = strings.ReplaceAll(params.Host, relevant_domain, "")
+	if !urlutil.IsSafeHost(params.Host) {
+		return "", &errortypes.BadInput{Message: "Invalid Host"}
+	}
 
 	endpointParams := macros.EndpointTemplateParams{Host: params.Host}
 	return macros.ResolveMacros(a.endpoint, endpointParams)
@@ -254,7 +264,7 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 func getMediaTypeForBidFromExt(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
-		err := json.Unmarshal(bid.Ext, &bidExt)
+		err := jsonutil.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
 			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
 		}
@@ -291,6 +301,17 @@ func isSupportedMediaType(bidType openrtb_ext.BidType) error {
 	return fmt.Errorf("bid type not supported %s", bidType)
 }
 
+func useSourceBidderCode(request *openrtb2.BidRequest) bool {
+	if request == nil || len(request.Imp) == 0 {
+		return false
+	}
+	impExt, err := getImpressionExt(&request.Imp[0])
+	if err != nil {
+		return false
+	}
+	return impExt.UseSourceBidderCode
+}
+
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
@@ -301,9 +322,11 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	}
 
 	var response openrtb2.BidResponse
-	if err := json.Unmarshal(responseData.Body, &response); err != nil {
+	if err := jsonutil.Unmarshal(responseData.Body, &response); err != nil {
 		return nil, []error{err}
 	}
+
+	passSourceSeat := useSourceBidderCode(request)
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(response.SeatBid))
 	bidResponse.Currency = response.Cur
@@ -322,6 +345,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				b := &adapters.TypedBid{
 					Bid:     &seatBid.Bid[i],
 					BidType: bidType,
+				}
+				if passSourceSeat {
+					b.Seat = openrtb_ext.BidderName(seatBid.Seat)
 				}
 				bidResponse.Bids = append(bidResponse.Bids, b)
 			}

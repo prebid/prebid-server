@@ -1,6 +1,7 @@
 endpoint: "https://server.cpmstar.com/openrtbbidrq.aspx"
 maintainer:
   email: "prebid@cpmstar.com"
+gvlVendorID: 1317
 capabilities:
   app:
     mediaTypes:

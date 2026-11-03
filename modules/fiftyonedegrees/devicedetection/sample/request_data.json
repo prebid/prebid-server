@@ -1,0 +1,114 @@
+{
+  "imp": [{
+      "ext": {
+        "data": {
+          "adserver": {
+            "name": "gam",
+            "adslot": "test"
+          },
+          "pbadslot": "test",
+          "gpid": "test"
+        },
+        "gpid": "test",
+        "prebid": {
+          "bidder": {
+            "appnexus": {
+              "placement_id": 1,
+              "use_pmt_rule": false
+            }
+          },
+          "adunitcode": "25e8ad9f-13a4-4404-ba74-f9eebff0e86c",
+          "floors": {
+            "floorMin": 0.01
+          }
+        }
+      },
+      "id": "2529eeea-813e-4da6-838f-f91c28d64867",
+      "banner": {
+        "topframe": 1,
+        "format": [
+          {
+            "w": 728,
+            "h": 90
+          }
+        ],
+        "pos": 1
+      },
+      "bidfloor": 0.01,
+      "bidfloorcur": "USD"
+  }],
+  "site": {
+    "domain": "test.com",
+    "publisher": {
+      "domain": "test.com",
+      "id": "1"
+    },
+    "page": "https://www.test.com/"
+  },
+  "device": {
+    "ua": "Mozilla/5.0 (Linux; Android 11; SM-G998W) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Mobile Safari/537.36"
+  },
+  "id": "fc4670ce-4985-4316-a245-b43c885dc37a",
+  "test": 1,
+  "cur": [
+    "USD"
+  ],
+  "source": {
+    "ext": {
+      "schain": {
+        "ver": "1.0",
+        "complete": 1,
+        "nodes": [
+          {
+            "asi": "example.com",
+            "sid": "1234",
+            "hp": 1
+          }
+        ]
+      }
+    }
+  },
+  "ext": {
+    "prebid": {
+      "cache": {
+        "bids": {
+          "returnCreative": true
+        },
+        "vastxml": {
+          "returnCreative": true
+        }
+      },
+      "auctiontimestamp": 1698390609882,
+      "targeting": {
+        "includewinners": true,
+        "includebidderkeys": false
+      },
+      "schains": [
+        {
+          "bidders": [
+            "appnexus"
+          ],
+          "schain": {
+            "ver": "1.0",
+            "complete": 1,
+            "nodes": [
+              {
+                "asi": "example.com",
+                "sid": "1234",
+                "hp": 1
+              }
+            ]
+          }
+        }
+      ],
+      "floors": {
+        "enabled": false,
+        "floorMin": 0.01,
+        "floorMinCur": "USD"
+      },
+      "createtids": false
+    }
+  },
+  "user": {},
+  "tmax": 1700
+}

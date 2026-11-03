@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Seedtag Adapter Params",
+    "description": "A schema which validates params accepted by the Seedtag adapter",
+    "type": "object",
+    "properties": {
+        "adUnitId": {
+            "type": "string",
+            "description": "Ad Unit ID for the placement",
+            "minLength": 1
+        },
+        "publisherId": {
+            "type": "string",
+            "description": "Publisher group ID for RON integration",
+            "minLength": 1
+        },
+        "integrationType": {
+            "type": "string",
+            "description": "Integration type. Use 'ronId' when integrating via publisherToken",
+            "enum": ["ronId"]
+        }
+    },
+    "oneOf": [
+        {
+            "required": ["adUnitId"]
+        },
+        {
+            "required": ["publisherId", "integrationType"]
+        }
+    ]
+}

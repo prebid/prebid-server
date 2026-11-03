@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
-	"github.com/prebid/prebid-server/v2/adapters"
-	"github.com/prebid/prebid-server/v2/config"
-	"github.com/prebid/prebid-server/v2/errortypes"
-	"github.com/prebid/prebid-server/v2/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/adapters"
+	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/errortypes"
+	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
 const nbrHeaderName = "x-nbr"
-const adapterVersion = "pbs1.2"
+const adapterVersion = "pbs1.3"
+const bidderCurrency = "USD"
 
 // AMXAdapter is the AMX bid adapter
 type AMXAdapter struct {
@@ -56,14 +59,43 @@ func ensurePublisherWithID(pub *openrtb2.Publisher, publisherID string) openrtb2
 	return pubCopy
 }
 
+func resolveBidFloor(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
+	if imp.BidFloor <= 0 || imp.BidFloorCur == "" || strings.EqualFold(imp.BidFloorCur, bidderCurrency) {
+		return nil
+	}
+
+	if reqInfo == nil {
+		return fmt.Errorf("cannot convert bid floor currency %s: reqInfo is nil", imp.BidFloorCur)
+	}
+
+	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, bidderCurrency)
+	if err != nil {
+		return err
+	}
+
+	imp.BidFloor = convertedValue
+	imp.BidFloorCur = bidderCurrency
+	return nil
+}
+
 // MakeRequests creates AMX adapter requests
 func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapters.ExtraRequestInfo) (reqsBidder []*adapters.RequestData, errs []error) {
 	reqCopy := *request
 
 	var publisherID string
-	for idx, imp := range reqCopy.Imp {
+	hasBidFloor := false
+	validImps := make([]openrtb2.Imp, 0, len(reqCopy.Imp))
+	for _, imp := range reqCopy.Imp {
+		if err := resolveBidFloor(&imp, req); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if imp.BidFloor > 0 {
+			hasBidFloor = true
+		}
+
 		var params amxExt
-		if err := json.Unmarshal(imp.Ext, &params); err == nil {
+		if err := jsonutil.Unmarshal(imp.Ext, &params); err == nil {
 			if params.Bidder.TagID != "" {
 				publisherID = params.Bidder.TagID
 			}
@@ -71,9 +103,21 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 			// if it has an adUnitId, set as the tagid
 			if params.Bidder.AdUnitID != "" {
 				imp.TagID = params.Bidder.AdUnitID
-				reqCopy.Imp[idx] = imp
 			}
 		}
+
+		validImps = append(validImps, imp)
+	}
+
+	if len(validImps) == 0 {
+		return nil, errs
+	}
+	reqCopy.Imp = validImps
+
+	// bid floors are normalized to USD, so request USD bids to keep the
+	// response currency consistent with the floors
+	if hasBidFloor {
+		reqCopy.Cur = []string{bidderCurrency}
 	}
 
 	if publisherID != "" {
@@ -112,8 +156,10 @@ func (adapter *AMXAdapter) MakeRequests(request *openrtb2.BidRequest, req *adapt
 }
 
 type amxBidExt struct {
-	StartDelay   *int `json:"startdelay,omitempty"`
-	CreativeType *int `json:"ct,omitempty"`
+	StartDelay   *int    `json:"startdelay,omitempty"`
+	CreativeType *int    `json:"ct,omitempty"`
+	DemandSource *string `json:"ds,omitempty"`
+	BidderCode   *string `json:"bc,omitempty"`
 }
 
 // MakeBids will parse the bids from the AMX server
@@ -139,11 +185,14 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 	}
 
 	var bidResp openrtb2.BidResponse
-	if err := json.Unmarshal(response.Body, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(response.Body, &bidResp); err != nil {
 		return nil, []error{err}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 
 	for _, sb := range bidResp.SeatBid {
 		for _, bid := range sb.Bid {
@@ -154,10 +203,23 @@ func (adapter *AMXAdapter) MakeBids(request *openrtb2.BidRequest, externalReques
 				continue
 			}
 
+			demandSource := ""
+			if bidExt.DemandSource != nil {
+				demandSource = *bidExt.DemandSource
+			}
+
 			bidType := getMediaTypeForBid(bidExt)
 			b := &adapters.TypedBid{
-				Bid:     &bid,
+				Bid: &bid,
+				BidMeta: &openrtb_ext.ExtBidPrebidMeta{
+					AdvertiserDomains: bid.ADomain,
+					DemandSource:      demandSource,
+				},
 				BidType: bidType,
+			}
+
+			if bidExt.BidderCode != nil {
+				b.Seat = openrtb_ext.BidderName(*bidExt.BidderCode)
 			}
 
 			bidResponse.Bids = append(bidResponse.Bids, b)
@@ -173,7 +235,7 @@ func getBidExt(ext json.RawMessage) (amxBidExt, error) {
 	}
 
 	var bidExt amxBidExt
-	err := json.Unmarshal(ext, &bidExt)
+	err := jsonutil.Unmarshal(ext, &bidExt)
 	return bidExt, err
 }
 

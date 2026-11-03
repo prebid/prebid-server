@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            { "w": 300, "h": 250 },
+            { "w": 300, "h": 300 }
+          ],
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "zone": "dc9d6be1"
+          },
+          "prebid": {
+            "adunitcode": "test-adunit-code"
+          }
+        },
+        "tagid": "test-adunit-code"
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://g2.gumgum.com/providers/prbds2s/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "tagid": "test-adunit-code",
+              "banner": {
+                "format": [
+                  { "w": 300, "h": 250 },
+                  { "w": 300, "h": 300 }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "zone": "dc9d6be1"
+                },
+                "prebid": {
+                  "adunitcode": "test-adunit-code"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "crid": "2068416",
+                  "adm": "some-test-ad",
+                  "adid": "2068416",
+                  "price": 5,
+                  "id": "5736a50b-6b05-42a8-aa6d-b0a4649dcd05",
+                  "impid": "test-imp-id",
+                  "cid": "4747"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "crid": "2068416",
+            "adm": "some-test-ad",
+            "adid": "2068416",
+            "price": 5,
+            "id": "5736a50b-6b05-42a8-aa6d-b0a4649dcd05",
+            "impid": "test-imp-id",
+            "cid": "4747"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

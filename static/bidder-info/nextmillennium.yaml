@@ -1,4 +1,5 @@
 endpoint: "https://pbs.nextmillmedia.com/openrtb2/auction"
+endpointCompression: GZIP
 maintainer:
   email: "accountmanagers@nextmillennium.io"
 gvlVendorID: 1060
