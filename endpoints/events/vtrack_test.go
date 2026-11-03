@@ -832,6 +832,18 @@ func TestModifyVastXmlString(t *testing.T) {
 			ok:   true,
 		},
 		{
+			name: "do not use impression from a later inline ad",
+			vast: `<VAST><Ad><InLine><Creatives></Creatives></InLine></Ad><Ad><InLine><Impression>later</Impression></InLine></Ad></VAST>`,
+			want: `<VAST><Ad><InLine><Creatives></Creatives>` + tag + `</InLine></Ad><Ad><InLine><Impression>later</Impression></InLine></Ad></VAST>`,
+			ok:   true,
+		},
+		{
+			name: "do not use impression from a later wrapper ad",
+			vast: `<VAST><Ad><Wrapper><Creatives></Creatives></Wrapper></Ad><Ad><Wrapper><Impression>later</Impression></Wrapper></Ad></VAST>`,
+			want: `<VAST><Ad><Wrapper><Creatives></Creatives>` + tag + `</Wrapper></Ad><Ad><Wrapper><Impression>later</Impression></Wrapper></Ad></VAST>`,
+			ok:   true,
+		},
+		{
 			name: "case and whitespace on wrapper and impression",
 			vast: `<  wraPPer garbage><Impression>http:/test.com</Impression><  / wraPPer garbage>`,
 			want: `<  wraPPer garbage><Impression>http:/test.com</Impression>` + tag + `<  / wraPPer garbage>`,
