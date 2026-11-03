@@ -49,7 +49,7 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 789, Seat: "123"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"malformed","buyer_id":"123"}`)},
@@ -57,19 +57,19 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789","buyer_id":"123-456"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserName: "123-456", NetworkID: 456, BrandID: 789},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 0, NetworkID: 456, BrandID: 789, Seat: "123-456"},
 		},
 		{
-			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"OpenX Advertiser"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserName: "OpenX Advertiser"},
+			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"openx-seat-1"}`)},
+			&openrtb_ext.ExtBidPrebidMeta{Seat: "openx-seat-1"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","dsp_id":"456"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0, Seat: "123"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","brand_id":"789"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 789, Seat: "123"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456","brand_id":"789"}`)},
@@ -77,7 +77,7 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 0, BrandID: 0, Seat: "123"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"dsp_id":"456"}`)},
@@ -89,7 +89,7 @@ func TestOpenxAdapter_GetBidMeta(t *testing.T) {
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"123","dsp_id":"456"}`)},
-			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0},
+			&openrtb_ext.ExtBidPrebidMeta{AdvertiserID: 123, NetworkID: 456, BrandID: 0, Seat: "123"},
 		},
 		{
 			&openrtb2.Bid{Ext: json.RawMessage(`{"buyer_id":"malformed","dsp_id":"malformed","brand_id":"malformed"}`)},
@@ -126,7 +126,7 @@ func TestOpenxAdapter_MakeBids(t *testing.T) {
 					MType: 1,
 					Ext:   json.RawMessage(`{"dsp_id":"123","brand_id":"456","buyer_id":"789"}`),
 				},
-				BidMeta:  &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, BrandID: 456, AdvertiserID: 789},
+				BidMeta:  &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, BrandID: 456, AdvertiserID: 789, Seat: "789"},
 				BidType:  "banner",
 				BidVideo: &openrtb_ext.ExtBidPrebidVideo{Duration: 0, PrimaryCategory: ""},
 			},
