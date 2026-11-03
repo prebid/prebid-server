@@ -1,6 +1,7 @@
 package rulesengine
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -217,4 +218,37 @@ type mockTimeUtil struct{}
 
 func (mt mockTimeUtil) Now() time.Time {
 	return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+}
+
+func TestSetEvictsOldestWhenFull(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	cache := NewCache(0)
+	cache.maxEntries = 3
+
+	cache.Set("a", &cacheEntry{timestamp: base.Add(2 * time.Second)})
+	cache.Set("b", &cacheEntry{timestamp: base}) // oldest
+	cache.Set("c", &cacheEntry{timestamp: base.Add(time.Second)})
+
+	// Rewriting an existing key doesn't evict anything.
+	cache.Set("a", &cacheEntry{timestamp: base.Add(3 * time.Second)})
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 3)
+	assert.NotNil(t, cache.Get("b"))
+
+	// A new key at the limit replaces the oldest entry.
+	cache.Set("d", &cacheEntry{timestamp: base.Add(4 * time.Second)})
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 3)
+	assert.Nil(t, cache.Get("b"))
+	assert.NotNil(t, cache.Get("a"))
+	assert.NotNil(t, cache.Get("c"))
+	assert.NotNil(t, cache.Get("d"))
+}
+
+func TestSetStaysBoundedForManyAccountIDs(t *testing.T) {
+	cache := NewCache(0)
+	cache.maxEntries = 100
+
+	for i := 0; i < 5000; i++ {
+		cache.Set(fmt.Sprintf("random-account-%d", i), &cacheEntry{timestamp: time.Unix(int64(i), 0)})
+	}
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 100)
 }

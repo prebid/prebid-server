@@ -17,9 +17,14 @@ type cacher interface {
 	Expired(time.Time) bool
 }
 
+// defaultMaxEntries is the number of accounts the cache holds when the module
+// config doesn't set "maxcacheentries".
+const defaultMaxEntries = 10000
+
 type cache struct {
 	sync.Mutex
 	m                atomic.Value
+	maxEntries       int
 	refreshFrequency time.Duration
 	t                timeutil.Time
 }
@@ -30,6 +35,7 @@ func NewCache(refreshRateSeconds int) *cache {
 
 	return &cache{
 		m:                atomicMap,
+		maxEntries:       defaultMaxEntries,
 		refreshFrequency: time.Duration(refreshRateSeconds) * time.Second,
 		t:                &timeutil.RealTime{},
 	}
@@ -72,6 +78,20 @@ func (c *cache) Set(id accountID, data *cacheEntry) {
 		if k != id {
 			m2[k] = v
 		}
+	}
+
+	// Account IDs come from the request, so the number of keys must be bounded. When a new
+	// key would exceed the limit, drop the entry that was built the longest ago.
+	if _, exists := m1[id]; !exists && c.maxEntries > 0 && len(m2) >= c.maxEntries {
+		var oldestID accountID
+		var oldest time.Time
+		first := true
+		for k, v := range m2 {
+			if first || v.timestamp.Before(oldest) {
+				oldestID, oldest, first = k, v.timestamp, false
+			}
+		}
+		delete(m2, oldestID)
 	}
 
 	m2[id] = data
