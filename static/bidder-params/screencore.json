@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Screencore Adapter Params",
+  "description": "A schema which validates params accepted by the Screencore adapter",
+  "type": "object",
+  "properties": {
+    "sspPlacementId": {
+      "type": "string",
+      "description": "An ID which identifies this placement for the SSP endpoint",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "description": "Region used to resolve the SSP endpoint",
+      "enum": [
+        "us",
+        "eu",
+        "asia"
+      ]
+    }
+  },
+  "required": [
+    "sspPlacementId",
+    "region"
+  ]
+}
