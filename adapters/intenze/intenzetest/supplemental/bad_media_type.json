@@ -59,7 +59,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {
@@ -116,10 +116,10 @@
                   ],
                   "crid": "20",
                   "w": 320,
-                  "h": 50
+                  "h": 50,
+                  "mtype": 0
                 }
               ],
-              "mtype": 0,
               "seat": "intenze"
             }
           ],
@@ -132,6 +132,12 @@
     {
       "value": "unsupported MType 0",
       "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
     }
   ]
 }
