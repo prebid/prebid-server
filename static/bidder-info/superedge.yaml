@@ -2,8 +2,13 @@ endpoint: "https://{{.Host}}.superedge.co.jp/bid?sk={{.AccountID}}"
 endpointCompression: gzip
 geoscope:
   - USA
-  - EEA
-  - APAC
+  - DEU
+  - JPN
+  - GBR
+  - KOR
+  - CAN
+  - FRA
+  - ITA
 maintainer:
   email: op@superedge.co.jp
 gvlVendorID: 1554
