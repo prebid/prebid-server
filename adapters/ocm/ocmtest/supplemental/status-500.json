@@ -1,0 +1,78 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-500-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "ocm-pub-1",
+            "placementId": "homepage-top"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.gr",
+      "page": "https://example.gr/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-500-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "prebid": {
+                  "storedrequest": {
+                    "id": "homepage-top"
+                  }
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.gr",
+            "page": "https://example.gr/",
+            "publisher": {
+              "id": "ocm-pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-banner-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 500. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
