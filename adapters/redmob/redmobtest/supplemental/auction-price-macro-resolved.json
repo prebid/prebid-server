@@ -1,0 +1,209 @@
+{
+  "mockBidRequest": {
+    "id": "req-4b8d2f60",
+    "imp": [
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ],
+          "api": [
+            3,
+            5
+          ]
+        },
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": 2101
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-2002",
+      "name": "Example Game",
+      "bundle": "com.example.game",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+      "ver": "4.12.0",
+      "cat": [
+        "IAB9-30"
+      ],
+      "publisher": {
+        "id": "pub-7102"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      "ip": "198.51.100.77",
+      "geo": {
+        "country": "NGA",
+        "type": 2
+      },
+      "devicetype": 4,
+      "os": "Android",
+      "osv": "14",
+      "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+      "lmt": 0,
+      "connectiontype": 6,
+      "language": "en"
+    },
+    "source": {
+      "tid": "c0ffee00-0000-4000-8000-req-4b8d2f60"
+    },
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.redmob.example/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-4b8d2f60",
+          "imp": [
+            {
+              "displaymanager": "prebid-mobile",
+              "displaymanagerver": "2.2.3",
+              "id": "1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ],
+                "api": [
+                  3,
+                  5
+                ],
+                "w": 320,
+                "h": 50
+              },
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "supplyPartnerId": 2101
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app-2002",
+            "name": "Example Game",
+            "bundle": "com.example.game",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+            "ver": "4.12.0",
+            "cat": [
+              "IAB9-30"
+            ],
+            "publisher": {
+              "id": "pub-7102"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "ip": "198.51.100.77",
+            "geo": {
+              "country": "NGA",
+              "type": 2
+            },
+            "devicetype": 4,
+            "os": "Android",
+            "osv": "14",
+            "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+            "lmt": 0,
+            "connectiontype": 6,
+            "language": "en"
+          },
+          "source": {
+            "tid": "c0ffee00-0000-4000-8000-req-4b8d2f60"
+          },
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-4b8d2f60",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "41",
+              "bid": [
+                {
+                  "id": "9a1c3e5f-7b2d-4e6a-8c0f-1d3b5a7c9e2f",
+                  "impid": "1",
+                  "price": 1.2345,
+                  "nurl": "https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&bti=1&p=${AUCTION_PRICE}",
+                  "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}",
+                  "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+                  "adm": "<a href=\"https://click.example/c?cr=cr-55644\" target=\"_blank\"><img src=\"https://cdn.example/creatives/cr-55644.png\" width=\"320\" height=\"50\" alt=\"\"/></a><img src=\"https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=${AUCTION_PRICE}&b=0\" style=\"position:absolute;left:-9999px\"/>",
+                  "adomain": [
+                    "brand.example.com"
+                  ],
+                  "cid": "cmp-2219",
+                  "crid": "cr-55644",
+                  "cat": [
+                    "IAB22"
+                  ],
+                  "w": 320,
+                  "h": 50,
+                  "exp": 3600
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "9a1c3e5f-7b2d-4e6a-8c0f-1d3b5a7c9e2f",
+            "impid": "1",
+            "price": 1.2345,
+            "nurl": "https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&bti=1&p=1.2345",
+            "burl": "https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=1.2345",
+            "lurl": "https://win-eu.redmob.io/lossnotice?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&lr=${AUCTION_LOSS}",
+            "adm": "<a href=\"https://click.example/c?cr=cr-55644\" target=\"_blank\"><img src=\"https://cdn.example/creatives/cr-55644.png\" width=\"320\" height=\"50\" alt=\"\"/></a><img src=\"https://win-eu.redmob.io/winnotice/58?bi=req-4b8d2f60&ii=1&op=Q2xXmP0aR7c&bp=N2k4ZTFhVQ&sp=ZHA9MTImZHBlPTQx&bti=1&p=1.2345&b=0\" style=\"position:absolute;left:-9999px\"/>",
+            "adomain": [
+              "brand.example.com"
+            ],
+            "cid": "cmp-2219",
+            "crid": "cr-55644",
+            "cat": [
+              "IAB22"
+            ],
+            "w": 320,
+            "h": 50,
+            "exp": 3600
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
