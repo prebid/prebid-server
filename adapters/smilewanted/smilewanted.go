@@ -113,6 +113,10 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidTy
 		return openrtb_ext.BidTypeBanner
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
 	}
 	return getMediaTypeForImp(bid.ImpID, imps)
 }
@@ -124,6 +128,10 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impId {
 			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Audio != nil {
+				mediaType = openrtb_ext.BidTypeAudio
+			} else if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType
 		}
