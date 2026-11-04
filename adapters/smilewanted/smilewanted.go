@@ -100,10 +100,25 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 		bid := sb.Bid[i]
 		bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 			Bid:     &bid,
-			BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
+			BidType: getMediaTypeForBid(bid, internalRequest.Imp),
 		})
 	}
 	return bidResponse, nil
+}
+
+// getMediaTypeForBid uses bid.mtype when it is set, and falls back to the impression otherwise.
+func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
+	}
+	return getMediaTypeForImp(bid.ImpID, imps)
 }
 
 // getMediaTypeForImp figures out which media type this bid is for.
@@ -113,6 +128,10 @@ func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
 		if imp.ID == impId {
 			if imp.Video != nil {
 				mediaType = openrtb_ext.BidTypeVideo
+			} else if imp.Audio != nil {
+				mediaType = openrtb_ext.BidTypeAudio
+			} else if imp.Native != nil {
+				mediaType = openrtb_ext.BidTypeNative
 			}
 			return mediaType
 		}
