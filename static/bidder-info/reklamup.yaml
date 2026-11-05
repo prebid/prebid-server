@@ -1,5 +1,7 @@
 aliasOf: "teqblaze"
-endpoint: "https://node.reklamup.com/pserver"
+# We have the following regional endpoint domains: 'eu-node' - for EU, 'node' - for US_EAST
+# Please deploy this config in each of your datacenters with the appropriate regional subdomain
+endpoint: "https://REGION.reklamup.com/pserver"
 maintainer:
   email: "support@reklamup.com"
 gvlVendorID: 1619

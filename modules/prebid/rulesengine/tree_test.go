@@ -19,8 +19,10 @@ func TestExecuteRulesFullConfig(t *testing.T) {
 		ChangeSet: hs.ChangeSet[hs.ProcessedAuctionRequestPayload]{},
 	}
 	result := ProcessedAuctionHookResult{
-		HookResult:     hookResult,
-		AllowedBidders: make(map[string]struct{}),
+		HookResult: hookResult,
+		IncludeBidders: includeBiddersState{
+			allowedBidders: make(map[string]struct{}),
+		},
 	}
 
 	err := rules.Run(rw, &result)
