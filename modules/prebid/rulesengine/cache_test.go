@@ -1,6 +1,8 @@
 package rulesengine
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -217,4 +219,88 @@ type mockTimeUtil struct{}
 
 func (mt mockTimeUtil) Now() time.Time {
 	return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+}
+
+func TestSetEvictsLeastRecentlyUsedWhenFull(t *testing.T) {
+	cache := NewCache(0)
+	cache.maxEntries = 3
+
+	cache.Set("a", &cacheEntry{})
+	cache.Set("b", &cacheEntry{}) // never read again: least recently used
+	cache.Set("c", &cacheEntry{})
+	assert.NotNil(t, cache.Get("a"))
+	assert.NotNil(t, cache.Get("c"))
+
+	// Rewriting an existing key doesn't evict anything.
+	cache.Set("a", &cacheEntry{})
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 3)
+	assert.NotNil(t, cache.Get("b"))
+	assert.NotNil(t, cache.Get("a"))
+	assert.NotNil(t, cache.Get("c"))
+
+	// A new key at the limit replaces the least recently used entry.
+	cache.Set("e", &cacheEntry{}) // "b" was read before "a" and "c"
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 3)
+	assert.Nil(t, cache.Get("b"))
+	assert.NotNil(t, cache.Get("a"))
+	assert.NotNil(t, cache.Get("c"))
+	assert.NotNil(t, cache.Get("e"))
+}
+
+// A long-lived account that keeps receiving auctions must survive a flood of new IDs,
+// even though its entry was built long before any of the new ones.
+func TestSetKeepsSteadyAccountThroughFlood(t *testing.T) {
+	cache := NewCache(0)
+	cache.maxEntries = 100
+
+	steady := &cacheEntry{hashedConfig: "steady", timestamp: time.Unix(0, 0)}
+	cache.Set("steady-account", steady)
+	for i := 0; i < 99; i++ {
+		cache.Set(fmt.Sprintf("old-idle-%d", i), &cacheEntry{timestamp: time.Unix(int64(i+1), 0)})
+	}
+
+	for i := 0; i < 10000; i++ {
+		// One auction for the steady account between new IDs.
+		assert.Same(t, steady, cache.Get("steady-account"), "evicted after %d new IDs", i)
+		cache.Set(fmt.Sprintf("flood-%d", i), &cacheEntry{timestamp: time.Unix(int64(1000+i), 0)})
+	}
+
+	assert.Same(t, steady, cache.Get("steady-account"))
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 100)
+	assert.Nil(t, cache.Get("old-idle-0"))
+}
+
+func TestGetConcurrentWithSet(t *testing.T) {
+	cache := NewCache(0)
+	cache.maxEntries = 10
+	cache.Set("steady", &cacheEntry{})
+
+	var wg sync.WaitGroup
+	for g := 0; g < 4; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 1000; i++ {
+				cache.Get("steady")
+			}
+		}()
+	}
+	for i := 0; i < 1000; i++ {
+		cache.Set(fmt.Sprintf("id-%d", i), &cacheEntry{})
+		if i%100 == 0 {
+			cache.Delete("steady")
+			cache.Set("steady", &cacheEntry{})
+		}
+	}
+	wg.Wait()
+}
+
+func TestSetStaysBoundedForManyAccountIDs(t *testing.T) {
+	cache := NewCache(0)
+	cache.maxEntries = 100
+
+	for i := 0; i < 5000; i++ {
+		cache.Set(fmt.Sprintf("random-account-%d", i), &cacheEntry{timestamp: time.Unix(int64(i), 0)})
+	}
+	assert.Len(t, cache.m.Load().(map[accountID]*cacheEntry), 100)
 }

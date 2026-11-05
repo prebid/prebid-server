@@ -35,7 +35,13 @@ func Builder(cfg json.RawMessage, deps moduledeps.ModuleDeps) (interface{}, erro
 		return nil, err
 	}
 
+	maxEntries, err := getMaxCacheEntries(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	c := NewCache(refreshRate)
+	c.maxEntries = maxEntries
 
 	go tm.Run(c)
 
@@ -139,4 +145,18 @@ func getRefreshRate(jsonCfg json.RawMessage) (int, error) {
 		return 0, err
 	}
 	return int(updateFrequency), nil
+}
+
+// getMaxCacheEntries reads the optional "maxcacheentries" setting: the most accounts the
+// cache keeps at once. Zero or a negative value means no limit.
+func getMaxCacheEntries(jsonCfg json.RawMessage) (int, error) {
+	maxEntries, err := jsonparser.GetInt(jsonCfg, "maxcacheentries")
+
+	if err == jsonparser.KeyPathNotFoundError {
+		return defaultMaxEntries, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return int(maxEntries), nil
 }

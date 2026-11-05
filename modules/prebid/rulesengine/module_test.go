@@ -291,3 +291,27 @@ func TestGetRefreshRate(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMaxCacheEntries(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		inData      json.RawMessage
+		expected    int
+		expectError bool
+	}{
+		{desc: "not set uses default", inData: json.RawMessage(`{}`), expected: defaultMaxEntries},
+		{desc: "set", inData: json.RawMessage(`{"maxcacheentries": 50}`), expected: 50},
+		{desc: "not a number", inData: json.RawMessage(`{"maxcacheentries": "x"}`), expectError: true},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			res, err := getMaxCacheEntries(tc.inData)
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, res)
+		})
+	}
+}
