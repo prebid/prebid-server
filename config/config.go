@@ -68,6 +68,7 @@ type Configuration struct {
 	GDPR                 GDPR              `mapstructure:"gdpr"`
 	CCPA                 CCPA              `mapstructure:"ccpa"`
 	LMT                  LMT               `mapstructure:"lmt"`
+	GeoPrivacy           GeoPrivacy        `mapstructure:"geo_privacy"`
 	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
 
@@ -1233,6 +1234,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 		"SVK", "SVN", "ESP", "SWE", "GBR"})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
+	v.SetDefault("geo_privacy.us_states_with_geo_prohibition", []string{})
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_timeout_ms", 60000)      // 60 seconds
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes
