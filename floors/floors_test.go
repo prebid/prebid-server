@@ -761,6 +761,86 @@ func TestResolveFloors(t *testing.T) {
 	}
 }
 
+// recordingFetch records the fetch URL that resolveFloors hands to the fetcher.
+type recordingFetch struct {
+	urls []string
+}
+
+func (f *recordingFetch) Stop() {}
+
+func (f *recordingFetch) Fetch(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
+	f.urls = append(f.urls, configs.Fetcher.URL)
+	return nil, openrtb_ext.FetchNone
+}
+
+func TestResolveFloorsFetchURL(t *testing.T) {
+	testCases := []struct {
+		name       string
+		accountURL string
+		requestExt string
+		expURL     string
+	}{
+		{
+			name:       "Request without floorendpoint uses account URL",
+			accountURL: "https://floors.example.com/pub.json",
+			requestExt: `{"prebid":{"floors":{"enabled":true}}}`,
+			expURL:     "https://floors.example.com/pub.json",
+		},
+		{
+			name:       "Request loopback floorendpoint is not fetched",
+			accountURL: "https://floors.example.com/pub.json",
+			requestExt: `{"prebid":{"floors":{"floorendpoint":{"url":"http://127.0.0.1:6060/debug/pprof/cmdline"}}}}`,
+			expURL:     "https://floors.example.com/pub.json",
+		},
+		{
+			name:       "Request link-local metadata floorendpoint is not fetched",
+			accountURL: "https://floors.example.com/pub.json",
+			requestExt: `{"prebid":{"floors":{"floorendpoint":{"url":"http://169.254.169.254/latest/meta-data/"}}}}`,
+			expURL:     "https://floors.example.com/pub.json",
+		},
+		{
+			name:       "Request internal host floorendpoint is not fetched",
+			accountURL: "https://floors.example.com/pub.json",
+			requestExt: `{"prebid":{"floors":{"floorendpoint":{"url":"http://internal-admin.svc.cluster.local/floors"}}}}`,
+			expURL:     "https://floors.example.com/pub.json",
+		},
+		{
+			name:       "Request floorendpoint does not fill a missing account URL",
+			accountURL: "",
+			requestExt: `{"prebid":{"floors":{"floorendpoint":{"url":"http://10.0.0.5:8080/floors"}}}}`,
+			expURL:     "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			account := config.Account{
+				ID: "pub1",
+				PriceFloors: config.AccountPriceFloors{
+					Enabled:        true,
+					UseDynamicData: true,
+					Fetcher: config.AccountFloorFetch{
+						Enabled: true,
+						URL:     tc.accountURL,
+						Timeout: 100,
+					},
+				},
+			}
+			bidRequestWrapper := &openrtb_ext.RequestWrapper{
+				BidRequest: &openrtb2.BidRequest{
+					Imp: []openrtb2.Imp{{ID: "1234", Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}}}},
+					Ext: json.RawMessage(tc.requestExt),
+				},
+			}
+			fetcher := &recordingFetch{}
+
+			resolveFloors(account, bidRequestWrapper, getCurrencyRates(nil), fetcher)
+
+			assert.Equal(t, []string{tc.expURL}, fetcher.urls)
+		})
+	}
+}
+
 type MockFetchDataRate0 struct{}
 
 func (m *MockFetchDataRate0) Fetch(configs config.AccountPriceFloors) (*openrtb_ext.PriceFloorRules, string) {
