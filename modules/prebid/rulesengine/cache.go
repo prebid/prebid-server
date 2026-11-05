@@ -25,6 +25,8 @@ type cache struct {
 	sync.Mutex
 	m                atomic.Value
 	maxEntries       int
+	clock            atomic.Uint64 // logical clock, ticks on every use
+	lastUsed         sync.Map      // accountID -> *atomic.Uint64, clock value at the last use
 	refreshFrequency time.Duration
 	t                timeutil.Time
 }
@@ -54,9 +56,18 @@ func (c *cache) Expired(coTimestamp time.Time) bool {
 func (c *cache) Get(id accountID) *cacheEntry {
 	m1 := c.m.Load().(map[accountID]*cacheEntry)
 	if cachedObj, exists := m1[id]; exists {
+		c.touch(id)
 		return cachedObj
 	}
 	return nil
+}
+
+// touch records that the account was just used. It only updates a counter that Set already
+// created, so it takes no lock and adds no entries for ids that are not cached.
+func (c *cache) touch(id accountID) {
+	if v, ok := c.lastUsed.Load(id); ok {
+		v.(*atomic.Uint64).Store(c.clock.Add(1))
+	}
 }
 
 // Set stores the data parameter in the data store using the id parameter as key in a
@@ -81,18 +92,28 @@ func (c *cache) Set(id accountID, data *cacheEntry) {
 	}
 
 	// Account IDs come from the request, so the number of keys must be bounded. When a new
-	// key would exceed the limit, drop the entry that was built the longest ago.
+	// key would exceed the limit, drop the entry that was used the longest ago. Entries
+	// are refreshed on every Get, so accounts that keep getting auctions stay cached.
 	if _, exists := m1[id]; !exists && c.maxEntries > 0 && len(m2) >= c.maxEntries {
 		var oldestID accountID
-		var oldest time.Time
+		var oldest uint64
 		first := true
-		for k, v := range m2 {
-			if first || v.timestamp.Before(oldest) {
-				oldestID, oldest, first = k, v.timestamp, false
+		for k := range m2 {
+			var used uint64
+			if v, ok := c.lastUsed.Load(k); ok {
+				used = v.(*atomic.Uint64).Load()
+			}
+			if first || used < oldest {
+				oldestID, oldest, first = k, used, false
 			}
 		}
 		delete(m2, oldestID)
+		c.lastUsed.Delete(oldestID)
 	}
+
+	// A write counts as a use, so a fresh entry is not the first one evicted.
+	stamp, _ := c.lastUsed.LoadOrStore(id, new(atomic.Uint64))
+	stamp.(*atomic.Uint64).Store(c.clock.Add(1))
 
 	m2[id] = data
 
@@ -124,6 +145,7 @@ func (c *cache) Delete(id accountID) {
 	}
 
 	c.m.Store(m2)
+	c.lastUsed.Delete(id)
 
 	return
 }
