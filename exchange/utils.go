@@ -402,6 +402,9 @@ func (rs *requestSplitter) applyPrivacy(reqWrapper *openrtb_ext.RequestWrapper, 
 		if ccpaEnforcer.ShouldEnforce(bidderName) {
 			privacy.ScrubDeviceIDsIPsUserDemoExt(reqWrapper, ipConf, "eids", false)
 		}
+		if privacy.UserInProhibitedGeoState(reqWrapper, rs.privacyConfig.Geo.USStatesWithSaleProhibition) {
+			privacy.ScrubGeoAndDeviceIP(reqWrapper, ipConf)
+		}
 	}
 
 	if lmt || coppa {
