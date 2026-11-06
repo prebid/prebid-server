@@ -1,0 +1,82 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "chan-a",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "<html>error</html>"
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "invalid response body: .*",
+      "comparison": "regex"
+    }
+  ]
+}
