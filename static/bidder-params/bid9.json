@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "bid9 Adapter Params",
+  "description": "A schema which validates params accepted by the bid9 adapter",
+  "type": "object",
+  "properties": {
+    "channelId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "bid9 channel ID, sent as imp.tagid and as the tagid URL parameter"
+    },
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "bid9 publisher ID, used when site.publisher.id or app.publisher.id is empty"
+    },
+    "bidFloor": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMinimum": true,
+      "description": "Static floor, used when the impression has no bidfloor"
+    },
+    "bidFloorCur": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Currency of bidFloor, defaults to USD"
+    }
+  },
+  "required": ["channelId"]
+}

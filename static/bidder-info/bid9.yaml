@@ -1,0 +1,23 @@
+endpoint: "https://rtb.bid9.ad/sspRTB2"
+# This bidder does not serve Europe yet. Please consider setting "disabled: true" in European datacenters.
+geoscope:
+  - "!EEA"
+  - "!GBR"
+  - "!CHE"
+maintainer:
+  email: "amit@kolorowey.com,kshitiz@kolorowey.com"
+openrtb:
+  version: 2.6
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: "https://player.aniview.com/ssync/ssync.html?pid=6960dc1469411be87d0ad78e&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "[AV_UID]"
