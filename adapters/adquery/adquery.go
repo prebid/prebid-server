@@ -1,10 +1,13 @@
 package adquery
 
 import (
+	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -20,6 +23,7 @@ const (
 	defaultCurrency string = "PLN"
 	bidderName      string = "adquery"
 	prebidVersion   string = "server"
+	eidSource       string = "adquery.io"
 )
 
 type adapter struct {
@@ -39,6 +43,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 
 	var result []*adapters.RequestData
 	var errs []error
+
+	// The EIDs are the same for every imp, so they are computed once per request.
+	eids, err := getEids(request.User)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	for _, imp := range request.Imp {
 		ext, err := parseExt(imp.Ext)
 		if err != nil {
@@ -46,7 +57,10 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRe
 			continue
 		}
 
-		requestJSON, err := json.Marshal(buildRequest(request, &imp, ext))
+		bidderRequest := buildRequest(request, &imp, ext)
+		bidderRequest.Eids = eids
+
+		requestJSON, err := json.Marshal(bidderRequest)
 		if err != nil {
 			return nil, append(errs, err)
 		}
@@ -229,4 +243,132 @@ func getImpSizes(imp *openrtb2.Imp) string {
 	}
 
 	return ""
+}
+
+// maxEidUids caps the number of uids forwarded in Eids, across all EIDs.
+const maxEidUids = 50
+
+// getEids returns the user's EIDs to forward to adQuery with their original source. EIDs without a
+// source and uids without an id are dropped, and identical duplicates are removed. The order does
+// not depend on input order: adquery.io first, then by source and uids, ties broken by the remaining
+// fields (ext is compared as raw JSON). The cap is applied after sorting, so it never drops the
+// adquery.io uid. The request is not modified.
+func getEids(user *openrtb2.User) ([]openrtb2.EID, error) {
+	source, err := userEids(user)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaned := make([]openrtb2.EID, 0, len(source))
+	for _, eid := range source {
+		if cleanedEid, ok := cleanEid(eid); ok {
+			cleaned = append(cleaned, cleanedEid)
+		}
+	}
+	cleaned = sortUniqueEids(cleaned)
+
+	var result []openrtb2.EID
+	budget := maxEidUids
+	for _, eid := range cleaned {
+		if budget <= 0 {
+			break
+		}
+		if len(eid.UIDs) > budget {
+			eid.UIDs = eid.UIDs[:budget]
+		}
+		result = append(result, eid)
+		budget -= len(eid.UIDs)
+	}
+	// Cutting uids can turn an EID into a copy of another one, so the capped list is sorted and
+	// deduplicated again; adquery.io still sorts first.
+	return sortUniqueEids(result), nil
+}
+
+func sortUniqueEids(eids []openrtb2.EID) []openrtb2.EID {
+	slices.SortFunc(eids, compareEids)
+	return slices.CompactFunc(eids, func(a, b openrtb2.EID) bool { return compareEids(a, b) == 0 })
+}
+
+// userEids returns user.eids (ORTB 2.6) when set and user.ext.eids (2.5) otherwise, like PBS core.
+// adquery declares no openrtb version in its bidder info, so PBS downconverts to 2.5 and the EIDs
+// arrive in user.ext.eids; user.eids only matters if the bidder info ever declares 2.6. Only the
+// eids field of user.ext is decoded, so a malformed unrelated field does not drop the EIDs; an
+// undecodable user.ext.eids is skipped with a warning.
+func userEids(user *openrtb2.User) ([]openrtb2.EID, error) {
+	if user == nil {
+		return nil, nil
+	}
+	if len(user.EIDs) > 0 || len(user.Ext) == 0 {
+		return user.EIDs, nil
+	}
+
+	var userExt struct {
+		Eids []openrtb2.EID `json:"eids"`
+	}
+	if err := jsonutil.Unmarshal(user.Ext, &userExt); err != nil {
+		return nil, &errortypes.Warning{Message: fmt.Sprintf("ignoring user.ext.eids: %s", err.Error())}
+	}
+	return userExt.Eids, nil
+}
+
+// cleanEid returns a copy of eid with only its uids that have an id, sorted and without identical
+// duplicates; ok is false when eid has no source or no such uid. ext values are compacted, so the
+// same JSON with different whitespace compares (and dedupes) as equal. The input is not modified.
+func cleanEid(eid openrtb2.EID) (openrtb2.EID, bool) {
+	if eid.Source == "" {
+		return eid, false
+	}
+	uids := make([]openrtb2.UID, 0, len(eid.UIDs))
+	for _, uid := range eid.UIDs {
+		if uid.ID != "" {
+			uid.Ext = compactJSON(uid.Ext)
+			uids = append(uids, uid)
+		}
+	}
+	if len(uids) == 0 {
+		return eid, false
+	}
+	slices.SortFunc(uids, compareUids)
+	eid.UIDs = slices.CompactFunc(uids, func(a, b openrtb2.UID) bool { return compareUids(a, b) == 0 })
+	eid.Ext = compactJSON(eid.Ext)
+	return eid, true
+}
+
+// compactJSON returns raw without insignificant whitespace, or raw itself when it is empty or invalid.
+func compactJSON(raw json.RawMessage) json.RawMessage {
+	if len(raw) == 0 {
+		return raw
+	}
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, raw); err != nil {
+		return raw
+	}
+	return buf.Bytes()
+}
+
+func compareUids(a, b openrtb2.UID) int {
+	return cmp.Or(
+		strings.Compare(a.ID, b.ID),
+		cmp.Compare(a.AType, b.AType),
+		bytes.Compare(a.Ext, b.Ext),
+	)
+}
+
+func compareEids(a, b openrtb2.EID) int {
+	aIsAdquery := a.Source == eidSource
+	bIsAdquery := b.Source == eidSource
+	if aIsAdquery != bIsAdquery {
+		if aIsAdquery {
+			return -1
+		}
+		return 1
+	}
+	return cmp.Or(
+		strings.Compare(a.Source, b.Source),
+		slices.CompareFunc(a.UIDs, b.UIDs, compareUids),
+		strings.Compare(a.Inserter, b.Inserter),
+		strings.Compare(a.Matcher, b.Matcher),
+		cmp.Compare(a.MM, b.MM),
+		bytes.Compare(a.Ext, b.Ext),
+	)
 }
