@@ -17,3 +17,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+userSync:
+  iframe:
+    url: "https://player.aniview.com/ssync/ssync.html?pid=6960dc1469411be87d0ad78e&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&r={{.RedirectURL}}"
+    userMacro: "[AV_UID]"
