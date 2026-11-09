@@ -1,0 +1,147 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "weatherbug",
+            "token": "secret-token"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "123.123.123.123"
+    },
+    "site": {
+      "id": "site-1",
+      "page": "https://example.com/page",
+      "domain": "example.com",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "https://exchange.sellwild.com/exchange/openrtb2/weatherbug",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "weatherbug",
+                  "token": "secret-token"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "123.123.123.123"
+          },
+          "site": {
+            "id": "site-1",
+            "page": "https://example.com/page",
+            "domain": "example.com",
+            "publisher": {
+              "id": "pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "sellwild",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-bid-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid bid-1 in imp imp-1 is missing mtype and the media type cannot be inferred from the imp",
+      "comparison": "literal"
+    }
+  ]
+}

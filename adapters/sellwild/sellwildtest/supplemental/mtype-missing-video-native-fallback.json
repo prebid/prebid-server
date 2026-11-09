@@ -1,0 +1,180 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "weatherbug",
+            "token": "secret-token"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "weatherbug",
+            "token": "secret-token"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "123.123.123.123"
+    },
+    "site": {
+      "id": "site-1",
+      "page": "https://example.com/page",
+      "domain": "example.com",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "https://exchange.sellwild.com/exchange/openrtb2/weatherbug",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "weatherbug",
+                  "token": "secret-token"
+                }
+              }
+            },
+            {
+              "id": "imp-2",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "weatherbug",
+                  "token": "secret-token"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "123.123.123.123"
+          },
+          "site": {
+            "id": "site-1",
+            "page": "https://example.com/page",
+            "domain": "example.com",
+            "publisher": {
+              "id": "pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1",
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "sellwild",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "crid-bid-1"
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 1.5,
+                  "adm": "{\"native\":{}}",
+                  "crid": "crid-bid-2"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "crid-bid-1"
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 1.5,
+            "adm": "{\"native\":{}}",
+            "crid": "crid-bid-2"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
