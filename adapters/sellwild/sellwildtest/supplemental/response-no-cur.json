@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "weatherbug",
+            "token": "secret-token"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "123.123.123.123"
+    },
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "https://exchange.sellwild.com/exchange/openrtb2/weatherbug",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "weatherbug",
+                  "token": "secret-token"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "123.123.123.123"
+          },
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "sellwild",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-bid-1",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "crid-bid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
