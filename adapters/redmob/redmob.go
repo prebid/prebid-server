@@ -1,6 +1,7 @@
 package redmob
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -112,6 +113,9 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 			resolveAuctionPrice(bid)
+			if bidType == openrtb_ext.BidTypeNative {
+				bid.AdM = unwrapNativeAdm(bid.AdM)
+			}
 			typedBid := &adapters.TypedBid{
 				Bid:     bid,
 				BidType: bidType,
@@ -135,6 +139,19 @@ func resolveAuctionPrice(bid *openrtb2.Bid) {
 	bid.BURL = strings.ReplaceAll(bid.BURL, auctionPriceMacro, price)
 }
 
+// unwrapNativeAdm returns the native response from an adm of the form {"native":{...}}, which is how the exchange
+// sends it. Prebid Server core reads adm as a bare native response when it fills in the asset types. Anything else
+// is returned unchanged.
+func unwrapNativeAdm(adm string) string {
+	var wrapper struct {
+		Native json.RawMessage `json:"native"`
+	}
+	if err := jsonutil.Unmarshal([]byte(adm), &wrapper); err != nil || len(wrapper.Native) == 0 {
+		return adm
+	}
+	return string(wrapper.Native)
+}
+
 // validateImpExt checks that the impression carries a readable Redmob bidder extension.
 func validateImpExt(imp openrtb2.Imp) error {
 	var bidderExt adapters.ExtImpBidder
@@ -156,6 +173,8 @@ func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	case 0:
 		// no mtype: fall through to the impression
 	default:
@@ -168,11 +187,14 @@ func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 		if imp.ID != bid.ImpID {
 			continue
 		}
-		if imp.Banner != nil && imp.Video == nil {
+		if imp.Banner != nil && imp.Video == nil && imp.Native == nil {
 			return openrtb_ext.BidTypeBanner, nil
 		}
-		if imp.Video != nil && imp.Banner == nil {
+		if imp.Video != nil && imp.Banner == nil && imp.Native == nil {
 			return openrtb_ext.BidTypeVideo, nil
+		}
+		if imp.Native != nil && imp.Banner == nil && imp.Video == nil {
+			return openrtb_ext.BidTypeNative, nil
 		}
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("bid.mtype is required to resolve the media type of imp %s", bid.ImpID),

@@ -166,7 +166,7 @@
                   "w": 320,
                   "h": 50,
                   "exp": 3600,
-                  "mtype": 4
+                  "mtype": 3
                 }
               ]
             }
@@ -184,7 +184,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unsupported bid.mtype 4 for imp 1",
+      "value": "unsupported bid.mtype 3 for imp 1",
       "comparison": "literal"
     }
   ]

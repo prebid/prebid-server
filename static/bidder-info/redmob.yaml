@@ -14,6 +14,7 @@ capabilities:
     mediaTypes:
       - banner
       - video
+      - native
 userSync:
   redirect:
     url: "https://prebid.redmob.io/user-sync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&dest={{.RedirectURL}}"

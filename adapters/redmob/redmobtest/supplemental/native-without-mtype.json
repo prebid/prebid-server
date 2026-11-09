@@ -1,0 +1,174 @@
+{
+  "mockBidRequest": {
+    "id": "req-b90c3e57",
+    "imp": [
+      {
+        "displaymanager": "prebid-mobile",
+        "displaymanagerver": "2.2.3",
+        "id": "1",
+        "secure": 1,
+        "ext": {
+          "bidder": {
+            "supplyPartnerId": 2101
+          }
+        },
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":140}}]}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "app": {
+      "id": "app-2002",
+      "name": "Example Game",
+      "bundle": "com.example.game",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+      "ver": "4.12.0",
+      "cat": [
+        "IAB9-30"
+      ],
+      "publisher": {
+        "id": "pub-7102"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      "ip": "198.51.100.77",
+      "geo": {
+        "country": "NGA",
+        "type": 2
+      },
+      "devicetype": 4,
+      "os": "Android",
+      "osv": "14",
+      "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+      "lmt": 0,
+      "connectiontype": 6,
+      "language": "en"
+    },
+    "source": {
+      "tid": "c0ffee00-0000-4000-8000-req-b90c3e57"
+    },
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.redmob.example/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-b90c3e57",
+          "imp": [
+            {
+              "displaymanager": "prebid-mobile",
+              "displaymanagerver": "2.2.3",
+              "id": "1",
+              "secure": 1,
+              "ext": {
+                "bidder": {
+                  "supplyPartnerId": 2101
+                }
+              },
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"context\":1,\"plcmttype\":1,\"plcmtcnt\":1,\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}},{\"id\":3,\"required\":0,\"data\":{\"type\":2,\"len\":140}}]}",
+                "ver": "1.2"
+              }
+            }
+          ],
+          "app": {
+            "id": "app-2002",
+            "name": "Example Game",
+            "bundle": "com.example.game",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.game",
+            "ver": "4.12.0",
+            "cat": [
+              "IAB9-30"
+            ],
+            "publisher": {
+              "id": "pub-7102"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+            "ip": "198.51.100.77",
+            "geo": {
+              "country": "NGA",
+              "type": 2
+            },
+            "devicetype": 4,
+            "os": "Android",
+            "osv": "14",
+            "ifa": "6d9a0c1e-3f2b-4c55-9b1a-2e7d8f0a4c31",
+            "lmt": 0,
+            "connectiontype": 6,
+            "language": "en"
+          },
+          "source": {
+            "tid": "c0ffee00-0000-4000-8000-req-b90c3e57"
+          },
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-b90c3e57",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "dsp-bid-1",
+                  "impid": "1",
+                  "price": 1.2,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Example title\"}},{\"id\":2,\"img\":{\"url\":\"https://cdn.example/creatives/cr-1.png\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Example description\"}}],\"link\":{\"url\":\"https://click.example/c?cr=cr-1\"},\"imptrackers\":[\"https://win-us.redmob.io/winnotice/2101/Y3ItMQ?bi=dsp-response-1&p=${AUCTION_PRICE}&bt=a\"]}}",
+                  "adomain": [
+                    "brand.example.com"
+                  ],
+                  "crid": "cr-1",
+                  "exp": 3600
+                }
+              ],
+              "seat": "410",
+              "group": 0
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "dsp-bid-1",
+            "impid": "1",
+            "price": 1.2,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Example title\"}},{\"id\":2,\"img\":{\"url\":\"https://cdn.example/creatives/cr-1.png\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Example description\"}}],\"link\":{\"url\":\"https://click.example/c?cr=cr-1\"},\"imptrackers\":[\"https://win-us.redmob.io/winnotice/2101/Y3ItMQ?bi=dsp-response-1&p=1.2&bt=a\"]}",
+            "adomain": [
+              "brand.example.com"
+            ],
+            "crid": "cr-1",
+            "exp": 3600
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}
