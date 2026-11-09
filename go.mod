@@ -1,16 +1,16 @@
 module github.com/prebid/prebid-server/v4
 
-go 1.26.0
+go 1.25.0
 
 require (
 	github.com/51Degrees/device-detection-go/v4 v4.4.35
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/IABTechLab/adscert v0.34.0
-	github.com/Intent-IQ/identity-go v0.1.0
-	github.com/Intent-IQ/identity-go/integrations/aerospike v0.1.0
-	github.com/Intent-IQ/identity-go/integrations/prometheus v0.1.0
-	github.com/Intent-IQ/identity-go/integrations/redis v0.1.0
-	github.com/Intent-IQ/identity-go/integrations/valkey v0.1.0
+	github.com/Intent-IQ/identity-go v0.1.1
+	github.com/Intent-IQ/identity-go/integrations/aerospike v0.1.1
+	github.com/Intent-IQ/identity-go/integrations/prometheus v0.1.1
+	github.com/Intent-IQ/identity-go/integrations/redis v0.1.1
+	github.com/Intent-IQ/identity-go/integrations/valkey v0.1.1
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/WURFL/golang-wurfl v1.30.3
 	github.com/alicebob/miniredis/v2 v2.38.0
