@@ -142,10 +142,17 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		bidResponse.Currency = response.Cur
 	}
 
+	// Bids are resolved against the imps of the outbound request that received this response,
+	// not the whole auction, so a bid can never be attributed to another partner code's imp.
+	var outbound openrtb2.BidRequest
+	if err := jsonutil.Unmarshal(requestData.Body, &outbound); err != nil {
+		return nil, []error{&errortypes.BadInput{Message: err.Error()}}
+	}
+
 	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(seatBid.Bid[i], request.Imp)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i], outbound.Imp)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -163,8 +170,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 
 // getMediaTypeForBid resolves the bid type from bid.mtype. The exchange only sets mtype when the
 // underlying demand did, so when it is absent the type is taken from the impression, provided
-// that impression declared exactly one of banner, video or native.
+// that impression declared exactly one of banner, video or native. The bid's impid must belong
+// to imps either way.
 func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	imp, found := findImp(bid.ImpID, imps)
+	if !found {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unable to find imp %s for bid %s", bid.ImpID, bid.ID),
+		}
+	}
+
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -173,7 +188,7 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	case 0:
-		return getMediaTypeFromImp(bid, imps)
+		return getMediaTypeFromImp(bid, imp)
 	default:
 		return "", &errortypes.BadServerResponse{
 			Message: fmt.Sprintf("unsupported bid.mtype %d for bid %s in imp %s", bid.MType, bid.ID, bid.ImpID),
@@ -181,37 +196,36 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	}
 }
 
-func getMediaTypeFromImp(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	for _, imp := range imps {
-		if imp.ID != bid.ImpID {
-			continue
+func findImp(impID string, imps []openrtb2.Imp) (openrtb2.Imp, bool) {
+	for i := range imps {
+		if imps[i].ID == impID {
+			return imps[i], true
 		}
+	}
+	return openrtb2.Imp{}, false
+}
 
-		formats := 0
-		var bidType openrtb_ext.BidType
-		if imp.Banner != nil {
-			formats++
-			bidType = openrtb_ext.BidTypeBanner
-		}
-		if imp.Video != nil {
-			formats++
-			bidType = openrtb_ext.BidTypeVideo
-		}
-		if imp.Native != nil {
-			formats++
-			bidType = openrtb_ext.BidTypeNative
-		}
+func getMediaTypeFromImp(bid openrtb2.Bid, imp openrtb2.Imp) (openrtb_ext.BidType, error) {
+	formats := 0
+	var bidType openrtb_ext.BidType
+	if imp.Banner != nil {
+		formats++
+		bidType = openrtb_ext.BidTypeBanner
+	}
+	if imp.Video != nil {
+		formats++
+		bidType = openrtb_ext.BidTypeVideo
+	}
+	if imp.Native != nil {
+		formats++
+		bidType = openrtb_ext.BidTypeNative
+	}
 
-		if formats == 1 {
-			return bidType, nil
-		}
-
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid %s in imp %s is missing mtype and the media type cannot be inferred from the imp", bid.ID, bid.ImpID),
-		}
+	if formats == 1 {
+		return bidType, nil
 	}
 
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("unable to find imp %s for bid %s", bid.ImpID, bid.ID),
+		Message: fmt.Sprintf("bid %s in imp %s is missing mtype and the media type cannot be inferred from the imp", bid.ID, bid.ImpID),
 	}
 }
