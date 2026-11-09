@@ -1,0 +1,312 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "partnerA",
+            "token": "token-a"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "partnerB",
+            "token": "token-b"
+          }
+        }
+      },
+      {
+        "id": "imp-3",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            2,
+            3
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "partnerCode": "partnerA",
+            "token": "token-a"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "123.123.123.123"
+    },
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "https://exchange.sellwild.com/exchange/openrtb2/partnerA",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "partnerA",
+                  "token": "token-a"
+                }
+              }
+            },
+            {
+              "id": "imp-3",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  2,
+                  3
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "partnerA",
+                  "token": "token-a"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "123.123.123.123"
+          },
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1",
+          "imp-3"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "sellwild",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-bid-1",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-3",
+                  "impid": "imp-3",
+                  "price": 1.5,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "crid-bid-3",
+                  "mtype": 2
+                },
+                {
+                  "id": "bid-x",
+                  "impid": "imp-2",
+                  "price": 9.0,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-bid-x",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "uri": "https://exchange.sellwild.com/exchange/openrtb2/partnerB",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "partnerCode": "partnerB",
+                  "token": "token-b"
+                }
+              }
+            }
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "123.123.123.123"
+          },
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "sellwild",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 2.0,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-bid-2",
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "crid-bid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-3",
+            "impid": "imp-3",
+            "price": 1.5,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "crid-bid-3",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 2.0,
+            "adm": "<div>ad</div>",
+            "crid": "crid-bid-2",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unable to find imp imp-2 for bid bid-x",
+      "comparison": "literal"
+    }
+  ]
+}
