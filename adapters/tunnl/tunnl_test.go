@@ -325,7 +325,7 @@ func TestMakeRequestsForwardsDeviceHeaders(t *testing.T) {
 
 			// The static headers are always present regardless of device.
 			assert.Equal(t, "application/json;charset=utf-8", requests[0].Headers.Get("Content-Type"))
-			assert.Equal(t, "2.6", requests[0].Headers.Get("X-OpenRTB-Version"))
+			assert.Equal(t, "2.5", requests[0].Headers.Get("X-OpenRTB-Version"))
 
 			for _, header := range []string{"User-Agent", "X-Forwarded-For"} {
 				assert.Equal(t, test.expected[header], requests[0].Headers.Values(header), header)
