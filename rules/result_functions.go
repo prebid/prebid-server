@@ -7,6 +7,7 @@ type ResultFunction[T1 any, T2 any] interface {
 
 type ResultFunctionMeta struct {
 	SchemaFunctionResults []SchemaFunctionStep
+	RulesetName           string
 	AnalyticsKey          string
 	RuleFired             string
 	ModelVersion          string

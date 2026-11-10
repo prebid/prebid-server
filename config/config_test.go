@@ -431,6 +431,8 @@ ccpa:
   enforce: true
 lmt:
   enforce: true
+cookie_sync:
+  disabled_iframe_bidders: ["hostBidder1", "hostBidder2"]
 host_cookie:
   cookie_name: userid
   family: prebid
@@ -651,6 +653,7 @@ func TestFullConfig(t *testing.T) {
 	cmpStrings(t, "cookie family", "prebid", cfg.HostCookie.Family)
 	cmpStrings(t, "opt out", "http://prebid.org/optout", cfg.HostCookie.OptOutURL)
 	cmpStrings(t, "opt in", "http://prebid.org/optin", cfg.HostCookie.OptInURL)
+	assert.Equal(t, []string{"hostBidder1", "hostBidder2"}, cfg.CookieSync.DisabledIFrameBidders, "cookie_sync.disabled_iframe_bidders")
 	cmpStrings(t, "external url", "http://prebid-server.prebid.org/", cfg.ExternalURL)
 	cmpStrings(t, "host", "prebid-server.prebid.org", cfg.Host)
 	cmpInts(t, "port", 1234, cfg.Port)
@@ -1454,6 +1457,75 @@ func TestValidateAccountsConfigRestrictions(t *testing.T) {
 	errs := cfg.validate(v)
 	assert.Len(t, errs, 1)
 	assert.Contains(t, errs, errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"))
+}
+
+func TestV2ConfigurationValidatesAccountSourceSelection(t *testing.T) {
+	testCases := []struct {
+		name         string
+		v2Enabled    bool
+		filesEnabled bool
+		databaseName string
+		httpEndpoint string
+		expectedErr  error
+	}{
+		{
+			name:         "V2 Rejects Multiple Sources",
+			v2Enabled:    true,
+			filesEnabled: true,
+			httpEndpoint: "http://localhost",
+			expectedErr:  errors.New("accounts: Fetchers 2.0 supports exactly one source; configured: filesystem, http"),
+		},
+		{
+			name:         "V2 Rejects Filesystem And Database Sources",
+			v2Enabled:    true,
+			filesEnabled: true,
+			databaseName: "accounts",
+			expectedErr:  errors.New("accounts: Fetchers 2.0 supports exactly one source; configured: filesystem, database"),
+		},
+		{
+			name:         "V1 Allows Multiple Sources",
+			filesEnabled: true,
+			httpEndpoint: "http://localhost",
+		},
+		{
+			name:         "V2 Allows Filesystem Source",
+			v2Enabled:    true,
+			filesEnabled: true,
+		},
+		{
+			name:         "V2 Allows HTTP Source",
+			v2Enabled:    true,
+			httpEndpoint: "http://localhost",
+		},
+		{
+			name:      "V2 Allows No Source",
+			v2Enabled: true,
+		},
+		{
+			name:         "V2 Database Source Remains Unsupported",
+			v2Enabled:    true,
+			databaseName: "accounts",
+			expectedErr:  errors.New("accounts.database: retrieving accounts via database not available, use accounts.files"),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			cfg, v := newDefaultConfig(t)
+			cfg.Accounts.V2Enabled = test.v2Enabled
+			cfg.Accounts.Files.Enabled = test.filesEnabled
+			cfg.Accounts.Database.ConnectionInfo.Database = test.databaseName
+			cfg.Accounts.HTTP.Endpoint = test.httpEndpoint
+
+			errs := cfg.validate(v)
+
+			if test.expectedErr == nil {
+				assert.Empty(t, errs)
+			} else {
+				assert.Contains(t, errs, test.expectedErr)
+			}
+		})
+	}
 }
 
 func newDefaultConfig(t *testing.T) (*Configuration, *viper.Viper) {

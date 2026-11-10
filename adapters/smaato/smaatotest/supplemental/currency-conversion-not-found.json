@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+    "site": {
+      "publisher": {
+        "id": "1100042525"
+      },
+      "page": "http://localhost:3000/server.html"
+    },
+    "imp": [
+      {
+        "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "bidfloor": 1.0,
+        "bidfloorcur": "JPY",
+        "ext": {
+          "bidder": {
+            "publisherId": "1100042525",
+            "adspaceId": "130563103"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 1.2
+            }
+          }
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}
