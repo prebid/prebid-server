@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"text/template"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
@@ -19,6 +20,13 @@ type adapter struct {
 	endpoint *template.Template
 }
 
+// requestKey groups imps into outbound requests. The exchange authenticates a request with the
+// token of its first imp, so imps are only grouped when they share both partner code and token.
+type requestKey struct {
+	partnerCode string
+	token       string
+}
+
 // Builder builds a new instance of the Sellwild adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	endpoint, err := template.New("endpointTemplate").Parse(config.Endpoint)
@@ -29,13 +37,13 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return &adapter{endpoint: endpoint}, nil
 }
 
-// MakeRequests sends one request per partner code, since the partner code is part of the
-// endpoint path. Imp.ext is forwarded untouched because the exchange authenticates the
-// partner with the token found in imp[0].ext.bidder.
+// MakeRequests sends one request per partner code and token, since the partner code is part of
+// the endpoint path and the exchange authenticates the partner with the token found in
+// imp[0].ext.bidder. Imp.ext is forwarded untouched.
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
 	var errs []error
-	var partnerCodes []string
-	groups := make(map[string][]openrtb2.Imp)
+	var keys []requestKey
+	groups := make(map[requestKey][]openrtb2.Imp)
 
 	for _, imp := range request.Imp {
 		impExt, err := parseImpExt(imp)
@@ -43,13 +51,14 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			errs = append(errs, err)
 			continue
 		}
-		if _, exists := groups[impExt.PartnerCode]; !exists {
-			partnerCodes = append(partnerCodes, impExt.PartnerCode)
+		key := requestKey{partnerCode: impExt.PartnerCode, token: impExt.Token}
+		if _, exists := groups[key]; !exists {
+			keys = append(keys, key)
 		}
-		groups[impExt.PartnerCode] = append(groups[impExt.PartnerCode], imp)
+		groups[key] = append(groups[key], imp)
 	}
 
-	if len(partnerCodes) == 0 {
+	if len(keys) == 0 {
 		return nil, errs
 	}
 
@@ -58,11 +67,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Accept", "application/json")
 	headers.Add("X-Openrtb-Version", "2.6")
 
-	requests := make([]*adapters.RequestData, 0, len(partnerCodes))
-	for _, partnerCode := range partnerCodes {
-		imps := groups[partnerCode]
+	requests := make([]*adapters.RequestData, 0, len(keys))
+	for _, key := range keys {
+		imps := groups[key]
 
-		endpoint, err := a.buildEndpointURL(partnerCode)
+		endpoint, err := a.buildEndpointURL(key.partnerCode)
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -109,12 +118,12 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpSellwild, error) {
 		}
 	}
 
-	if sellwildExt.PartnerCode == "" {
+	if strings.TrimSpace(sellwildExt.PartnerCode) == "" {
 		return openrtb_ext.ExtImpSellwild{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("missing partnerCode for imp %s", imp.ID),
 		}
 	}
-	if sellwildExt.Token == "" {
+	if strings.TrimSpace(sellwildExt.Token) == "" {
 		return openrtb_ext.ExtImpSellwild{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("missing token for imp %s", imp.ID),
 		}
@@ -137,16 +146,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
-	if response.Cur != "" {
-		bidResponse.Currency = response.Cur
-	}
-
 	// Bids are resolved against the imps of the outbound request that received this response,
-	// not the whole auction, so a bid can never be attributed to another partner code's imp.
+	// not the whole auction, so a bid can never be attributed to another request's imp.
 	var outbound openrtb2.BidRequest
 	if err := jsonutil.Unmarshal(requestData.Body, &outbound); err != nil {
-		return nil, []error{&errortypes.BadInput{Message: err.Error()}}
+		return nil, []error{err}
+	}
+
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(outbound.Imp))
+	if response.Cur != "" {
+		bidResponse.Currency = response.Cur
 	}
 
 	var errs []error

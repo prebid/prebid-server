@@ -14,3 +14,6 @@ capabilities:
       - native
 openrtb:
   version: 2.6
+# The partner token travels in imp.ext.bidder, so keep the outbound request out of debug output.
+debug:
+  allow: false
