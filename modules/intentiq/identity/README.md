@@ -75,6 +75,11 @@ hooks:
 The provider may be `redis`, `valkey`, or `aerospike`; the matching provider
 configuration is required. When caching is disabled, omit the provider config.
 
+Cache entries are written with a TTL, so an Aerospike namespace must have
+`nsup-period` greater than 0 (or `allow-ttl-without-nsup true`). Otherwise
+Aerospike rejects every write with `FAIL_FORBIDDEN`: the module still works,
+but nothing is cached and each write logs a warning.
+
 `timeout` and `wait_timeout` are milliseconds. An omitted `wait_timeout`, or a
 value greater than or equal to `timeout`, runs synchronously. A smaller value
 allows the auction to stop waiting while admitted enrichment work continues and
