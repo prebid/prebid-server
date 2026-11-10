@@ -1,6 +1,6 @@
 endpoint: "https://exchange.sellwild.com/exchange/openrtb2/{{.PublisherID}}"
 maintainer:
-  email: prebid@sellwild.com
+  email: support@sellwild.com
 capabilities:
   app:
     mediaTypes:
