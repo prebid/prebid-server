@@ -1,5 +1,4 @@
-endpoint: https://prebid.resetdigital.co
-endpointCompression: gzip
+endpoint: https://adsreq.resetdigital.co/RTB
 maintainer:
   email: biddersupport@resetdigital.co
 gvlVendorID: 1162
@@ -8,13 +7,11 @@ capabilities:
     mediaTypes:
       - banner
       - video
-      - native
       - audio
   app:
     mediaTypes:
       - banner
       - video
-      - native
       - audio
 
 usersync:
