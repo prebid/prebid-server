@@ -17,6 +17,7 @@ type auctionContext struct {
 	UserAgent        string
 	ABTestUUID       string
 	TerminationCause *int64
+	COPPA            bool
 	Start            time.Time
 	TraceEnabled     bool
 	Trace            []string
@@ -26,7 +27,7 @@ func newAuctionContext(req *openrtb2.BidRequest) auctionContext {
 	if req == nil {
 		return auctionContext{}
 	}
-	result := auctionContext{AuctionID: req.ID}
+	result := auctionContext{AuctionID: req.ID, COPPA: req.Regs != nil && req.Regs.COPPA == 1}
 	if req.Site != nil {
 		result.Reference = req.Site.Domain
 		if strings.TrimSpace(result.Reference) == "" {

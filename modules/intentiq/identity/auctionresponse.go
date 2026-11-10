@@ -35,6 +35,12 @@ func (m *Module) HandleAuctionResponseHook(
 	if tr.enabled() {
 		tr.tracef("[response] start — flow latency (enrich → response) %s", fmtDur(time.Since(auction.Start)))
 	}
+	if auction.COPPA {
+		if tr.enabled() {
+			tr.tracef("[response] regs.coppa=1 — reporting skipped; response hook took %s", fmtDur(time.Since(start)))
+		}
+		return result, nil
+	}
 
 	if config.ReportsEndpoint == "" {
 		if tr.enabled() {

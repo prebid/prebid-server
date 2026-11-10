@@ -171,6 +171,27 @@ func TestTraceEnrichPaths(t *testing.T) {
 	}
 }
 
+func TestTraceCOPPASkips(t *testing.T) {
+	enricher := &stubEnricher{}
+	request := debugRequest()
+	request.Regs = &openrtb2.Regs{COPPA: 1}
+	enriched := runEnrichHook(t, traceModule(enricher), request)
+	assert.Nil(t, enricher.req.Auction)
+	assert.Empty(t, enriched.ChangeSet.Mutations())
+	assert.Contains(t, strings.Join(enriched.DebugMessages, "\n"), "[enrich] skipped: regs.coppa=1 (no S2S call, user.eids unchanged)")
+
+	reporter := &stubReporter{requests: make(chan iiqreporting.Request, 1)}
+	module := traceModule(nil)
+	module.config.ReportsEndpoint = "https://reports.example"
+	module.reporter = reporter
+	response := &openrtb2.BidResponse{SeatBid: []openrtb2.SeatBid{{Seat: "bidder", Bid: []openrtb2.Bid{{ID: "1"}}}}}
+	reported, err := module.HandleAuctionResponseHook(context.Background(),
+		hookstage.ModuleInvocationContext{ModuleContext: enriched.ModuleContext}, hookstage.AuctionResponsePayload{BidResponse: response})
+	require.NoError(t, err)
+	assert.Empty(t, reporter.requests)
+	assert.Contains(t, strings.Join(applyTraceMutation(t, reported, response), "\n"), "[response] regs.coppa=1 — reporting skipped")
+}
+
 func TestTraceWrittenToResponseExt(t *testing.T) {
 	reporter := &stubReporter{requests: make(chan iiqreporting.Request, 2)}
 	module := traceModule(nil)

@@ -37,6 +37,12 @@ func (m *Module) HandleProcessedAuctionHook(
 		tr.tracef("[enrich] start — partner=%s, cache=%s; request signals: %s",
 			config.PartnerID, onOff(config.Cache.Enabled), requestSignals(auction))
 	}
+	if auctionCtx.COPPA {
+		if tr.enabled() {
+			tr.tracef("[enrich] skipped: regs.coppa=1 (no S2S call, user.eids unchanged); enrich hook took %s total", fmtDur(time.Since(start)))
+		}
+		return result, nil
+	}
 
 	resolved, err := m.enricher.Enrich(ctx, iiqenrichment.Request{
 		PartnerID: config.PartnerID, Endpoint: config.APIEndpoint, Auction: auction,

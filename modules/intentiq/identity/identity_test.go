@@ -176,6 +176,11 @@ func TestNewAuctionContext(t *testing.T) {
 			request: &openrtb2.BidRequest{ID: "a", App: &openrtb2.App{Name: "Example"}},
 			want:    auctionContext{AuctionID: "a", Reference: "Example"},
 		},
+		{
+			name:    "coppa",
+			request: &openrtb2.BidRequest{ID: "a", Regs: &openrtb2.Regs{COPPA: 1}},
+			want:    auctionContext{AuctionID: "a", COPPA: true},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

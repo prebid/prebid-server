@@ -10,7 +10,7 @@ github.com/Intent-IQ/identity-go library.
 Register `intentiq.identity` at the `processed_auction_request` stage and,
 when impression reporting is required, at the `auction_response` stage.
 Enrichment is fail-open: a timeout or upstream error leaves the auction
-unchanged.
+unchanged. Requests with `regs.coppa=1` are neither enriched nor reported.
 
 ```yaml
 hooks:
