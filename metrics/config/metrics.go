@@ -240,6 +240,20 @@ func (me *MultiMetricsEngine) RecordAccountCacheResult(cacheResult metrics.Cache
 	}
 }
 
+// RecordFetcherResult across all engines
+func (me *MultiMetricsEngine) RecordFetcherResult(subsystem string, result metrics.FetcherResult) {
+	for _, thisME := range *me {
+		thisME.RecordFetcherResult(subsystem, result)
+	}
+}
+
+// RecordFetcherBackendFetch across all engines
+func (me *MultiMetricsEngine) RecordFetcherBackendFetch(subsystem string, operation metrics.FetcherOperation, result metrics.FetcherBackendResult, length time.Duration) {
+	for _, thisME := range *me {
+		thisME.RecordFetcherBackendFetch(subsystem, operation, result, length)
+	}
+}
+
 // RecordPrebidCacheRequestTime across all engines
 func (me *MultiMetricsEngine) RecordPrebidCacheRequestTime(success bool, length time.Duration) {
 	for _, thisME := range *me {
@@ -506,6 +520,14 @@ func (me *NilMetricsEngine) RecordStoredImpCacheResult(cacheResult metrics.Cache
 
 // RecordAccountCacheResult as a noop
 func (me *NilMetricsEngine) RecordAccountCacheResult(cacheResult metrics.CacheResult, inc int) {
+}
+
+// RecordFetcherResult as a noop
+func (me *NilMetricsEngine) RecordFetcherResult(subsystem string, result metrics.FetcherResult) {
+}
+
+// RecordFetcherBackendFetch as a noop
+func (me *NilMetricsEngine) RecordFetcherBackendFetch(subsystem string, operation metrics.FetcherOperation, result metrics.FetcherBackendResult, length time.Duration) {
 }
 
 // RecordPrebidCacheRequestTime as a noop
