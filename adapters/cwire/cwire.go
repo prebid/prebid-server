@@ -2,8 +2,10 @@ package cwire
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -94,6 +96,14 @@ func (a *adapter) MakeBids(bidReq *openrtb2.BidRequest, unused *adapters.Request
 			bidType, err := getBidType(sb.Bid[i])
 			if err != nil {
 				return nil, []error{err}
+			}
+			if bidType == openrtb_ext.BidTypeVideo && (strings.HasPrefix(sb.Bid[i].AdM, "https://") || strings.HasPrefix(sb.Bid[i].AdM, "http://")) {
+				// PBS consumers expect VAST XML in adm, not C-Wire's bare VAST URL.
+				var vastURL strings.Builder
+				if err := xml.EscapeText(&vastURL, []byte(sb.Bid[i].AdM)); err != nil {
+					return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("Error escaping VAST URL: %v", err)}}
+				}
+				sb.Bid[i].AdM = fmt.Sprintf(`<VAST version="3.0"><Ad><Wrapper><AdSystem>cwire</AdSystem><VASTAdTagURI>%s</VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>`, vastURL.String())
 			}
 			bidderResponse.Bids = append(bidderResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[i],
