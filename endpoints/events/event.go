@@ -139,7 +139,11 @@ func (e *eventEndpoint) Handle(w http.ResponseWriter, r *http.Request, _ httprou
 
 // EventRequestToUrl converts an analytics.EventRequest to an URL
 func EventRequestToUrl(externalUrl string, request *analytics.EventRequest) string {
-	s := fmt.Sprintf(TemplateUrl, externalUrl, request.Type, request.BidID, request.AccountID)
+	s := fmt.Sprintf(TemplateUrl, externalUrl,
+		url.QueryEscape(string(request.Type)),
+		url.QueryEscape(request.BidID),
+		url.QueryEscape(request.AccountID),
+	)
 
 	return s + optionalParameters(request)
 }
