@@ -361,6 +361,7 @@ func TestDefaults(t *testing.T) {
 		10: &expectedTCF2.Purpose10,
 	}
 	assert.Equal(t, expectedTCF2, cfg.GDPR.TCF2, "gdpr.tcf2")
+	assert.Empty(t, cfg.GeoPrivacy.USStatesWithSaleProhibition, "geo_privacy.us_states_with_geo_prohibition default should be empty")
 }
 
 // When adding a new field, make sure the indentations are spaces not tabs otherwise read config may fail to parse the new field value.
@@ -431,6 +432,13 @@ ccpa:
   enforce: true
 lmt:
   enforce: true
+geo_privacy:
+  us_states_with_geo_prohibition:
+    - MD
+    - NJ
+    - CT
+    - VA
+    - OR
 cookie_sync:
   disabled_iframe_bidders: ["hostBidder1", "hostBidder2"]
 host_cookie:
@@ -779,6 +787,7 @@ func TestFullConfig(t *testing.T) {
 
 	cmpBools(t, "ccpa.enforce", true, cfg.CCPA.Enforce)
 	cmpBools(t, "lmt.enforce", true, cfg.LMT.Enforce)
+	assert.Equal(t, []string{"MD", "NJ", "CT", "VA", "OR"}, cfg.GeoPrivacy.USStatesWithSaleProhibition, "geo_privacy.us_states_with_geo_prohibition")
 
 	//Assert the NonStandardPublishers was correctly unmarshalled
 	cmpStrings(t, "blocked_apps", "spamAppID", cfg.BlockedApps[0])
