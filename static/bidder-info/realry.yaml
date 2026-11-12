@@ -1,0 +1,17 @@
+endpoint: "https://bid.realry.com/bid/openrtb"
+geoscope:
+  - global
+maintainer:
+  email: "steve@realry.com"
+openrtb:
+  version: 2.6
+  multiformat-supported: true
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - native
