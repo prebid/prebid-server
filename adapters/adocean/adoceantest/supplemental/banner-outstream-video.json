@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "banner-outstream-video",
+    "test": 1,
+    "imp": [
+      {
+        "id": "banner-imp",
+        "banner": {
+          "format": [
+            {"w": 300, "h": 250}
+          ]
+        },
+        "video": {
+          "mimes": ["video/mp4"],
+          "minduration": 5,
+          "maxduration": 30,
+          "placement": 2
+        },
+        "ext": {
+          "bidder": {
+            "emitterPrefix": "myao",
+            "masterId": "tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7",
+            "slaveId": "adoceanmyaozpniqismex"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://myao.adocean.pl/_10000000/ad.json?aosize=300x250&id=tmYF.DMl7ZBq.Nqt2Bq4FutQTJfTpxCOmtNPZoQUDcL.G7&pbsrv_v=2.0.0&slaves=zpniqismex",
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/json;charset=utf-8"]
+        },
+        "impIDs": ["banner-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "id": "adoceanmyaozpniqismex",
+            "price": "0.019000",
+            "ttl": "360",
+            "crid": "banner-creative",
+            "currency": "EUR",
+            "width": "300",
+            "height": "250",
+            "isVideo": false,
+            "code": "%3C!--%20Banner%20--%3E"
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "30470a14-2949-4110-abce-b62d57304ad5",
+            "impid": "banner-imp",
+            "price": 0.019,
+            "adm": "<!-- Banner -->",
+            "crid": "banner-creative",
+            "w": 300,
+            "h": 250,
+            "exp": 360
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
