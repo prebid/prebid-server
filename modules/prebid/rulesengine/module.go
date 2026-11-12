@@ -74,7 +74,7 @@ func (m Module) HandleProcessedAuctionHook(
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
 		}
-		m.TreeManager.requests <- bi
+		sendBuildInstruction(m.TreeManager, bi)
 
 		// TODO: return with reject or no reject, possible config option
 		return hs.HookResult[hs.ProcessedAuctionRequestPayload]{
@@ -87,7 +87,7 @@ func (m Module) HandleProcessedAuctionHook(
 			accountID: miCtx.AccountID,
 			config:    &miCtx.AccountConfig,
 		}
-		m.TreeManager.requests <- bi
+		sendBuildInstruction(m.TreeManager, bi)
 	}
 
 	if !co.enabled {
@@ -104,6 +104,21 @@ func (m Module) HandleProcessedAuctionHook(
 func (m Module) Shutdown() {
 	m.TreeManager.Shutdown()
 	<-m.TreeManager.done
+}
+
+// sendBuildInstruction enqueues a build instruction for the tree manager without blocking
+// the auction request that triggered it. The tree manager's requests channel is unbuffered
+// and drained by a single background goroutine, so a blocking send here would stall the
+// current request (and, with it, the hook execution timeout budget) until the tree manager
+// is free to receive - defeating the "for future requests" fire-and-forget design of the
+// cache-miss/refresh path. If the tree manager is busy, the instruction is dropped; the
+// account's cache entry stays as-is and will be considered for (re)build again on a
+// subsequent request.
+func sendBuildInstruction(tm *treeManager, bi buildInstruction) {
+	select {
+	case tm.requests <- bi:
+	default:
+	}
 }
 
 // rebuildTrees returns true if the trees need to be rebuilt; false otherwise
