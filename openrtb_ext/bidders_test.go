@@ -282,3 +282,29 @@ func TestNewBidderParamsValidator(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkBuildBidderNameHashSet(b *testing.B) {
+	requestAliases := map[string]string{
+		"pubmatic_s2s0":    "pubmatic",
+		"criteo_s2s1":      "criteo",
+		"rubicon_s2s":      "rubicon",
+		"criteo_s2s":       "criteo",
+		"pubmatic_s2s":     "pubmatic",
+		"rise_s2s":         "rise",
+		"appnexus_s2s":     "appnexus",
+		"medianet_s2s":     "medianet",
+		"triplelift_s2s":   "triplelift",
+		"sovrn_s2s":        "sovrn",
+		"unruly_s2s":       "unruly",
+		"onetag_s2s":       "onetag",
+		"ix_s2s":           "ix",
+		"sharethrough_s2s": "sharethrough",
+		"taboola_s2s":      "taboola",
+	}
+	for i := 0; i < b.N; i++ {
+		bidders := BuildBidderNameHashSet()
+		for k := range requestAliases {
+			bidders[k] = struct{}{}
+		}
+	}
+}
