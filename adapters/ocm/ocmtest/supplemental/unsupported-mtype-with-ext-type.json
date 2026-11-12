@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "ocm-audio-mtype-req",
+    "imp": [
+      {
+        "id": "imp-banner-1",
+        "banner": {"format": [{"w": 300, "h": 250}]},
+        "ext": {"bidder": {"publisherId": "ocm-pub-1", "placementId": "homepage-top"}}
+      }
+    ],
+    "site": {"domain": "example.gr", "page": "https://example.gr/"}
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbam.test.invalid/openrtb2/auction",
+        "body": {
+          "id": "ocm-audio-mtype-req",
+          "imp": [
+            {
+              "id": "imp-banner-1",
+              "banner": {"format": [{"w": 300, "h": 250}]},
+              "ext": {
+                "prebid": {"storedrequest": {"id": "homepage-top"}}
+              }
+            }
+          ],
+          "site": {"domain": "example.gr", "page": "https://example.gr/", "publisher": {"id": "ocm-pub-1"}}
+        },
+        "impIDs": ["imp-banner-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "ocm-audio-mtype-req",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "ocm",
+              "bid": [
+                {
+                  "id": "bid-audio-1",
+                  "impid": "imp-banner-1",
+                  "price": 1.25,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "creative-audio-1",
+                  "mtype": 3,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported mtype 3 for bid \"bid-audio-1\"",
+      "comparison": "literal"
+    }
+  ]
+}
