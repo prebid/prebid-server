@@ -2,9 +2,11 @@ package openrtb2
 
 import (
 	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
+	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/stretchr/testify/assert"
 )
@@ -120,4 +122,238 @@ func TestInterstitialWithoutPrebidDeviceExt(t *testing.T) {
 		},
 	}
 	assert.Equal(t, targetFormat, myRequest.Imp[0].Banner.Format)
+}
+
+func TestInterstitialUsesDeviceSizeInDipsWhenFormatIsAbsent(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  1,
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 60, "minheightperc": 60}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"usepxratio":true}}}`),
+	}
+
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
+		t.Fatalf("Error processing interstitials: %v", err)
+	}
+
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 320, H: 480})
+	assert.NotContains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialUsesDeviceSizeInDipsWhenFormatIsOneByOne(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "my-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{W: 1, H: 1}},
+				},
+				Instl: 1,
+				Ext:   json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 60, "minheightperc": 60}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"usepxratio":true}}}`),
+	}
+
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
+		t.Fatalf("Error processing interstitials: %v", err)
+	}
+
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 320, H: 480})
+	assert.NotContains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialUsesExplicitFormatSizeInDips(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID: "my-imp-id",
+				Banner: &openrtb2.Banner{
+					Format: []openrtb2.Format{{W: 1080, H: 1920}},
+				},
+				Instl: 1,
+				Ext:   json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 60, "minheightperc": 60}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"usepxratio":true}}}`),
+	}
+
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
+		t.Fatalf("Error processing interstitials: %v", err)
+	}
+
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 320, H: 480})
+	assert.NotContains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialKeepsCurrentDeviceSizeBehaviorWhenUsePxRatioIsTrueAndDevicePxRatioIsAbsent(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  1,
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:   1920,
+			W:   1080,
+			Ext: json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 1, "minheightperc": 1}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"usepxratio":true}}}`),
+	}
+
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
+		t.Fatalf("Error processing interstitials: %v", err)
+	}
+
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialKeepsCurrentDeviceSizeBehaviorWhenUsePxRatioIsAbsent(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  1,
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 1, "minheightperc": 1}}}`),
+		},
+	}
+
+	if err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}); err != nil {
+		t.Fatalf("Error processing interstitials: %v", err)
+	}
+
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialDoesNotParseUsePxRatioWhenRequestHasNoInterstitialImps(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		ID: "some-id",
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  0,
+				Ext:    json.RawMessage(`{"appnexus": {"placementId": 12883451}}`),
+			},
+		},
+		Device: &openrtb2.Device{
+			H:   1920,
+			W:   1080,
+			Ext: json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 1, "minheightperc": 1}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":`),
+	}
+
+	assert.NoError(t, processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}))
+}
+
+func TestInterstitialIgnoresInvalidUsePxRatio(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  1,
+			},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 1, "minheightperc": 1}}}`),
+		},
+		Ext: json.RawMessage(`{"prebid":{"sdk":{"usepxratio":"true"}}}`),
+	}
+
+	assert.NoError(t, processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest}))
+	assert.Contains(t, myRequest.Imp[0].Banner.Format, openrtb2.Format{W: 768, H: 1024})
+}
+
+func TestInterstitialReturnsBadInputWhenDeviceIsMissing(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "my-imp-id",
+				Banner: &openrtb2.Banner{},
+				Instl:  1,
+			},
+		},
+	}
+
+	err := processInterstitials(&openrtb_ext.RequestWrapper{BidRequest: myRequest})
+
+	assert.IsType(t, &errortypes.BadInput{}, err)
+	assert.EqualError(t, err, "Unable to read max interstitial size for Imp id=my-imp-id (No Device and no Format objects)")
+}
+
+func TestInterstitialResolvesUsePxRatioOnceForMultipleImpressions(t *testing.T) {
+	myRequest := &openrtb2.BidRequest{
+		Imp: []openrtb2.Imp{
+			{ID: "imp-1", Banner: &openrtb2.Banner{}, Instl: 1},
+			{ID: "imp-2", Banner: &openrtb2.Banner{}, Instl: 1},
+		},
+		Device: &openrtb2.Device{
+			H:       1920,
+			W:       1080,
+			PxRatio: 3,
+			Ext:     json.RawMessage(`{"prebid": {"interstitial": {"minwidthperc": 60, "minheightperc": 60}}}`),
+		},
+	}
+	resolveCalls := 0
+	resolveUsePxRatio := func(*openrtb_ext.RequestWrapper) bool {
+		resolveCalls++
+		return true
+	}
+
+	err := processInterstitialsWithUsePxRatioResolver(
+		&openrtb_ext.RequestWrapper{BidRequest: myRequest},
+		resolveUsePxRatio)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, resolveCalls)
+}
+
+func TestDeviceSizeToDips(t *testing.T) {
+	assert.Equal(t, int64(360), deviceSizeToDips(1080, 3))
+	assert.Equal(t, int64(1080), deviceSizeToDips(1080, 0))
+	assert.Equal(t, int64(1080), deviceSizeToDips(1080, math.NaN()))
 }
