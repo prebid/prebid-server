@@ -2,7 +2,8 @@
   "mockBidRequest": {
       "id": "testid",
       "site": {
-          "id": "test"
+          "id": "test",
+          "domain": "www.example.com"
       },
       "imp": [
           {
@@ -57,7 +58,8 @@
                       }
                   ],
                   "site": {
-                      "id": "test"
+                      "id": "test",
+                      "domain": "www.example.com"
                   }
               },
               "impIDs":["testimpid"]
