@@ -279,6 +279,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderVdoai,
 	BidderViant,
 	BidderVidazoo,
 	BidderVideoByte,
@@ -674,6 +675,7 @@ const (
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderVdoai             BidderName = "vdoai"
 	BidderViant             BidderName = "viant"
 	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
