@@ -5,12 +5,12 @@
       {
         "id": "banner-imp",
         "banner": { "w": 300, "h": 250 },
-        "ext": { "bidder": { "bidFloor": 0.5 } }
+        "ext": { "bidder": { "bidfloor": 0.5 } }
       },
       {
         "id": "video-imp",
         "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
-        "ext": { "bidder": { "bidFloor": 2.0 } }
+        "ext": { "bidder": { "bidfloor": 2.0 } }
       }
     ]
   },
@@ -25,13 +25,13 @@
               "id": "banner-imp",
               "banner": { "w": 300, "h": 250 },
               "bidfloor": 0.5,
-              "ext": { "bidder": { "bidFloor": 0.5 } }
+              "ext": { "bidder": { "bidfloor": 0.5 } }
             },
             {
               "id": "video-imp",
               "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
               "bidfloor": 2.0,
-              "ext": { "bidder": { "bidFloor": 2.0 } }
+              "ext": { "bidder": { "bidfloor": 2.0 } }
             }
           ]
         },

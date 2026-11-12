@@ -5,7 +5,7 @@
       {
         "id": "1",
         "banner": { "w": 300, "h": 250 },
-        "ext": { "bidder": { "bidFloor": 1.23, "sspId": "ssp-123" } }
+        "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
       }
     ]
   },
@@ -20,7 +20,7 @@
               "id": "1",
               "banner": { "w": 300, "h": 250 },
               "bidfloor": 1.23,
-              "ext": { "bidder": { "bidFloor": 1.23, "sspId": "ssp-123" } }
+              "ext": { "bidder": { "bidfloor": 1.23, "sspId": "ssp-123" } }
             }
           ]
         },

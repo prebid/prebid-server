@@ -45,20 +45,21 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 			continue
 		}
 
+		// sspId/siteId go on the request URL, so every imp in the batch must agree.
+		if len(validImps) == 0 {
+			sspID, siteID = impExt.SspID, impExt.SspSiteID
+		} else if impExt.SspID != sspID || impExt.SspSiteID != siteID {
+			return nil, append(errs, &errortypes.BadInput{
+				Message: fmt.Sprintf("impID %s: sspId/siteId must be identical across all impressions", imp.ID),
+			})
+		}
+
 		if imp.BidFloor == 0 && impExt.BidFloor > 0 {
 			imp.BidFloor = impExt.BidFloor
 		}
 
 		if impExt.TestMode == 1 {
 			setTestMode = true
-		}
-
-		// First imp to supply sspId/siteId wins; the whole batch shares one outgoing request.
-		if sspID == "" && impExt.SspID != "" {
-			sspID = impExt.SspID
-		}
-		if siteID == "" && impExt.SspSiteID != "" {
-			siteID = impExt.SspSiteID
 		}
 
 		validImps = append(validImps, imp)

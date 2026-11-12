@@ -19,7 +19,7 @@
         },
         "ext": {
           "bidder": {
-            "bidFloor": 1.0,
+            "bidfloor": 1.0,
             "siteId": "site-456"
           }
         }
@@ -44,7 +44,7 @@
               "bidfloor": 1.0,
               "ext": {
                 "bidder": {
-                  "bidFloor": 1.0,
+                  "bidfloor": 1.0,
                   "siteId": "site-456"
                 }
               }
