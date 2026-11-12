@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "HypeLab Adapter Params",
+  "description": "A schema which validates params accepted by the HypeLab adapter",
+  "type": "object",
+  "properties": {
+    "property_slug": {
+      "type": "string",
+      "minLength": 1,
+      "description": "HypeLab property slug"
+    },
+    "placement_slug": {
+      "type": "string",
+      "minLength": 1,
+      "description": "HypeLab placement slug"
+    }
+  },
+  "required": ["property_slug", "placement_slug"]
+}
