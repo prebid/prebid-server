@@ -585,6 +585,24 @@ func TestBidderInfoFiles(t *testing.T) {
 	}
 }
 
+// TestMissenaUserSyncForwardsGPP guards against static/bidder-info/missena.yaml's usersync
+// iframe URL regressing to omit the GPP consent macros. Missena's cookie-sync URL previously
+// forwarded gdpr/gdpr_consent/us_privacy but not gpp/gpp_sid, so GPP-covered consent (e.g. US
+// state privacy laws routed through the IAB Global Privacy Platform) was never communicated to
+// Missena's sync endpoint, unlike the overwhelming majority of other syncers in this repo.
+func TestMissenaUserSyncForwardsGPP(t *testing.T) {
+	bidderInfos, err := LoadBidderInfoFromDisk(bidderInfoRelativePath)
+	require.NoError(t, err)
+
+	missena, ok := bidderInfos["missena"]
+	require.True(t, ok, "missena bidder-info not found")
+	require.NotNil(t, missena.Syncer)
+	require.NotNil(t, missena.Syncer.IFrame)
+
+	assert.Contains(t, missena.Syncer.IFrame.URL, "{{.GPP}}", "missena usersync iframe URL must forward the GPP consent string")
+	assert.Contains(t, missena.Syncer.IFrame.URL, "{{.GPPSID}}", "missena usersync iframe URL must forward the GPP Section ID")
+}
+
 func TestBidderInfoValidationPositive(t *testing.T) {
 	bidderInfos := BidderInfos{
 		"bidderA": BidderInfo{
