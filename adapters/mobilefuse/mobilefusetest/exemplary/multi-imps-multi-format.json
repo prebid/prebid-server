@@ -79,7 +79,12 @@
                                 "w": 320,
                                 "h": 480
                             },
-                            "tagid": "123456"
+                            "tagid": "123456",
+                            "ext": {
+                                "bidder": {
+                                    "placement_id": 123456
+                                }
+                            }
                         },
                         {
                             "id": "2",
@@ -95,7 +100,12 @@
                                 "ver": "1.2",
                                 "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
                             },
-                            "tagid": "234567"
+                            "tagid": "234567",
+                            "ext": {
+                                "bidder": {
+                                    "placement_id": 234567
+                                }
+                            }
                         }
                     ]
                 },
