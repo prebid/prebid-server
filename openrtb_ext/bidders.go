@@ -224,6 +224,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderRelevantDigital,
 	BidderResetDigital,
 	BidderRevcontent,
+	BidderRevX,
 	BidderRichaudience,
 	BidderRise,
 	BidderRoulax,
@@ -619,6 +620,7 @@ const (
 	BidderRelevantDigital   BidderName = "relevantdigital"
 	BidderResetDigital      BidderName = "resetdigital"
 	BidderRevcontent        BidderName = "revcontent"
+	BidderRevX              BidderName = "revx"
 	BidderRichaudience      BidderName = "richaudience"
 	BidderRise              BidderName = "rise"
 	BidderRoulax            BidderName = "roulax"
