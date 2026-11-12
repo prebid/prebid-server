@@ -126,6 +126,35 @@ func TestOtherError(t *testing.T) {
 	assert.JSONEq(t, `{"imp_id": "imp-1"}`, string(impData["imp-1"]), "MultiFetcher should return the right imp data")
 }
 
+func TestMultiFetcherResponses(t *testing.T) {
+	f1 := &mockFetcher{}
+	f2 := &mockFetcher{}
+	fetcher := &MultiFetcher{f1, f2}
+	ctx := context.Background()
+	ids := []string{"resp-1", "resp-2", "resp-3"}
+
+	f1.On("FetchResponses", ctx, ids).Return(
+		map[string]json.RawMessage{
+			"resp-1": json.RawMessage(`{"id":"resp-1"}`),
+		},
+		[]error{NotFoundError{"resp-2", "Response"}},
+	)
+	f2.On("FetchResponses", ctx, []string{"resp-2", "resp-3"}).Return(
+		map[string]json.RawMessage{
+			"resp-2": json.RawMessage(`{"id":"resp-2"}`),
+		},
+		[]error{},
+	)
+
+	respData, errs := fetcher.FetchResponses(ctx, ids)
+
+	f1.AssertExpectations(t)
+	f2.AssertExpectations(t)
+	assert.Len(t, respData, 2)
+	assert.Len(t, errs, 1)
+	assert.EqualError(t, errs[0], NotFoundError{"resp-3", "Response"}.Error())
+}
+
 func TestMultiFetcherAccountFoundInFirstFetcher(t *testing.T) {
 	f1 := &mockFetcher{}
 	f2 := &mockFetcher{}

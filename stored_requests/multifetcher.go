@@ -37,7 +37,22 @@ func (mf MultiFetcher) FetchRequests(ctx context.Context, requestIDs []string, i
 }
 
 func (mf MultiFetcher) FetchResponses(ctx context.Context, ids []string) (data map[string]json.RawMessage, errs []error) {
-	return nil, nil
+	data = make(map[string]json.RawMessage, len(ids))
+
+	for _, f := range mf {
+		remainingIDs := filter(ids, data)
+		ids = remainingIDs
+
+		theseData, reserrs := f.FetchResponses(ctx, remainingIDs)
+		reserrs = dropMissingIDs(reserrs)
+		if len(reserrs) > 0 {
+			errs = append(errs, reserrs...)
+		}
+		addAll(data, theseData)
+	}
+
+	errs = appendNotFoundErrors("Response", ids, data, errs)
+	return
 }
 
 func (mf MultiFetcher) FetchAccount(ctx context.Context, accountDefaultJSON json.RawMessage, accountID string) (account json.RawMessage, errs []error) {
