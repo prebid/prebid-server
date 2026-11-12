@@ -1,0 +1,227 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test",
+      "ext": {
+        "data": {
+          "k": "v"
+        }
+      }
+    },
+    "tmax": 800,
+    "cur": [
+      "USD",
+      "EUR"
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "192.0.2.1"
+    },
+    "user": {
+      "buyeruid": "b9-123",
+      "consent": "CPX",
+      "eids": [
+        {
+          "source": "pubcid.org",
+          "uids": [
+            {
+              "id": "u1"
+            }
+          ]
+        }
+      ]
+    },
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "1YNN",
+      "gpp": "DBAA",
+      "gpp_sid": [
+        7
+      ],
+      "coppa": 1
+    },
+    "source": {
+      "tid": "tid-1",
+      "schain": {
+        "complete": 1,
+        "ver": "1.0",
+        "nodes": [
+          {
+            "asi": "a.test",
+            "sid": "1",
+            "hp": 1
+          }
+        ]
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          },
+          "gpid": "/1/slot",
+          "data": {
+            "pbadslot": "slot"
+          },
+          "tid": "t1"
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test",
+            "ext": {
+              "data": {
+                "k": "v"
+              }
+            }
+          },
+          "tmax": 800,
+          "cur": [
+            "USD",
+            "EUR"
+          ],
+          "device": {
+            "ua": "test-ua",
+            "ip": "192.0.2.1"
+          },
+          "user": {
+            "buyeruid": "b9-123",
+            "consent": "CPX",
+            "eids": [
+              {
+                "source": "pubcid.org",
+                "uids": [
+                  {
+                    "id": "u1"
+                  }
+                ]
+              }
+            ]
+          },
+          "regs": {
+            "gdpr": 1,
+            "us_privacy": "1YNN",
+            "gpp": "DBAA",
+            "gpp_sid": [
+              7
+            ],
+            "coppa": 1
+          },
+          "source": {
+            "tid": "tid-1",
+            "schain": {
+              "complete": 1,
+              "ver": "1.0",
+              "nodes": [
+                {
+                  "asi": "a.test",
+                  "sid": "1",
+                  "hp": 1
+                }
+              ]
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "chan-a",
+              "ext": {
+                "gpid": "/1/slot",
+                "data": {
+                  "pbadslot": "slot"
+                },
+                "tid": "t1",
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "crid": "crid-1",
+                  "adm": "<div>ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "crid": "crid-1",
+            "adm": "<div>ad</div>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

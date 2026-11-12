@@ -56,6 +56,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/beop"
 	"github.com/prebid/prebid-server/v4/adapters/between"
 	"github.com/prebid/prebid-server/v4/adapters/beyondmedia"
+	"github.com/prebid/prebid-server/v4/adapters/bid9"
 	"github.com/prebid/prebid-server/v4/adapters/bidmachine"
 	"github.com/prebid/prebid-server/v4/adapters/bidmatic"
 	"github.com/prebid/prebid-server/v4/adapters/bidmyadz"
@@ -344,6 +345,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBeop:              beop.Builder,
 		openrtb_ext.BidderBetween:           between.Builder,
 		openrtb_ext.BidderBeyondMedia:       beyondmedia.Builder,
+		openrtb_ext.BidderBid9:              bid9.Builder,
 		openrtb_ext.BidderBidmachine:        bidmachine.Builder,
 		openrtb_ext.BidderBidmatic:          bidmatic.Builder,
 		openrtb_ext.BidderBidmyadz:          bidmyadz.Builder,
