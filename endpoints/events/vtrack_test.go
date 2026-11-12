@@ -836,3 +836,62 @@ func TestGetIntegrationType(t *testing.T) {
 		}
 	}
 }
+
+func TestModifyVastXmlString(t *testing.T) {
+	const (
+		externalUrl     = "http://external.url"
+		bidid           = "bid-id"
+		bidder          = "bidder"
+		accountID       = "account-id"
+		timestamp       = int64(1000)
+		integrationType = ""
+	)
+	vastUrlTracking := GetVastUrlTracking(externalUrl, bidid, bidder, accountID, timestamp, integrationType)
+	impressionUrl := "<![CDATA[" + vastUrlTracking + "]]>"
+
+	testCases := []struct {
+		description  string
+		givenVast    string
+		expectedVast string
+		expectedOk   bool
+	}{
+		{
+			description:  "No impression tag at all - vast returned unmodified",
+			givenVast:    vastXmlWithoutImpression,
+			expectedVast: vastXmlWithoutImpression,
+			expectedOk:   false,
+		},
+		{
+			description:  "Exact-case empty impression tag - tracking inserted inside the pair",
+			givenVast:    vastXmlWithImpressionWithoutContent,
+			expectedVast: "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>" + impressionUrl + "</Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+			expectedOk:   true,
+		},
+		{
+			description:  "Exact-case impression tag with existing content - a new tag is appended after it",
+			givenVast:    vastXmlWithImpressionWithContent,
+			expectedVast: "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>prebid.org wrapper</AdSystem><VASTAdTagURI><![CDATA[adm2]]></VASTAdTagURI><Impression>content</Impression>" + ImpressionOpenTag + impressionUrl + ImpressionCloseTag + "<Creatives></Creatives></Wrapper></Ad></VAST>",
+			expectedOk:   true,
+		},
+		{
+			description:  "Lowercase empty impression tag - tracking still inserted inside the pair",
+			givenVast:    "<VAST><Ad><Wrapper><impression></impression></Wrapper></Ad></VAST>",
+			expectedVast: "<VAST><Ad><Wrapper><impression>" + impressionUrl + "</impression></Wrapper></Ad></VAST>",
+			expectedOk:   true,
+		},
+		{
+			description:  "Impression tag with whitespace, attributes, and mismatched case - a new tag is appended after it",
+			givenVast:    "<Wrapper><  impreSSion garbage >http://test.com<  /ImPression  garbage ></Wrapper>",
+			expectedVast: "<Wrapper><  impreSSion garbage >http://test.com<  /ImPression  garbage >" + ImpressionOpenTag + impressionUrl + ImpressionCloseTag + "</Wrapper>",
+			expectedOk:   true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			result, ok := ModifyVastXmlString(externalUrl, test.givenVast, bidid, bidder, accountID, timestamp, integrationType)
+			assert.Equal(t, test.expectedOk, ok)
+			assert.Equal(t, test.expectedVast, result)
+		})
+	}
+}
