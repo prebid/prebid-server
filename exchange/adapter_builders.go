@@ -161,6 +161,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/medianet"
 	"github.com/prebid/prebid-server/v4/adapters/mediasquare"
 	"github.com/prebid/prebid-server/v4/adapters/melozen"
+	"github.com/prebid/prebid-server/v4/adapters/melvad"
 	"github.com/prebid/prebid-server/v4/adapters/metax"
 	"github.com/prebid/prebid-server/v4/adapters/mgid"
 	"github.com/prebid/prebid-server/v4/adapters/mgidX"
@@ -452,6 +453,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderMedianet:          medianet.Builder,
 		openrtb_ext.BidderMediasquare:       mediasquare.Builder,
 		openrtb_ext.BidderMeloZen:           melozen.Builder,
+		openrtb_ext.BidderMelvad:            melvad.Builder,
 		openrtb_ext.BidderMetaX:             metax.Builder,
 		openrtb_ext.BidderMgid:              mgid.Builder,
 		openrtb_ext.BidderMgidX:             mgidX.Builder,

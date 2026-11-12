@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {"w": 300, "h": 250},
+        "ext": {"bidder": {}}
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Impression test-imp-id: ext.bidder.sspId is required",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": [],
+  "expectedBidResponses": []
+}

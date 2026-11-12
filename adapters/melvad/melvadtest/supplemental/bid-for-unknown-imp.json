@@ -1,0 +1,63 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {"w": 300, "h": 250},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {"w": 300, "h": 250},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "unknown-imp-id",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "crid-1"
+                }
+              ],
+              "seat": "melvad"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unable to determine the media type of the bid bid-1 for the impression unknown-imp-id",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "mockBidRequest": {
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37934lssd34fgd",
+    "imp": [
+      {
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "secure": 1,
+        "tagid": "ierui234fdfdf",
+        "video": {
+          "h": 50,
+          "linearity": 2,
+          "mimes": [
+            "image/gif",
+            "image/jpeg",
+            "image/png"
+          ],
+          "protocols": [
+            3
+          ],
+          "w": 320
+        }
+      }
+    ],
+    "site": {
+      "cat": [
+        "IAB12",
+        "IAB17-12"
+      ],
+      "domain": "tass.ru",
+      "id": "9fu48u347ru34o",
+      "page": "https://tass.ru/sport/4237913",
+      "publisher": {
+        "id": "p-93dj34di3344"
+      }
+    },
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37934lssd34fgd",
+          "imp": [
+            {
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "secure": 1,
+              "tagid": "ierui234fdfdf",
+              "video": {
+                "h": 50,
+                "linearity": 2,
+                "mimes": [
+                  "image/gif",
+                  "image/jpeg",
+                  "image/png"
+                ],
+                "protocols": [
+                  3
+                ],
+                "w": 320
+              }
+            }
+          ],
+          "site": {
+            "cat": [
+              "IAB12",
+              "IAB17-12"
+            ],
+            "domain": "tass.ru",
+            "id": "9fu48u347ru34o",
+            "page": "https://tass.ru/sport/4237913",
+            "publisher": {
+              "id": "p-93dj34di3344"
+            }
+          },
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37934lssd34fgd",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11303",
+                  "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"><Ad id=\"11303\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11303]]></AdTitle><Impression id=\"1\"><![CDATA[https://rtb.melvad.com/imp/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo]]></Impression><Creatives><Creative id=\"1\" AdID=\"1\"><NonLinearAds><TrackingEvents><Tracking event=\"close\"><![CDATA[https://rtb.melvad.com/close/Hry1F-HtWoe7vLSwCzmAmiOtmK6IBZzH75Ms5AYLbFineQLH4QhmDoHCQ5A5QXcGAY9x-VhYRnAcB2eaq3s5W7_h9cA25EYzXwwp60rM0_tZxxUlVxMLGIGP2vXr7Dm_7Q7iRghR3gd3_7MsIBuEB3PRYSg0iPRXfJxhmPmsIiO7Rd9K1x-wvAtdMgkJmNqmPO9BO7OzThEJhrgOOqUXMr1j7x2J4k8DQqUBrzOPVWEuFbYt0zubj2C50WcNIFTh-oTSf5GtyBYvkdau0_TDwXoN3ftjf_O6kuhLRNTiLStzHeoVvRdYP0mRpqivRMkW2gdTTkdmuOv3xiPXN1CN6_V0CYeBRzvDRVtnUpX3T9cyVpsu3NaLA-s0LceFYIzyrb82W7xLVPo7-hU]]></Tracking></TrackingEvents><NonLinear id=\"1\" width=\"300\" height=\"250\" expandedWidth=\"0\" expandedHeight=\"0\" scalable=\"true\" maintainAspectRatio=\"true\" minSuggestedDuration=\"00:00:05\"><NonLinearClickTracking><![CDATA[https://rtb.melvad.com/click/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo]]></NonLinearClickTracking><NonLinearClickThrough><![CDATA[https://melvad.com]]></NonLinearClickThrough><StaticResource creativeType=\"image/png\"><![CDATA[https://cdn.melvad.com/files/dev/jbu3sumdcwi.png]]></StaticResource><IFrameResource></IFrameResource></NonLinear></NonLinearAds></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+                  "adomain": [
+                    "melvad.com"
+                  ],
+                  "burl": "https://rtb.melvad.com/billing/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5934",
+                  "crid": "11303",
+                  "id": "11303",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo",
+                  "price": 1.9492729777,
+                  "protocol": 3
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11303",
+            "adm": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><VAST version=\"3.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"vast.xsd\"><Ad id=\"11303\"><InLine><AdSystem><![CDATA[Melvad]]></AdSystem><AdTitle><![CDATA[11303]]></AdTitle><Impression id=\"1\"><![CDATA[https://rtb.melvad.com/imp/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo]]></Impression><Creatives><Creative id=\"1\" AdID=\"1\"><NonLinearAds><TrackingEvents><Tracking event=\"close\"><![CDATA[https://rtb.melvad.com/close/Hry1F-HtWoe7vLSwCzmAmiOtmK6IBZzH75Ms5AYLbFineQLH4QhmDoHCQ5A5QXcGAY9x-VhYRnAcB2eaq3s5W7_h9cA25EYzXwwp60rM0_tZxxUlVxMLGIGP2vXr7Dm_7Q7iRghR3gd3_7MsIBuEB3PRYSg0iPRXfJxhmPmsIiO7Rd9K1x-wvAtdMgkJmNqmPO9BO7OzThEJhrgOOqUXMr1j7x2J4k8DQqUBrzOPVWEuFbYt0zubj2C50WcNIFTh-oTSf5GtyBYvkdau0_TDwXoN3ftjf_O6kuhLRNTiLStzHeoVvRdYP0mRpqivRMkW2gdTTkdmuOv3xiPXN1CN6_V0CYeBRzvDRVtnUpX3T9cyVpsu3NaLA-s0LceFYIzyrb82W7xLVPo7-hU]]></Tracking></TrackingEvents><NonLinear id=\"1\" width=\"300\" height=\"250\" expandedWidth=\"0\" expandedHeight=\"0\" scalable=\"true\" maintainAspectRatio=\"true\" minSuggestedDuration=\"00:00:05\"><NonLinearClickTracking><![CDATA[https://rtb.melvad.com/click/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo]]></NonLinearClickTracking><NonLinearClickThrough><![CDATA[https://melvad.com]]></NonLinearClickThrough><StaticResource creativeType=\"image/png\"><![CDATA[https://cdn.melvad.com/files/dev/jbu3sumdcwi.png]]></StaticResource><IFrameResource></IFrameResource></NonLinear></NonLinearAds></Creative></Creatives><Description></Description><Survey></Survey><Error><![CDATA[https://rtb.melvad.com/error/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?code=[ERRORCODE]]]></Error></InLine></Ad></VAST>",
+            "adomain": [
+              "melvad.com"
+            ],
+            "burl": "https://rtb.melvad.com/billing/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?ap=1.9492729777&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5934",
+            "crid": "11303",
+            "id": "11303",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/bPOe55G7mtXGn-OftfIFYfJNLlsLgNgf7pUBgwzdrTM55wC0s21W3DhK3Cr30u19_WMw8Slbc1xfWZTkkqvNTEUB6tXAcFhcAm-BGQTyDe11g_xja1fK1mJxmaxFTGZpnNLg737VaGMxgxsUYfRTy_IeZjUqCFydwtUwIjnC1OwPULfow0AInbMYttP_V9nBrYKPy8gmUaisfquhRp3KcNQ6UUoMx58VQRYIE78R1pFtJl7djuA_oeNYf3_KowyWNC5h4rcNnIpJSNlG3dkekVdv6ZW7iYk0zyALsaCtKjxEcep2YRfhi1v3klpjHCv95qHOJ48Odcizesmh3LBWYpWVHL6VU5D5E0kTvi8oVXQ3A88jkXvW2hvIH6Q3WX13uzqDZoC0ttJPYvo",
+            "price": 1.9492729777,
+            "protocol": 3
+          },
+          "type": "video"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}

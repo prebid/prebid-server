@@ -1,0 +1,186 @@
+{
+  "mockBidRequest": {
+    "app": {
+      "bundle": "com.rovio.baba",
+      "cat": [
+        "IAB9"
+      ],
+      "id": "9fu48u347ru34o",
+      "name": "Angry Birds 2",
+      "publisher": {
+        "id": "p-8e23ywepo3rr"
+      },
+      "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+    },
+    "at": 2,
+    "cur": [
+      "USD",
+      "RUB"
+    ],
+    "device": {
+      "geo": {
+        "city": "Los Angeles",
+        "country": "USA",
+        "region": "CA"
+      },
+      "h": 667,
+      "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+      "ip": "69.75.122.146",
+      "language": "en",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+      "w": 375
+    },
+    "id": "o37934lssd34fgd",
+    "imp": [
+      {
+        "bidfloor": 0.25,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "sspId": "prebid"
+          }
+        },
+        "id": "1",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":4,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":5,\"data\":{\"type\":3,\"len\":5}},{\"id\":6,\"data\":{\"type\":4,\"len\":11}},{\"id\":7,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+          "ver": "1.2"
+        },
+        "secure": 1,
+        "tagid": "ierui234fdfdf"
+      }
+    ],
+    "user": {
+      "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+      "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "body": {
+          "app": {
+            "bundle": "com.rovio.baba",
+            "cat": [
+              "IAB9"
+            ],
+            "id": "9fu48u347ru34o",
+            "name": "Angry Birds 2",
+            "publisher": {
+              "id": "p-8e23ywepo3rr"
+            },
+            "storeurl": "https://apps.apple.com/app/angry-birds-2/id880047117"
+          },
+          "at": 2,
+          "cur": [
+            "USD",
+            "RUB"
+          ],
+          "device": {
+            "geo": {
+              "city": "Los Angeles",
+              "country": "USA",
+              "region": "CA"
+            },
+            "h": 667,
+            "ifa": "460384F3-D3B0-47CA-8090-F120F270A8B7",
+            "ip": "69.75.122.146",
+            "language": "en",
+            "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1",
+            "w": 375
+          },
+          "id": "o37934lssd34fgd",
+          "imp": [
+            {
+              "bidfloor": 0.25,
+              "bidfloorcur": "USD",
+              "ext": {
+                "bidder": {
+                  "sspId": "prebid"
+                }
+              },
+              "id": "1",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":25}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"wmin\":100,\"hmin\":100,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"wmin\":1200,\"hmin\":627,\"mimes\":[\"image/png\",\"image/jpeg\",\"image/gif\",\"text/html\"]}},{\"id\":4,\"required\":1,\"data\":{\"type\":2,\"len\":90}},{\"id\":5,\"data\":{\"type\":3,\"len\":5}},{\"id\":6,\"data\":{\"type\":4,\"len\":11}},{\"id\":7,\"data\":{\"type\":12,\"len\":15}}],\"eventtrackers\":[{\"event\":1,\"methods\":[1]}]}",
+                "ver": "1.2"
+              },
+              "secure": 1,
+              "tagid": "ierui234fdfdf"
+            }
+          ],
+          "user": {
+            "buyeruid": "213ba1a2425be71ec5080b1d64b8450c",
+            "id": "d92a55e6-3eda-44c4-a448-14830a4c6838"
+          }
+        },
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ]
+        },
+        "impIDs": [
+          "1"
+        ],
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid"
+      },
+      "mockResponse": {
+        "body": {
+          "cur": "USD",
+          "id": "o37934lssd34fgd",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "adid": "11294",
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Angry Birds 2\",\"len\":13}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"url\":\"https://cdn.melvad.com/files/dev/jorrtj50muq.png\",\"w\":256,\"h\":256}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://cdn.melvad.com/files/dev/03zv4uelnlf.png\",\"w\":1280,\"h\":720}},{\"id\":4,\"required\":1,\"data\":{\"type\":2,\"len\":13,\"value\":\"Angry Birds 2\"}},{\"id\":5,\"data\":{\"type\":3,\"value\":\"4.1\"}},{\"id\":6,\"data\":{\"type\":4,\"value\":\"6252338\"}},{\"id\":7,\"data\":{\"type\":12,\"len\":4,\"value\":\"Join\"}}],\"link\":{\"url\":\"https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru\",\"clicktrackers\":[\"https://rtb.melvad.com/click/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://rtb.melvad.com/imp/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh\"}]}}",
+                  "adomain": [
+                    "play.google.com"
+                  ],
+                  "bundle": "com.rovio.baba",
+                  "burl": "https://rtb.melvad.com/billing/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?ap=${AUCTION_PRICE}&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+                  "cid": "5935",
+                  "crid": "11294",
+                  "id": "11294",
+                  "impid": "1",
+                  "lurl": "https://rtb.melvad.com/loss/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?al=${AUCTION_LOSS}",
+                  "nurl": "https://rtb.melvad.com/win/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh",
+                  "price": 1.9517991108
+                }
+              ],
+              "seat": "a-e687c7a804"
+            }
+          ]
+        },
+        "status": 200
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "adid": "11294",
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"text\":\"Angry Birds 2\",\"len\":13}},{\"id\":2,\"required\":1,\"img\":{\"type\":1,\"url\":\"https://cdn.melvad.com/files/dev/jorrtj50muq.png\",\"w\":256,\"h\":256}},{\"id\":3,\"required\":1,\"img\":{\"type\":3,\"url\":\"https://cdn.melvad.com/files/dev/03zv4uelnlf.png\",\"w\":1280,\"h\":720}},{\"id\":4,\"required\":1,\"data\":{\"type\":2,\"len\":13,\"value\":\"Angry Birds 2\"}},{\"id\":5,\"data\":{\"type\":3,\"value\":\"4.1\"}},{\"id\":6,\"data\":{\"type\":4,\"value\":\"6252338\"}},{\"id\":7,\"data\":{\"type\":12,\"len\":4,\"value\":\"Join\"}}],\"link\":{\"url\":\"https://play.google.com/store/apps/details?id=com.rovio.baba&hl=ru\",\"clicktrackers\":[\"https://rtb.melvad.com/click/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh\"]},\"eventtrackers\":[{\"event\":1,\"method\":1,\"url\":\"https://rtb.melvad.com/imp/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh\"}]}}",
+            "adomain": [
+              "play.google.com"
+            ],
+            "bundle": "com.rovio.baba",
+            "burl": "https://rtb.melvad.com/billing/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "cid": "5935",
+            "crid": "11294",
+            "id": "11294",
+            "impid": "1",
+            "lurl": "https://rtb.melvad.com/loss/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?al=${AUCTION_LOSS}",
+            "nurl": "https://rtb.melvad.com/win/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh",
+            "price": 1.9517991108
+          },
+          "type": "native"
+        }
+      ],
+      "currency": "USD"
+    }
+  ]
+}
