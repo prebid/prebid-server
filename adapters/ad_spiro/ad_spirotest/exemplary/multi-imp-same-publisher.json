@@ -1,0 +1,218 @@
+{
+  "mockBidRequest": {
+    "id": "request-multi-imp",
+    "site": {
+      "id": "site-1",
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "site-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      "ip": "203.0.113.10"
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "test"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 5,
+          "maxduration": 15,
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "test"
+          }
+        }
+      }
+    ],
+    "tmax": 500
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=test",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "body": {
+          "id": "request-multi-imp",
+          "site": {
+            "id": "site-1",
+            "domain": "publisher.example",
+            "page": "https://publisher.example/article",
+            "publisher": {
+              "id": "site-publisher"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+            "ip": "203.0.113.10"
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "test"
+                }
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 5,
+                "maxduration": 15,
+                "w": 640,
+                "h": 360
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "test"
+                }
+              }
+            }
+          ],
+          "tmax": 500,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-banner",
+          "imp-video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-multi-imp",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adspiro",
+              "bid": [
+                {
+                  "id": "bid-banner",
+                  "impid": "imp-banner",
+                  "price": 0.5,
+                  "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "adspiro-test-banner",
+                  "w": 300,
+                  "h": 250,
+                  "exp": 300,
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-video",
+                  "impid": "imp-video",
+                  "price": 0.5,
+                  "adm": "<VAST version=\"4.2\"></VAST>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "adspiro-test-video",
+                  "w": 640,
+                  "h": 360,
+                  "exp": 300,
+                  "dur": 15,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner",
+            "impid": "imp-banner",
+            "price": 0.5,
+            "adm": "<a href=\"https://adspiro.io\"><img src=\"https://adspiro.io/prebid/300x250.png\"></a>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "adspiro-test-banner",
+            "w": 300,
+            "h": 250,
+            "exp": 300,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "imp-video",
+            "price": 0.5,
+            "adm": "<VAST version=\"4.2\"></VAST>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "adspiro-test-video",
+            "w": 640,
+            "h": 360,
+            "exp": 300,
+            "dur": 15,
+            "mtype": 2
+          },
+          "type": "video",
+          "video": {
+            "duration": 15,
+            "primary_category": ""
+          }
+        }
+      ]
+    }
+  ]
+}
