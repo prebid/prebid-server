@@ -61,6 +61,7 @@ func (a *PubnativeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *a
 		}
 
 		requestCopy.Imp = []openrtb2.Imp{imp}
+		requestCopy.Cur = []string{"USD"}
 		reqJSON, err := jsonutil.Marshal(&requestCopy)
 		if err != nil {
 			errs = append(errs, err)
@@ -102,7 +103,9 @@ func convertBidFloorCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestIn
 
 	convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
 	if err != nil {
-		return err
+		return &errortypes.BadInput{
+			Message: fmt.Sprintf("Unable to convert bid floor currency for imp %s: %v", imp.ID, err),
+		}
 	}
 
 	imp.BidFloor = convertedValue
@@ -173,6 +176,7 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+	bidResponse.Currency = "USD"
 
 	for _, sb := range parsedResponse.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
