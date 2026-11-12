@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 728,
+          "h": 90,
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://news.example/article",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "req-1-imp-1-banner",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "w": 728,
+                "h": 90,
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://news.example/article",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1,
+                  "crid": "crid-1",
+                  "adm": "<div>creative</div>",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1,
+            "crid": "crid-1",
+            "adm": "<div>creative</div>",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

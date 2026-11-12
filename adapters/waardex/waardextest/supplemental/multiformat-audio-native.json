@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ],
+          "minduration": 1,
+          "maxduration": 30
+        },
+        "native": {
+          "request": "{\"ver\":\"1.2\"}"
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-1 has no supported media type (banner or video)",
+      "comparison": "literal"
+    }
+  ]
+}

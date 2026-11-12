@@ -1,0 +1,191 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://news.example/article",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "req-1-imp-1-banner",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://news.example/article",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "bid-banner",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<!-- banner -->",
+                  "crid": "crid-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "req-1-imp-1-video",
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://news.example/article",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "bid-video",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "crid-1"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-banner",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<!-- banner -->",
+            "crid": "crid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "crid-1",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

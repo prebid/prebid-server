@@ -1,0 +1,58 @@
+{
+  "mockBidRequest": {
+    "id": "auction-7731",
+    "imp": [
+      {
+        "id": "slot-hero",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "malformed"
+      },
+      {
+        "id": "slot-hero-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "not-json"
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp.ext is invalid: expect { or n, but found \"",
+      "comparison": "literal"
+    },
+    {
+      "value": "imp.ext.bidder is invalid: expect { or n, but found \"",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": []
+}

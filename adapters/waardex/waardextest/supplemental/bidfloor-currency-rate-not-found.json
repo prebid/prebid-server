@@ -1,0 +1,54 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "cur": [
+      "EUR"
+    ],
+    "site": {
+      "page": "https://news.example/article",
+      "publisher": {
+        "id": "pub-1"
+      }
+    },
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {
+              "USD": 1.25
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 2,
+        "bidfloorcur": "JPY",
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ],
+  "expectedBidResponses": []
+}
