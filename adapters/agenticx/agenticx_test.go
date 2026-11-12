@@ -37,7 +37,7 @@ func TestParseImpExt(t *testing.T) {
 		ext     jsonutil.RawMessage
 		wantErr bool
 	}{
-		{"Valid ext", jsonutil.RawMessage(`{"bidder":{"bidFloor":0.5}}`), false},
+		{"Valid ext", jsonutil.RawMessage(`{"bidder":{"bidfloor":0.5}}`), false},
 		{"Valid ext with sspId", jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-123","siteId":"site-456"}}`), false},
 		{"Invalid JSON", jsonutil.RawMessage(`not-json`), true},
 		{"Not an object", jsonutil.RawMessage(`"string"`), true},
@@ -91,7 +91,15 @@ func TestMakeRequestsErrors(t *testing.T) {
 	}{
 		{"Invalid ext", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`not-json`)}}, "impID 1:"},
 		{"No valid imps", []openrtb2.Imp{}, "no valid impressions"},
-		{"No banner or video or audio", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidFloor": 0.5}}`)}}, "no banner, video, or audio object specified"},
+		{"No banner or video or audio", []openrtb2.Imp{{ID: "1", Ext: jsonutil.RawMessage(`{"bidder":{"bidfloor": 0.5}}`)}}, "no banner, video, or audio object specified"},
+		{"Mismatched sspId", []openrtb2.Imp{
+			{ID: "1", Banner: &openrtb2.Banner{}, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"a"}}`)},
+			{ID: "2", Banner: &openrtb2.Banner{}, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"b"}}`)},
+		}, "sspId/siteId must be identical"},
+		{"Mismatched siteId", []openrtb2.Imp{
+			{ID: "1", Banner: &openrtb2.Banner{}, Ext: jsonutil.RawMessage(`{"bidder":{"siteId":"a"}}`)},
+			{ID: "2", Banner: &openrtb2.Banner{}, Ext: jsonutil.RawMessage(`{"bidder":{"siteId":"b"}}`)},
+		}, "sspId/siteId must be identical"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -138,10 +146,10 @@ func TestMakeRequestsSspSiteIdResolution(t *testing.T) {
 			wantSiteID: "site-456",
 		},
 		{
-			name: "First imp's values win across multiple imps",
+			name: "Same values across multiple imps",
 			imps: []openrtb2.Imp{
 				{ID: "1", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-first","siteId":"site-first"}}`)},
-				{ID: "2", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-second","siteId":"site-second"}}`)},
+				{ID: "2", Banner: banner, Ext: jsonutil.RawMessage(`{"bidder":{"sspId":"ssp-first","siteId":"site-first"}}`)},
 			},
 			wantSspID:  "ssp-first",
 			wantSiteID: "site-first",

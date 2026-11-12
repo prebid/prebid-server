@@ -4,7 +4,7 @@
   "description": "A schema which validates params accepted by the Agenticx adapter",
   "type": "object",
   "properties": {
-    "bidFloor": {
+    "bidfloor": {
       "type": "number",
       "minimum": 0,
       "description": "Bid Floor Price"

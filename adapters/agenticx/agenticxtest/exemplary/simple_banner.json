@@ -22,7 +22,7 @@
         },
         "ext": {
           "bidder": {
-            "bidFloor": 0.5,
+            "bidfloor": 0.5,
             "sspId": "ssp-123"
           }
         }
@@ -49,7 +49,7 @@
               "bidfloor": 0.5,
               "ext": {
                 "bidder": {
-                  "bidFloor": 0.5,
+                  "bidfloor": 0.5,
                   "sspId": "ssp-123"
                 }
               }
