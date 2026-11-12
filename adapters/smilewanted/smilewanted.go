@@ -95,6 +95,9 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(bidResp.SeatBid[0].Bid))
+	if bidResp.Cur != "" {
+		bidResponse.Currency = bidResp.Cur
+	}
 	sb := bidResp.SeatBid[0]
 	for i := 0; i < len(sb.Bid); i++ {
 		bid := sb.Bid[i]
