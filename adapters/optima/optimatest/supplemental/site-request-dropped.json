@@ -1,0 +1,22 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-site",
+    "at": 1,
+    "site": {
+      "domain": "example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optima: site traffic is not supported, request dropped",
+      "comparison": "literal"
+    }
+  ]
+}

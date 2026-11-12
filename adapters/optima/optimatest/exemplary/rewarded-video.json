@@ -1,0 +1,93 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-rewarded",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-rewarded",
+        "rwdd": 1,
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 1280,
+          "h": 720
+        },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://optima.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-rewarded",
+          "at": 1,
+          "cur": ["USD"],
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "imp": [
+            {
+              "id": "imp-rewarded",
+              "rwdd": 1,
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 1280,
+                "h": 720
+              },
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-rewarded"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-rewarded",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-rewarded",
+                  "impid": "imp-rewarded",
+                  "price": 3.3,
+                  "adm": "<VAST version=\"4.0\"><Ad id=\"2\"><InLine></InLine></Ad></VAST>",
+                  "crid": "cr-rewarded",
+                  "mtype": 2,
+                  "w": 1280,
+                  "h": 720
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-rewarded",
+            "impid": "imp-rewarded",
+            "price": 3.3,
+            "adm": "<VAST version=\"4.0\"><Ad id=\"2\"><InLine></InLine></Ad></VAST>",
+            "crid": "cr-rewarded",
+            "mtype": 2,
+            "w": 1280,
+            "h": 720
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-instl",
+    "at": 1,
+    "tmax": 300,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "device": {
+      "geo": { "country": "USA" }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "instl": 1,
+        "banner": { "w": 320, "h": 480 },
+        "bidfloor": 1.0,
+        "bidfloorcur": "USD",
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://optima.example.com/ortb/testkey",
+        "body": {
+          "id": "test-req-instl",
+          "at": 1,
+          "cur": ["USD"],
+          "tmax": 300,
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "device": {
+            "geo": { "country": "USA" }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "instl": 1,
+              "banner": { "w": 320, "h": 480 },
+              "bidfloor": 1.0,
+              "bidfloorcur": "USD",
+              "ext": { "bidder": { "supply_id": "testkey" } }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-req-instl",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adx-platform",
+              "bid": [
+                {
+                  "id": "bid-instl-1",
+                  "impid": "imp-1",
+                  "price": 3.0,
+                  "adm": "<div>fullscreen ad</div>",
+                  "crid": "cr-instl-1",
+                  "w": 320,
+                  "h": 480
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-instl-1",
+            "impid": "imp-1",
+            "price": 3.0,
+            "adm": "<div>fullscreen ad</div>",
+            "crid": "cr-instl-1",
+            "w": 320,
+            "h": 480
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
