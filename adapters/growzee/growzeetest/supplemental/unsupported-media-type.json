@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    },
+    "device": {
+      "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "ip": "1.2.3.4",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-a",
+        "audio": {
+          "mimes": [
+            "audio/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.com/openrtb?id=1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "device": {
+            "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "ip": "1.2.3.4",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-a",
+              "audio": {
+                "mimes": [
+                  "audio/mp4"
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-a"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "growzee",
+              "bid": [
+                {
+                  "id": "bid-imp-a",
+                  "impid": "imp-a",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "c1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "unsupported media type for imp imp-a",
+      "comparison": "literal"
+    }
+  ]
+}

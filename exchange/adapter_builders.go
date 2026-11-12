@@ -121,6 +121,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/globalsun"
 	"github.com/prebid/prebid-server/v4/adapters/goldbach"
 	"github.com/prebid/prebid-server/v4/adapters/grid"
+	"github.com/prebid/prebid-server/v4/adapters/growzee"
 	"github.com/prebid/prebid-server/v4/adapters/gumgum"
 	"github.com/prebid/prebid-server/v4/adapters/huaweiads"
 	"github.com/prebid/prebid-server/v4/adapters/imds"
@@ -410,6 +411,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderGlobalsun:         globalsun.Builder,
 		openrtb_ext.BidderGoldbach:          goldbach.Builder,
 		openrtb_ext.BidderGrid:              grid.Builder,
+		openrtb_ext.BidderGrowzee:           growzee.Builder,
 		openrtb_ext.BidderGumGum:            gumgum.Builder,
 		openrtb_ext.BidderHuaweiAds:         huaweiads.Builder,
 		openrtb_ext.BidderImds:              imds.Builder,

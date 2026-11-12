@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    },
+    "device": {
+      "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "ip": "1.2.3.4",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-b",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.com/openrtb?id=1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "device": {
+            "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "ip": "1.2.3.4",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-b",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-b"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "growzee",
+              "bid": [
+                {
+                  "id": "bid-imp-b",
+                  "impid": "imp-b",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "c1"
+                }
+              ]
+            }
+          ],
+          "cur": "EUR"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-b",
+            "impid": "imp-b",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "c1"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    },
+    "device": {
+      "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "ip": "1.2.3.4",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 320,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "9f8e7d6c-5b4a-4321-8fed-cba987654321"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.com/openrtb?id=1d5c3b2a-0f4e-4a6b-9c8d-7e6f5a4b3c2d",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "device": {
+            "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "ip": "1.2.3.4",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "growzee",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "c1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.com/openrtb?id=9f8e7d6c-5b4a-4321-8fed-cba987654321",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "X-Openrtb-Version": [
+            "2.5"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "app": {
+            "bundle": "com.example.app",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "device": {
+            "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "ip": "1.2.3.4",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 320,
+                "h": 480
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "growzee",
+              "bid": [
+                {
+                  "id": "bid-imp-2",
+                  "impid": "imp-2",
+                  "price": 1.5,
+                  "adm": "<?xml version=\"1.0\"?><VAST version=\"4.0\"></VAST>",
+                  "crid": "c1"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "crid": "c1"
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-2",
+            "impid": "imp-2",
+            "price": 1.5,
+            "adm": "<?xml version=\"1.0\"?><VAST version=\"4.0\"></VAST>",
+            "crid": "c1"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

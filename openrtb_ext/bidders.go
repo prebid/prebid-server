@@ -138,6 +138,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderGlobalsun,
 	BidderGoldbach,
 	BidderGrid,
+	BidderGrowzee,
 	BidderGumGum,
 	BidderHuaweiAds,
 	BidderImds,
@@ -533,6 +534,7 @@ const (
 	BidderGlobalsun         BidderName = "globalsun"
 	BidderGoldbach          BidderName = "goldbach"
 	BidderGrid              BidderName = "grid"
+	BidderGrowzee           BidderName = "growzee"
 	BidderGumGum            BidderName = "gumgum"
 	BidderHuaweiAds         BidderName = "huaweiads"
 	BidderImds              BidderName = "imds"
