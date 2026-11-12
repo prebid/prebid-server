@@ -172,7 +172,7 @@ func TestCharacterEscape(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, true, nil, "", errList, &SeatNonBidBuilder{})
+	bidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, nil, nil, extCacheInstructions{}, nil, "", errList, &SeatNonBidBuilder{})
 
 	// 	5) Assert we have no errors and one '&' character as we are supposed to
 	if len(errList) > 0 {
@@ -1063,9 +1063,9 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 					sampleAd,
 				},
 				{
-					"Vast returnCreative set to false, don't return ad markup in response",
+					"Vast returnCreative set to false, return banner ad markup in response",
 					json.RawMessage(`{"prebid":{"cache":{"vastXml":{"returnCreative":false}}}}`),
-					"",
+					sampleAd,
 				},
 			},
 		},
@@ -1083,9 +1083,9 @@ func TestReturnCreativeEndToEnd(t *testing.T) {
 					sampleAd,
 				},
 				{
-					"Vast returnCreative is true, expect valid AdM",
+					"Bids returnCreative is false, expect empty banner AdM",
 					json.RawMessage(`{"prebid":{"cache":{"bids":{"returnCreative":false},"vastXml":{"returnCreative":true}}}}`),
-					sampleAd,
+					"",
 				},
 				{
 					"Both field's returnCreative set to true, expect valid AdM",
@@ -1346,7 +1346,7 @@ func TestGetBidCacheInfoEndToEnd(t *testing.T) {
 	var errList []error
 
 	// 	4) Build bid response
-	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, true, nil, "", errList, &SeatNonBidBuilder{})
+	bid_resp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, adapterExtra, auc, nil, extCacheInstructions{}, nil, "", errList, &SeatNonBidBuilder{})
 
 	expectedBidResponse := &openrtb2.BidResponse{
 		SeatBid: []openrtb2.SeatBid{
@@ -1386,17 +1386,50 @@ func TestBidReturnsCreative(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
 		description            string
-		inReturnCreative       bool
+		bidType                openrtb_ext.BidType
+		cacheInstructions      extCacheInstructions
 		expectedCreativeMarkup string
 	}{
 		{
-			"returnCreative set to true, expect a full creative markup string in returned bid",
-			true,
+			"no cache instruction returns banner creative",
+			openrtb_ext.BidTypeBanner,
+			extCacheInstructions{},
 			sampleAd,
 		},
 		{
-			"returnCreative set to false, expect empty creative markup string in returned bid",
-			false,
+			"bids returnCreative false removes banner creative",
+			openrtb_ext.BidTypeBanner,
+			extCacheInstructions{cacheBids: true, returnCreativeBids: false},
+			"",
+		},
+		{
+			"VAST returnCreative false preserves banner creative",
+			openrtb_ext.BidTypeBanner,
+			extCacheInstructions{cacheVAST: true, returnCreativeVAST: false},
+			sampleAd,
+		},
+		{
+			"VAST returnCreative false removes video creative",
+			openrtb_ext.BidTypeVideo,
+			extCacheInstructions{cacheVAST: true, returnCreativeVAST: false},
+			"",
+		},
+		{
+			"VAST returnCreative false removes video creative when bids returnCreative is true",
+			openrtb_ext.BidTypeVideo,
+			extCacheInstructions{cacheBids: true, cacheVAST: true, returnCreativeBids: true, returnCreativeVAST: false},
+			"",
+		},
+		{
+			"bids returnCreative false removes banner creative when VAST returnCreative is true",
+			openrtb_ext.BidTypeBanner,
+			extCacheInstructions{cacheBids: true, cacheVAST: true, returnCreativeBids: false, returnCreativeVAST: true},
+			"",
+		},
+		{
+			"bids returnCreative false removes video creative when VAST returnCreative is true",
+			openrtb_ext.BidTypeVideo,
+			extCacheInstructions{cacheBids: true, cacheVAST: true, returnCreativeBids: false, returnCreativeVAST: true},
 			"",
 		},
 	}
@@ -1436,7 +1469,8 @@ func TestBidReturnsCreative(t *testing.T) {
 
 	//Run tests
 	for _, test := range testCases {
-		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.inReturnCreative, nil, &openrtb_ext.RequestWrapper{}, nil, "", "", &SeatNonBidBuilder{})
+		sampleBids[0].BidType = test.bidType
+		resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, test.cacheInstructions, nil, &openrtb_ext.RequestWrapper{}, nil, "", "", &SeatNonBidBuilder{})
 
 		assert.Equal(t, 0, len(resultingErrs), "%s. Test should not return errors \n", test.description)
 		assert.Equal(t, test.expectedCreativeMarkup, resultingBids[0].AdM, "%s. Ad markup string doesn't match expected \n", test.description)
@@ -1721,7 +1755,7 @@ func TestBidResponseCurrency(t *testing.T) {
 	}
 	// Run tests
 	for i := range testCases {
-		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, true, nil, "", errList, &SeatNonBidBuilder{})
+		actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, testCases[i].adapterBids, bidRequest, adapterExtra, nil, bidResponseExt, extCacheInstructions{}, nil, "", errList, &SeatNonBidBuilder{})
 		assert.Equalf(t, testCases[i].expectedBidResponse, actualBidResp, fmt.Sprintf("[TEST_FAILED] Objects must be equal for test: %s \n Expected: >>%s<< \n Actual: >>%s<< ", testCases[i].description, testCases[i].expectedBidResponse.Ext, actualBidResp.Ext))
 	}
 }
@@ -1789,7 +1823,7 @@ func TestBidResponseImpExtInfo(t *testing.T) {
 
 	expectedBidResponseExt := `{"origbidcpm":0,"prebid":{"meta":{"adaptercode":"appnexus"},"type":"video","passthrough":{"imp_passthrough_val":1}},"storedrequestattributes":{"h":480,"mimes":["video/mp4"]}}`
 
-	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, true, impExtInfo, "", errList, &SeatNonBidBuilder{})
+	actualBidResp := e.buildBidResponse(context.Background(), liveAdapters, adapterBids, bidRequest, nil, nil, nil, extCacheInstructions{}, impExtInfo, "", errList, &SeatNonBidBuilder{})
 
 	resBidExt := string(actualBidResp.SeatBid[0].Bid[0].Ext)
 	assert.Equalf(t, expectedBidResponseExt, resBidExt, "Expected bid response extension is incorrect")
@@ -4930,7 +4964,7 @@ func TestMakeBidWithValidation(t *testing.T) {
 			e.bidValidationEnforcement = test.givenValidations
 			sampleBids := test.givenBids
 			nonBids := &SeatNonBidBuilder{}
-			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, true, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
+			resultingBids, resultingErrs := e.makeBid(sampleBids, sampleAuction, extCacheInstructions{}, ImpExtInfoMap, bidRequest, bidExtResponse, test.givenSeat, "", nonBids)
 
 			assert.Equal(t, 0, len(resultingErrs))
 			assert.Equal(t, test.expectedNumOfBids, len(resultingBids))
