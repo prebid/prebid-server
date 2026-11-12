@@ -1,0 +1,14 @@
+endpoint: "https://pbs.goadserver.com/openrtb2/auction"
+maintainer:
+  email: "support@goadserver.com"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
