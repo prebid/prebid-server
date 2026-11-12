@@ -58,13 +58,7 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		reqCopy.Imp[0].TagID = tagID
 
 		// placementId
-		newExt, err := json.Marshal(
-			map[string]interface{}{
-				"bidder": map[string]interface{}{
-					"TagID":       tagID,
-					"placementId": tagID,
-				},
-			})
+		newExt, err := buildImpExt(reqCopy.Imp[0].Ext, tagID)
 		if err != nil {
 			errs = append(errs, err)
 			return nil, errs
@@ -95,6 +89,31 @@ func (a *AdprimeAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 		errs = append(errs, errors...)
 	}
 	return adapterRequests, errs
+}
+
+// buildImpExt keeps the existing imp.ext fields (gpid, data, etc.) and replaces only the bidder key
+func buildImpExt(impExt json.RawMessage, tagID string) (json.RawMessage, error) {
+	var extMap map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(impExt, &extMap); err != nil {
+		return nil, err
+	}
+
+	if extMap == nil {
+		extMap = make(map[string]json.RawMessage)
+	}
+
+	bidderExt, err := json.Marshal(
+		map[string]interface{}{
+			"TagID":       tagID,
+			"placementId": tagID,
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	extMap["bidder"] = bidderExt
+
+	return json.Marshal(extMap)
 }
 
 func (a *AdprimeAdapter) makeRequest(request *openrtb2.BidRequest) (*adapters.RequestData, []error) {
