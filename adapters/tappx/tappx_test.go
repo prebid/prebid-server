@@ -54,3 +54,20 @@ func TestTsValue(t *testing.T) {
 	}
 	assert.True(t, match)
 }
+
+func TestNewEndpointWithSuffixLongerThanThreeChars(t *testing.T) {
+	bidder, buildErr := Builder(openrtb_ext.BidderTappx, config.Adapter{
+		Endpoint: "http://{{.Host}}"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
+	require.NoError(t, buildErr, "Builder")
+
+	bidderTappx := bidder.(*TappxAdapter)
+
+	var tappxExt openrtb_ext.ExtImpTappx
+	tappxExt.Endpoint = "zz123456abcd"
+	tappxExt.TappxKey = "dummy-tappx-key"
+
+	url, err := bidderTappx.buildEndpointURL(&tappxExt, 1)
+	require.NoError(t, err, "buildEndpointURL")
+
+	assert.Equal(t, "http://zz123456abcd.pub.tappx.com/rtb/?tappxkey=dummy-tappx-key&type_cnn=prebid&v=1.6", url)
+}
