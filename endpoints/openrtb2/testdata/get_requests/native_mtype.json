@@ -1,0 +1,23 @@
+{
+  "description": "Native media type selection",
+  "expected_imp": {
+    "id": "imp1",
+    "native": {
+      "request": "{\"ver\":\"1.2\"}",
+      "ver": "1.2"
+    }
+  },
+  "query": "srid=testnative\u0026mtype=4\u0026w=300\u0026h=250",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "native": {
+          "request": "{\"ver\":\"1.2\"}",
+          "ver": "1.2"
+        }
+      }
+    ],
+    "site": {}
+  }
+}

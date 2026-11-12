@@ -1,0 +1,34 @@
+{
+  "description": "Request-level parameter mappings",
+  "expected_bid_request": {
+    "ext": {
+      "prebid": {
+        "debug": true,
+        "of": "vast4",
+        "om": "vastmodule",
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testreqlevel"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {},
+    "tmax": 500
+  },
+  "query": "srid=testreqlevel\u0026tmax=500\u0026debug=1\u0026of=vast4\u0026om=vastmodule",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

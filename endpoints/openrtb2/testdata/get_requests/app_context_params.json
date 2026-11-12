@@ -1,0 +1,22 @@
+{
+  "description": "pubid and content route to app when the stored request declares app",
+  "query": "srid=testapp&pubid=pub-123&cgenre=comedy",
+  "stored_bid_request": {
+    "app": {"id": "stored-app"},
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "app": {
+      "id": "stored-app",
+      "publisher": {"id": "pub-123"},
+      "content": {"genre": "comedy"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testapp"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}

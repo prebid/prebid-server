@@ -1,0 +1,21 @@
+{
+  "description": "dtype=8 (DOOH device type) implies dooh context; pubid and content route to dooh",
+  "query": "srid=testdooh&dtype=8&pubid=pub-dooh&cgenre=outdoor",
+  "stored_bid_request": {
+    "imp": [{"id": "imp1"}]
+  },
+  "expected_bid_request": {
+    "imp": [{"id": "imp1"}],
+    "device": {"devicetype": 8},
+    "dooh": {
+      "publisher": {"id": "pub-dooh"},
+      "content": {"genre": "outdoor"}
+    },
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "testdooh"},
+        "server": {"http_method": "GET"}
+      }
+    }
+  }
+}
