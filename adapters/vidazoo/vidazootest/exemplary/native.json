@@ -1,0 +1,112 @@
+{
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "prebid.org"
+    },
+    "imp": [
+      {
+        "id": "some-impression-id",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}},{\"id\":3,\"required\":1,\"data\":{\"type\":1}}]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "cId": "test_cid_123"
+          }
+        }
+      }
+    ],
+    "tmax": 5000
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://prebid-server.cootlogix.com/openrtb/test_cid_123",
+        "body": {
+          "id": "some-request-id",
+          "site": {
+            "page": "prebid.org"
+          },
+          "imp": [
+            {
+              "id": "some-impression-id",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":80}},{\"id\":2,\"required\":1,\"img\":{\"type\":3,\"w\":1200,\"h\":627}},{\"id\":3,\"required\":1,\"data\":{\"type\":1}}]}",
+                "ver": "1.2"
+              },
+              "ext": {
+                "bidder": {
+                  "cId": "test_cid_123"
+                }
+              }
+            }
+          ],
+          "tmax": 5000
+        },
+        "impIDs": [
+          "some-impression-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "some-request-id",
+          "cur": "",
+          "bidid": "some-bid-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "some-bid-id",
+                  "impid": "some-impression-id",
+                  "price": 1,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Native title\"}},{\"id\":2,\"img\":{\"url\":\"https://cdn.example/img.jpg\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Advertiser\"}}],\"link\":{\"url\":\"https://advertiser.example/click\"}}}",
+                  "adid": "some-ad-id",
+                  "cid": "test",
+                  "crid": "some-creative-id",
+                  "adomain": [
+                    "test.com"
+                  ],
+                  "dealid": "deal123",
+                  "w": 1,
+                  "h": 1,
+                  "exp": 60,
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "bids": [
+        {
+          "bid": {
+            "id": "some-bid-id",
+            "impid": "some-impression-id",
+            "price": 1,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Native title\"}},{\"id\":2,\"img\":{\"url\":\"https://cdn.example/img.jpg\",\"w\":1200,\"h\":627}},{\"id\":3,\"data\":{\"value\":\"Advertiser\"}}],\"link\":{\"url\":\"https://advertiser.example/click\"}}}",
+            "adid": "some-ad-id",
+            "cid": "test",
+            "crid": "some-creative-id",
+            "adomain": [
+              "test.com"
+            ],
+            "dealid": "deal123",
+            "w": 1,
+            "h": 1,
+            "exp": 60,
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": []
+}
