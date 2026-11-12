@@ -13,11 +13,14 @@ import (
 	"testing"
 
 	"github.com/prebid/prebid-server/v4/config"
+	"github.com/prebid/prebid-server/v4/metrics"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/prebid_cache_client"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -835,4 +838,42 @@ func TestGetIntegrationType(t *testing.T) {
 			assert.Equalf(t, test.expectedIntegrationType, integrationType, test.description)
 		}
 	}
+}
+
+func TestVTrackCacheKeyCannotAddPut(t *testing.T) {
+	input := BidCacheRequest{Puts: []prebid_cache_client.Cacheable{{
+		Type: prebid_cache_client.TypeJSON, Data: json.RawMessage(`true`),
+		BidID: "fixture-bid", Bidder: "fixture-bidder",
+		Key: `safe"},{"type":"json","value":true,"key":"extra`,
+	}}}
+	body, err := json.Marshal(input)
+	require.NoError(t, err)
+	req, err := ParseVTrackRequest(httptest.NewRequest(http.MethodPost, "/vtrack?a=fixture", bytes.NewReader(body)), maxSize)
+	require.NoError(t, err)
+	captured := make(chan BidCacheRequest, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request BidCacheRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Error(err)
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		captured <- request
+		_, _ = w.Write([]byte(`{"responses":[{"uuid":"one"}]}`))
+	}))
+	defer server.Close()
+	metricsMock := &metrics.MetricsEngineMock{}
+	metricsMock.On("RecordPrebidCacheRequestTime", true, mock.Anything).Once()
+	client := prebid_cache_client.NewClient(server.Client(), &config.Cache{
+		Scheme: "http", Host: strings.TrimPrefix(server.URL, "http://"),
+	}, &config.ExternalCache{}, metricsMock)
+	endpoint := &vtrackEndpoint{Cache: client, Cfg: &config.Configuration{}}
+	_, errs := endpoint.cachePutObjects(context.Background(), req, map[string]struct{}{}, "fixture", "")
+	require.Empty(t, errs)
+	got := <-captured
+	require.Len(t, got.Puts, 1)
+	assert.Equal(t, input.Puts[0].Key, got.Puts[0].Key)
+	assert.Equal(t, input.Puts[0].Type, got.Puts[0].Type)
+	assert.Equal(t, input.Puts[0].Data, got.Puts[0].Data)
+	metricsMock.AssertExpectations(t)
 }
