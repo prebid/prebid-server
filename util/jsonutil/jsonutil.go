@@ -3,6 +3,7 @@ package jsonutil
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 	"unsafe"
@@ -19,6 +20,8 @@ const (
 	closingCurlyBracket byte = '}'
 )
 
+var errMalformedNestedElement = errors.New("jsonutil: could not determine boundaries of nested element")
+
 // RawMessage to allow replacing json with jsonutil
 type RawMessage = json.RawMessage
 
@@ -29,7 +32,7 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 	dec := json.NewDecoder(buf)
 	found := false
 	var startIndex, endIndex int64
-	var i interface{}
+	var i any
 	for {
 		token, err := dec.Token()
 		if err == io.EOF {
@@ -53,6 +56,9 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 				}
 				for {
 					//structure has more elements, need to find index of comma
+					if endIndex >= int64(len(extension)) {
+						return false, -1, -1, errMalformedNestedElement
+					}
 					if extension[endIndex] == comma {
 						endIndex++
 						break
@@ -71,6 +77,9 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 			return found, startIndex, endIndex, nil
 		} else if len(elementNames) > 1 {
 			for {
+				if startIndex >= int64(len(extension)) {
+					return false, -1, -1, errMalformedNestedElement
+				}
 				//find the beginning of nested element
 				if extension[startIndex] == colon {
 					startIndex++
@@ -82,18 +91,15 @@ func FindElement(extension []byte, elementNames ...string) (bool, int64, int64, 
 				if endIndex == int64(len(extension)) {
 					endIndex--
 				}
-
-				//if structure had more elements, need to find index of comma at the end
-				if extension[endIndex] == sqBracket || extension[endIndex] == closingCurlyBracket {
-					break
+				if endIndex < 0 {
+					return false, -1, -1, errMalformedNestedElement
 				}
 
-				if extension[endIndex] == comma {
-					endIndex--
+				//index lands one past the nested element's own closing bracket/brace
+				if extension[endIndex] == sqBracket || extension[endIndex] == closingCurlyBracket || extension[endIndex] == comma {
 					break
-				} else {
-					endIndex--
 				}
+				endIndex--
 			}
 			if found {
 				found, startInd, endInd, err := FindElement(extension[startIndex:endIndex], elementNames[1:]...)
