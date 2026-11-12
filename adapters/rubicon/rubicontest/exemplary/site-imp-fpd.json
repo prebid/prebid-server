@@ -39,82 +39,6 @@
           ],
           "attr7": 1.23
         }
-      },
-      "content": {
-        "data": [
-          {
-            "ext": {
-              "segtax": 1
-            },
-            "segment": [
-              {
-                "id": "idToCopy"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "someValue"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": "2"
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 2
-            },
-            "segment": [
-              {
-                "id": "idToCopy2"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 5
-            },
-            "segment": [
-              {
-                "id": "idToCopy3"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": 6
-            },
-            "segment": [
-              {
-                "id": "idToCopy4"
-              }
-            ]
-          },
-          {
-            "ext": {
-              "segtax": [
-                2
-              ]
-            },
-            "segment": [
-              {
-                "id": "shouldNotBeCopied3"
-              }
-            ]
-          }
-        ]
       }
     },
     "user": {
@@ -124,61 +48,7 @@
         "lat": 47.627500,
         "lon": -122.346200
       },
-      "gender": "f",
-      "data": [
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "someValue"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": "4"
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": 4
-          },
-          "segment": [
-            {
-              "id": "idToCopy2"
-            }
-          ]
-        },
-        {
-          "ext": {
-            "segtax": [
-              4
-            ]
-          },
-          "segment": [
-            {
-              "id": "shouldNotBeCopied3"
-            }
-          ]
-        }
-      ]
+      "gender": "f"
     },
     "imp": [
       {
@@ -242,93 +112,9 @@
             "page": "somePage",
             "ref": "someRef",
             "search": "someSearch",
-            "content": {
-              "data": [
-                {
-                  "ext": {
-                    "segtax": 1
-                  },
-                  "segment": [
-                    {
-                      "id": "idToCopy"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "someValue"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": "2"
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 2
-                  },
-                  "segment": [
-                    {
-                      "id": "idToCopy2"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 5
-                  },
-                  "segment": [
-                    {
-                      "id": "idToCopy3"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": 6
-                  },
-                  "segment": [
-                    {
-                      "id": "idToCopy4"
-                    }
-                  ]
-                },
-                {
-                  "ext": {
-                    "segtax": [
-                      2
-                    ]
-                  },
-                  "segment": [
-                    {
-                      "id": "shouldNotBeCopied3"
-                    }
-                  ]
-                }
-              ]
-            },
             "ext": {
               "rp": {
-                "site_id": 113932,
-                "target": {
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2",
-                    "idToCopy3",
-                    "idToCopy4"
-                  ]
-                }
+                "site_id": 113932
               }
             },
             "publisher": {
@@ -340,67 +126,9 @@
             }
           },
           "user": {
-            "data": [
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "someValue"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": "4"
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": 4
-                },
-                "segment": [
-                  {
-                    "id": "idToCopy2"
-                  }
-                ]
-              },
-              {
-                "ext": {
-                  "segtax": [
-                    4
-                  ]
-                },
-                "segment": [
-                  {
-                    "id": "shouldNotBeCopied3"
-                  }
-                ]
-              }
-            ],
             "ext": {
               "rp": {
                 "target": {
-                  "iab": [
-                    "idToCopy",
-                    "idToCopy2"
-                  ]
                 }
               }
             }
