@@ -937,6 +937,14 @@ func (me *Metrics) RecordAccountCacheResult(cacheResult CacheResult, inc int) {
 	me.AccountCacheMeter[cacheResult].Mark(int64(inc))
 }
 
+// RecordFetcherResult is not tracked by the influx/go-metrics engine.
+func (me *Metrics) RecordFetcherResult(subsystem string, result FetcherResult) {
+}
+
+// RecordFetcherBackendFetch is not tracked by the influx/go-metrics engine.
+func (me *Metrics) RecordFetcherBackendFetch(subsystem string, operation FetcherOperation, result FetcherBackendResult, length time.Duration) {
+}
+
 // RecordPrebidCacheRequestTime implements a part of the MetricsEngine interface. Records the
 // amount of time taken to store the auction result in Prebid Cache.
 func (me *Metrics) RecordPrebidCacheRequestTime(success bool, length time.Duration) {

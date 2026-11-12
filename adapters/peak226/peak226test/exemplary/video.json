@@ -1,0 +1,105 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://publisher.example.com/page"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "bidfloor": 2.0,
+        "bidfloorcur": "USD",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3, 5, 6],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-test",
+            "placementId": "plc-test",
+            "region": "eu"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://eu.a.viddea.com/edge_direct",
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://publisher.example.com/page",
+            "publisher": {
+              "id": "pub-test"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "plc-test",
+              "bidfloor": 2.0,
+              "bidfloorcur": "USD",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 3, 5, 6],
+                "w": 640,
+                "h": 480
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "resp-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "peak226",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 4.75,
+                  "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+                  "crid": "cr-2",
+                  "adomain": ["advertiser.com"],
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 4.75,
+            "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
+            "crid": "cr-2",
+            "adomain": ["advertiser.com"],
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
