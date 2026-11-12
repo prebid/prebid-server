@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "mismatched-ssp-site-id",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "sspId": "ssp-1", "siteId": "site-1" } }
+      },
+      {
+        "id": "2",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": { "sspId": "ssp-2", "siteId": "site-2" } }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "impID 2: sspId/siteId must be identical across all impressions",
+      "comparison": "literal"
+    }
+  ]
+}
