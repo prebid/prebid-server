@@ -37,6 +37,7 @@ var validParams = []string{
 	`{"id":"123456"}`,
 	`{"id":""}`,
 	`{"id":"12345","other_params":"hoge"}`,
+	`{"id":"1","marginTop":"10"}`,
 }
 
 var invalidParams = []string{
@@ -44,4 +45,5 @@ var invalidParams = []string{
 	`null`,
 	`12345`,
 	`{"id":123456}`,
+	`{"id":"1","marginTop":10}`,
 }
