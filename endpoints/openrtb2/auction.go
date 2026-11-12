@@ -422,6 +422,13 @@ func (deps *endpointDeps) parseRequest(httpRequest *http.Request, labels *metric
 	var errL []error
 	var r io.ReadCloser = httpRequest.Body
 	reqContentEncoding := httputil.ContentEncoding(httpRequest.Header.Get("Content-Encoding"))
+	if reqContentEncoding == "" && httpRequest.URL.Query().Get("gzip") == "1" {
+		// Prebid.js's endpointCompression option gzip-compresses the request body but
+		// intentionally omits the Content-Encoding header (setting it would trigger a
+		// CORS preflight request), signaling compression via this query param instead.
+		// See https://github.com/prebid/prebid-server/issues/4474.
+		reqContentEncoding = httputil.ContentEncodingGZIP
+	}
 	if reqContentEncoding != "" {
 		if !deps.cfg.Compression.Request.IsSupported(reqContentEncoding) {
 			errs = []error{fmt.Errorf("Content-Encoding of type %s is not supported", reqContentEncoding)}

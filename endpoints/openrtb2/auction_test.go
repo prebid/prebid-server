@@ -3788,11 +3788,12 @@ func TestParseRequestParseImpInfoError(t *testing.T) {
 func TestParseGzipedRequest(t *testing.T) {
 	testCases :=
 		[]struct {
-			desc           string
-			reqContentEnc  string
-			maxReqSize     int64
-			compressionCfg config.Compression
-			expectedErr    string
+			desc              string
+			reqContentEnc     string
+			useGzipQueryParam bool
+			maxReqSize        int64
+			compressionCfg    config.Compression
+			expectedErr       string
 		}{
 			{
 				desc:           "Gzip compression enabled, request size exceeds max request size",
@@ -3827,6 +3828,24 @@ func TestParseGzipedRequest(t *testing.T) {
 				maxReqSize:     2000,
 				compressionCfg: config.Compression{Request: config.CompressionInfo{GZIP: true}},
 				expectedErr:    "",
+			},
+			{
+				// Prebid.js's endpointCompression option gzip-compresses the body but
+				// deliberately omits the Content-Encoding header, signaling via
+				// ?gzip=1 instead (see https://github.com/prebid/prebid-server/issues/4474).
+				desc:              "Gzip signaled via gzip=1 query param, no Content-Encoding header, compression enabled",
+				reqContentEnc:     "gzip",
+				useGzipQueryParam: true,
+				maxReqSize:        2000,
+				compressionCfg:    config.Compression{Request: config.CompressionInfo{GZIP: true}},
+				expectedErr:       "",
+			},
+			{
+				desc:              "Gzip signaled via gzip=1 query param, but Gzip compression is disabled",
+				reqContentEnc:     "gzip",
+				useGzipQueryParam: true,
+				compressionCfg:    config.Compression{Request: config.CompressionInfo{GZIP: false}},
+				expectedErr:       "Content-Encoding of type gzip is not supported",
 			},
 		}
 
@@ -3866,8 +3885,14 @@ func TestParseGzipedRequest(t *testing.T) {
 			assert.NoError(t, err, "Error writing gzip compressed request body", test.desc)
 			assert.NoError(t, gw.Close(), "Error closing gzip writer", test.desc)
 
-			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(compressed.Bytes()))
-			req.Header.Set("Content-Encoding", "gzip")
+			path := "/openrtb2/auction"
+			if test.useGzipQueryParam {
+				path += "?gzip=1"
+			}
+			req = httptest.NewRequest("POST", path, bytes.NewReader(compressed.Bytes()))
+			if !test.useGzipQueryParam {
+				req.Header.Set("Content-Encoding", "gzip")
+			}
 		} else {
 			req = httptest.NewRequest("POST", "/openrtb2/auction", bytes.NewReader(reqBody))
 		}
