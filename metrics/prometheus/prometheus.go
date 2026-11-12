@@ -96,6 +96,7 @@ type Metrics struct {
 	accountRequests                       *prometheus.CounterVec
 	accountDebugRequests                  *prometheus.CounterVec
 	accountStoredResponses                *prometheus.CounterVec
+	accountGotBidsRequests                *prometheus.CounterVec
 	accountBidResponseValidationSizeError *prometheus.CounterVec
 	accountBidResponseValidationSizeWarn  *prometheus.CounterVec
 	accountBidResponseSecureMarkupError   *prometheus.CounterVec
@@ -559,6 +560,11 @@ func NewMetrics(cfg config.PrometheusMetrics, disabledMetrics config.DisabledMet
 		"Count of total requests to Prebid Server that have stored responses labled by account",
 		[]string{accountLabel})
 
+	metrics.accountGotBidsRequests = newCounter(cfg, reg,
+		"account_requests_gotbids",
+		"Count of auction requests per account that returned at least one bid",
+		[]string{accountLabel})
+
 	metrics.adsCertSignTimer = newHistogram(cfg, reg,
 		"ads_cert_sign_time",
 		"Seconds to generate an AdsCert header",
@@ -760,6 +766,14 @@ func (m *Metrics) RecordStoredResponse(pubId string) {
 	m.storedResponses.Inc()
 	if !m.metricsDisabled.AccountStoredResponses && pubId != metrics.PublisherUnknown {
 		m.accountStoredResponses.With(prometheus.Labels{
+			accountLabel: pubId,
+		}).Inc()
+	}
+}
+
+func (m *Metrics) RecordAccountGotBids(pubId string) {
+	if pubId != metrics.PublisherUnknown {
+		m.accountGotBidsRequests.With(prometheus.Labels{
 			accountLabel: pubId,
 		}).Inc()
 	}
