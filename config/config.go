@@ -629,10 +629,42 @@ type InfluxMetrics struct {
 }
 
 type PrometheusMetrics struct {
-	Port             int    `mapstructure:"port"`
-	Namespace        string `mapstructure:"namespace"`
-	Subsystem        string `mapstructure:"subsystem"`
-	TimeoutMillisRaw int    `mapstructure:"timeout_ms"`
+	Port             int                      `mapstructure:"port"`
+	Namespace        string                   `mapstructure:"namespace"`
+	Subsystem        string                   `mapstructure:"subsystem"`
+	TimeoutMillisRaw int                      `mapstructure:"timeout_ms"`
+	Buckets          PrometheusMetricsBuckets `mapstructure:"buckets"`
+}
+
+// PrometheusMetricsBuckets holds optional per-histogram-family bucket boundary overrides for
+// the Prometheus metrics NewMetrics() registers. Each field left empty (the default) falls
+// back to NewMetrics()'s existing hardcoded boundaries, so this struct is purely additive and
+// changes no behavior for operators who don't set it.
+type PrometheusMetricsBuckets struct {
+	// StandardTimeBuckets overrides the bucket boundaries (in seconds) for the majority of
+	// this package's request/stage timing histograms - auction, AMP, video, cookie sync,
+	// setuid, per-module-stage overhead, and similar. Defaults to
+	// {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1}.
+	StandardTimeBuckets []float64 `mapstructure:"standard_time_buckets"`
+	// CacheWriteTimeBuckets overrides the bucket boundaries (in seconds) for the Prebid
+	// Cache write-time histogram. Defaults to
+	// {0.001, 0.002, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1}.
+	CacheWriteTimeBuckets []float64 `mapstructure:"cache_write_time_buckets"`
+	// PriceBuckets overrides the bucket boundaries (in the request's resolved currency's
+	// smallest reporting unit, e.g. cents) for the bid/imp price histogram. Defaults to
+	// {250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000}.
+	PriceBuckets []float64 `mapstructure:"price_buckets"`
+	// QueuedRequestTimeBuckets overrides the bucket boundaries (in seconds) for the
+	// queued-request-time histogram. Defaults to {0, 1, 5, 30, 60, 120, 180, 240, 300}.
+	QueuedRequestTimeBuckets []float64 `mapstructure:"queued_request_time_buckets"`
+	// OverheadTimeBuckets overrides the bucket boundaries (in seconds) for the per-stage
+	// processing-overhead histogram. Defaults to
+	// {0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1}.
+	OverheadTimeBuckets []float64 `mapstructure:"overhead_time_buckets"`
+	// RequestSizeBuckets overrides the bucket boundaries (in bytes) for the incoming
+	// request-size histogram. Defaults to
+	// {100, 500, 750, 1000, 2000, 4000, 7000, 10000, 15000, 20000, 50000, 75000}.
+	RequestSizeBuckets []float64 `mapstructure:"request_size_buckets"`
 }
 
 func (cfg *PrometheusMetrics) validate(errs []error) []error {
