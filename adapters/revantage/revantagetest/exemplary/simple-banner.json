@@ -1,0 +1,149 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "tagid": "ad-unit-1",
+        "banner": {
+          "w": 300,
+          "h": 250,
+          "format": [
+            {"w": 300, "h": 250},
+            {"w": 300, "h": 600}
+          ]
+        },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": {
+          "bidder": {
+            "feedId": "feed-abc",
+            "placementId": "plc-1",
+            "publisherId": "pub-1"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/article"
+    },
+    "device": {
+      "ua": "Mozilla/5.0",
+      "language": "en"
+    },
+    "user": {
+      "ext": {
+        "consent": "BOJ/P2HOJ/P2HABABMAAAAAZ+A=="
+      }
+    },
+    "regs": {
+      "ext": {
+        "gdpr": 1
+      }
+    },
+    "tmax": 1000,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-abc",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "ad-unit-1",
+              "banner": {
+                "w": 300,
+                "h": 250,
+                "format": [
+                  {"w": 300, "h": 250},
+                  {"w": 300, "h": 600}
+                ]
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "ext": {
+                "feedId": "feed-abc",
+                "bidder": {
+                  "placementId": "plc-1",
+                  "publisherId": "pub-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/article"
+          },
+          "device": {
+            "ua": "Mozilla/5.0",
+            "language": "en"
+          },
+          "user": {
+            "ext": {
+              "consent": "BOJ/P2HOJ/P2HABABMAAAAAZ+A=="
+            }
+          },
+          "regs": {
+            "ext": {
+              "gdpr": 1
+            }
+          },
+          "tmax": 1000,
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "test-dsp",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.25,
+                  "adm": "<div>Banner Ad</div>",
+                  "crid": "creative-123",
+                  "w": 300,
+                  "h": 250,
+                  "adomain": ["advertiser.com"],
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.25,
+            "adm": "<div>Banner Ad</div>",
+            "crid": "creative-123",
+            "w": 300,
+            "h": 250,
+            "adomain": ["advertiser.com"],
+            "mtype": 1
+          },
+          "type": "banner",
+          "seat": "test-dsp"
+        }
+      ]
+    }
+  ]
+}
