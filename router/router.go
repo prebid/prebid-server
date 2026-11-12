@@ -46,6 +46,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/cors"
 )
 
@@ -208,7 +209,11 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 	}
 
 	normalizedGeoscopes := getNormalizedGeoscopes(cfg.BidderInfos)
+	moduleMetricsRegisterer, moduleMetricsGatherer, moduleMetricsEnabled := newModuleMetricsRegistry(cfg.Metrics.Prometheus)
 	moduleDeps := moduledeps.ModuleDeps{HTTPClient: generalHttpClient, RateConvertor: rateConvertor, Geoscope: normalizedGeoscopes}
+	if moduleMetricsEnabled {
+		moduleDeps.MetricsRegisterer = moduleMetricsRegisterer
+	}
 	repo, moduleStageNames, shutdownModules, err := modules.NewBuilder().Build(cfg.Hooks.Modules, moduleDeps)
 	if err != nil {
 		logger.Fatalf("Failed to init hook modules: %v", err)
@@ -216,6 +221,9 @@ func New(cfg *config.Configuration, rateConvertor *currency.RateConverter) (r *R
 
 	// Metrics engine
 	r.MetricsEngine = metricsConf.NewMetricsEngine(cfg, openrtb_ext.CoreBidderNames(), syncerKeys, moduleStageNames)
+	if moduleMetricsEnabled {
+		r.MetricsEngine.ModuleMetricsGatherer = moduleMetricsGatherer
+	}
 	shutdown, fetcher, ampFetcher, accounts, categoriesFetcher, videoFetcher, storedRespFetcher := storedRequestsConf.NewStoredRequests(cfg, r.MetricsEngine, generalHttpClient, r.Router)
 
 	analyticsRunner := analyticsBuild.New(&cfg.Analytics)
@@ -411,6 +419,14 @@ func readDefaultRequestFromFile(defReqConfig config.DefReqConfig) []byte {
 	}
 
 	return defaultRequestJSON
+}
+
+func newModuleMetricsRegistry(cfg config.PrometheusMetrics) (prometheus.Registerer, prometheus.Gatherer, bool) {
+	if cfg.Port == 0 {
+		return nil, nil, false
+	}
+	registry := prometheus.NewRegistry()
+	return registry, registry, true
 }
 
 func getNormalizedGeoscopes(bidderInfos config.BidderInfos) map[string][]string {

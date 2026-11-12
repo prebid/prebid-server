@@ -1,0 +1,14 @@
+{
+  "id": "local-auction-1",
+  "test": 1,
+  "tmax": 2000,
+  "imp": [{
+    "id": "test-div-1",
+    "banner": {"format": [{"w": 300, "h": 250}]},
+    "ext": {"prebid": {"storedbidresponse": [{"bidder": "pubmatic", "id": "iiq-test"}], "bidder": {"pubmatic": {"publisherId": "156209"}}}}
+  }],
+  "site": {"domain": "example.com", "page": "https://example.com/article"},
+  "device": {"ip": "203.0.113.10", "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"},
+  "user": {"eids": [{"source": "pubcid.org", "uids": [{"id": "pubcid-123"}]}]},
+  "ext": {"prebid": {"debug": true}}
+}
