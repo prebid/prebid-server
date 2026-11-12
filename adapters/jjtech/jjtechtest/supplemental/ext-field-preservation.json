@@ -1,0 +1,55 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": { "bundle": "com.example.app" },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": {
+          "gpid": "/homepage/banner1",
+          "tid": "test-transaction-id",
+          "skadn": {
+            "versions": ["2.0", "2.2"],
+            "sourceapp": "123456789",
+            "skadnetids": ["cDkw7geQsH.skadnetwork"]
+          },
+          "bidder": { "placementId": "test-placement-1" }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ind-apac.jambojar.com/jjt-prebid/rtb-apac",
+        "body": {
+          "id": "test-request-id",
+          "app": { "bundle": "com.example.app" },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": {
+                "gpid": "/homepage/banner1",
+                "tid": "test-transaction-id",
+                "skadn": {
+                  "versions": ["2.0", "2.2"],
+                  "sourceapp": "123456789",
+                  "skadnetids": ["cDkw7geQsH.skadnetwork"]
+                },
+                "jjtech": { "placementId": "test-placement-1" }
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
