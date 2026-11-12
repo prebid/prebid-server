@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "at": 1,
+    "cur": [
+      "EUR"
+    ],
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "partnerId": 4321,
+            "placementId": "slot-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "cur does not contain JPY or USD, got EUR",
+      "comparison": "literal"
+    }
+  ]
+}
