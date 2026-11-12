@@ -130,13 +130,6 @@ func TestGetMediaType(t *testing.T) {
 			expected: openrtb_ext.BidTypeAudio,
 		},
 		{
-			name: "Native type",
-			imp: openrtb2.Imp{
-				Native: &openrtb2.Native{},
-			},
-			expected: openrtb_ext.BidTypeNative,
-		},
-		{
 			name: "Multiple media types - prioritize video",
 			imp: openrtb2.Imp{
 				Banner: &openrtb2.Banner{},
@@ -151,14 +144,6 @@ func TestGetMediaType(t *testing.T) {
 				Audio:  &openrtb2.Audio{},
 			},
 			expected: openrtb_ext.BidTypeAudio,
-		},
-		{
-			name: "Multiple media types - prioritize native over banner",
-			imp: openrtb2.Imp{
-				Banner: &openrtb2.Banner{},
-				Native: &openrtb2.Native{},
-			},
-			expected: openrtb_ext.BidTypeNative,
 		},
 		{
 			name:     "No media type defaults to banner",
@@ -211,12 +196,20 @@ func TestGetBidType(t *testing.T) {
 			hasError: false,
 		},
 		{
-			name: "Native MType",
+			name: "Native MType falls back to impression lookup",
 			bid: openrtb2.Bid{
+				ImpID: "imp-1",
 				MType: openrtb2.MarkupNative,
 			},
-			request:  &openrtb2.BidRequest{},
-			expected: openrtb_ext.BidTypeNative,
+			request: &openrtb2.BidRequest{
+				Imp: []openrtb2.Imp{
+					{
+						ID:     "imp-1",
+						Banner: &openrtb2.Banner{},
+					},
+				},
+			},
+			expected: openrtb_ext.BidTypeBanner,
 			hasError: false,
 		},
 		{
