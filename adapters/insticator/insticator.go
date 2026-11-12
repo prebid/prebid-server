@@ -1,6 +1,7 @@
 package insticator
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,10 +15,6 @@ import (
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 	"github.com/prebid/prebid-server/v4/util/mathutil"
 )
-
-type ext struct {
-	Insticator impInsticatorExt `json:"insticator"`
-}
 
 type impInsticatorExt struct {
 	AdUnitId    string `json:"adUnitId"`
@@ -49,14 +46,6 @@ type insticatorCaller struct {
 // caller Info used to track Prebid Server
 // as one of the hops in the request to exchange
 var caller = insticatorCaller{"Prebid-Server", "n/a"}
-
-type bidExt struct {
-	Insticator bidInsticatorExt `json:"insticator,omitempty"`
-}
-
-type bidInsticatorExt struct {
-	MediaType string `json:"mediaType,omitempty"`
-}
 
 // Builder builds a new instance of the Insticator adapter with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
@@ -114,6 +103,10 @@ func getMediaTypeForBid(bid *openrtb2.Bid) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeBanner
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo
+	case openrtb2.MarkupAudio:
+		return openrtb_ext.BidTypeAudio
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative
 	default:
 		return openrtb_ext.BidTypeBanner
 	}
@@ -286,29 +279,43 @@ func getBidVideo(bid *openrtb2.Bid, bidType openrtb_ext.BidType) *openrtb_ext.Ex
 }
 
 func makeImps(imp openrtb2.Imp) (openrtb2.Imp, string, string, error) {
-	var bidderExt adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
+	incomingExt := map[string]json.RawMessage{}
+	if err := jsonutil.Unmarshal(imp.Ext, &incomingExt); err != nil {
 		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
 	var insticatorExt openrtb_ext.ExtImpInsticator
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &insticatorExt); err != nil {
+	if err := jsonutil.Unmarshal(incomingExt[openrtb_ext.PrebidExtBidderKey], &insticatorExt); err != nil {
 		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
 		}
 	}
 
-	// Directly construct the impExt
-	impExt := ext{
-		Insticator: impInsticatorExt{
-			AdUnitId:    insticatorExt.AdUnitId,
-			PublisherId: insticatorExt.PublisherId,
-		},
+	outgoingExt := map[string]json.RawMessage{}
+	for key, value := range incomingExt {
+		if key == openrtb_ext.PrebidExtBidderKey {
+			continue
+		}
+		if _, isBidder := openrtb_ext.NormalizeBidderName(key); isBidder {
+			continue
+		}
+		outgoingExt[key] = value
 	}
 
-	impExtJSON, err := jsonutil.Marshal(impExt)
+	insticatorJSON, err := jsonutil.Marshal(impInsticatorExt{
+		AdUnitId:    insticatorExt.AdUnitId,
+		PublisherId: insticatorExt.PublisherId,
+	})
+	if err != nil {
+		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
+			Message: err.Error(),
+		}
+	}
+	outgoingExt[string(openrtb_ext.BidderInsticator)] = insticatorJSON
+
+	impExtJSON, err := jsonutil.Marshal(outgoingExt)
 	if err != nil {
 		return openrtb2.Imp{}, "", "", &errortypes.BadInput{
 			Message: err.Error(),
