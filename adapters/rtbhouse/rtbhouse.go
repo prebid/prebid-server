@@ -292,7 +292,14 @@ func (adapter *RTBHouseAdapter) MakeBids(
 		return nil, []error{err}
 	}
 
-	bidsCapacity := len(openRTBBidderResponse.SeatBid[0].Bid)
+	if len(openRTBBidderResponse.SeatBid) == 0 {
+		return nil, nil
+	}
+
+	bidsCapacity := 0
+	for _, seatBid := range openRTBBidderResponse.SeatBid {
+		bidsCapacity += len(seatBid.Bid)
+	}
 	bidderResponse = adapters.NewBidderResponseWithBidsCapacity(bidsCapacity)
 	var typedBid *adapters.TypedBid
 	for _, seatBid := range openRTBBidderResponse.SeatBid {
@@ -305,8 +312,9 @@ func (adapter *RTBHouseAdapter) MakeBids(
 				continue
 			} else {
 				typedBid = &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: bidType,
+					Bid:      &bid,
+					BidType:  bidType,
+					BidVideo: getBidVideo(bidType, &bid),
 				}
 
 				// for native bid responses fix Adm field
@@ -333,10 +341,28 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
 		return "", fmt.Errorf("unrecognized bid type in response from rtbhouse for bid %s", bid.ImpID)
+	}
+}
+
+func getBidVideo(bidType openrtb_ext.BidType, bid *openrtb2.Bid) *openrtb_ext.ExtBidPrebidVideo {
+	if bidType != openrtb_ext.BidTypeVideo {
+		return nil
+	}
+
+	var primaryCategory string
+	if len(bid.Cat) > 0 {
+		primaryCategory = bid.Cat[0]
+	}
+
+	return &openrtb_ext.ExtBidPrebidVideo{
+		Duration:        int(bid.Dur),
+		PrimaryCategory: primaryCategory,
 	}
 }
 
