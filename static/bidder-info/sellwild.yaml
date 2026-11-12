@@ -1,0 +1,19 @@
+endpoint: "https://exchange.sellwild.com/exchange/openrtb2/{{.PublisherID}}"
+maintainer:
+  email: support@sellwild.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
+openrtb:
+  version: 2.6
+# The partner token travels in imp.ext.bidder, so keep the outbound request out of debug output.
+debug:
+  allow: false
