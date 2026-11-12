@@ -1,0 +1,116 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 728,
+              "h": 90
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "prebid-test"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.nl",
+      "page": "https://example.nl/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 728,
+                    "h": 90
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "page": "https://example.nl/",
+            "publisher": {
+              "id": "prebid-test"
+            }
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-1",
+                  "price": 1.2,
+                  "crid": "cr-1",
+                  "ext": {
+                    "adswag": {
+                      "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2VydmUtY29udGV4dA&sig=c2lnbmF0dXJl"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "imp-1",
+            "price": 1.2,
+            "crid": "cr-1",
+            "ext": {
+              "adswag": {
+                "serve_url": "https://ads.adswag.ai/v1/ad?sc=c2VydmUtY29udGV4dA&sig=c2lnbmF0dXJl"
+              }
+            },
+            "mtype": 1,
+            "adm": "<iframe src=\"https://ads.adswag.ai/v1/ad?sc=c2VydmUtY29udGV4dA&amp;sig=c2lnbmF0dXJl\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" style=\"border:0\" title=\"Advertisement\"></iframe>"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

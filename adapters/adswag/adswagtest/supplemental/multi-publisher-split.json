@@ -1,0 +1,152 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-pub-a",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "pub-a" } }
+      },
+      {
+        "id": "imp-pub-b",
+        "banner": { "format": [{ "w": 728, "h": 90 }] },
+        "ext": { "bidder": { "publisherId": "pub-b" } }
+      },
+      {
+        "id": "imp-pub-a-2",
+        "banner": { "format": [{ "w": 160, "h": 600 }] },
+        "ext": { "bidder": { "publisherId": "pub-a" } }
+      }
+    ],
+    "site": {
+      "domain": "example.nl",
+      "page": "https://example.nl/"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-pub-a",
+              "banner": { "format": [{ "w": 300, "h": 250 }] }
+            },
+            {
+              "id": "imp-pub-a-2",
+              "banner": { "format": [{ "w": 160, "h": 600 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "page": "https://example.nl/",
+            "publisher": { "id": "pub-a" }
+          }
+        },
+        "impIDs": ["imp-pub-a", "imp-pub-a-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "bid-a",
+                  "impid": "imp-pub-a",
+                  "price": 2.5,
+                  "crid": "cr-a",
+                  "adm": "<script src=\"https://ads.adswag.ai/v1/ad\"></script>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://test.endpoint.example/prebid/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-pub-b",
+              "banner": { "format": [{ "w": 728, "h": 90 }] }
+            }
+          ],
+          "site": {
+            "domain": "example.nl",
+            "page": "https://example.nl/",
+            "publisher": { "id": "pub-b" }
+          }
+        },
+        "impIDs": ["imp-pub-b"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "EUR",
+          "seatbid": [
+            {
+              "seat": "adswag",
+              "bid": [
+                {
+                  "id": "bid-b",
+                  "impid": "imp-pub-b",
+                  "price": 1.75,
+                  "crid": "cr-b",
+                  "adm": "<script src=\"https://ads.adswag.ai/v1/ad\"></script>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-a",
+            "impid": "imp-pub-a",
+            "price": 2.5,
+            "crid": "cr-a",
+            "adm": "<script src=\"https://ads.adswag.ai/v1/ad\"></script>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-b",
+            "impid": "imp-pub-b",
+            "price": 1.75,
+            "crid": "cr-b",
+            "adm": "<script src=\"https://ads.adswag.ai/v1/ad\"></script>",
+            "w": 728,
+            "h": 90,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
