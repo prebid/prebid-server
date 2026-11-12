@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "s2s_1",
+    "imp": [{
+      "id": "video-1",
+      "video": { "w": 640, "h": 480, "mimes": ["video/mp4"] },
+      "ext": { "bidder": { "placementId": "111c7fb088" } }
+    }],
+    "site": { "page": "https://publisher.example/article" },
+    "device": { "ua": "Mozilla/5.0", "ip": "203.0.113.10" }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://rtb.adferry.co/api/ortb/prebid",
+      "headers": {
+        "Content-Type": ["application/json;charset=utf-8"],
+        "Accept": ["application/json"],
+        "X-Openrtb-Version": ["2.6"]
+      },
+      "body": {
+        "id": "s2s_1",
+        "imp": [{
+          "id": "video-1",
+          "tagid": "111c7fb088",
+          "video": { "w": 640, "h": 480, "mimes": ["video/mp4"] },
+          "ext": { "bidder": { "placementId": "111c7fb088" } }
+        }],
+        "site": { "page": "https://publisher.example/article" },
+        "device": { "ua": "Mozilla/5.0", "ip": "203.0.113.10" }
+      },
+      "impIDs": ["video-1"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "s2s_1",
+        "cur": "USD",
+        "seatbid": [{
+          "seat": "adferry",
+          "bid": [{
+            "id": "b1",
+            "impid": "video-1",
+            "price": 2.5,
+            "adm": "<VAST version=\"4.2\"><Ad><InLine/></Ad></VAST>",
+            "crid": "src-1",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "b1",
+        "impid": "video-1",
+        "price": 2.5,
+        "adm": "<VAST version=\"4.2\"><Ad><InLine/></Ad></VAST>",
+        "crid": "src-1",
+        "w": 640,
+        "h": 480,
+        "mtype": 2
+      },
+      "type": "video"
+    }]
+  }]
+}

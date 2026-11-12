@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "r", "imp": [{ "id": "i", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 }, "ext": { "bidder": { "placementId": "111c7fb088" } } }]
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://rtb.adferry.co/api/ortb/prebid",
+      "body": { "id": "r", "imp": [{ "id": "i", "tagid": "111c7fb088", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 }, "ext": { "bidder": { "placementId": "111c7fb088" } } }] },
+      "impIDs": ["i"]
+    },
+    "mockResponse": { "status": 204, "body": {} }
+  }],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": []
+}
