@@ -1,4 +1,4 @@
-package sspBC
+package gopl
 
 import (
 	"encoding/json"
@@ -13,20 +13,20 @@ import (
 )
 
 func TestJsonSamples(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSspBC, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderGopl, config.Adapter{
 		Endpoint: "http://ssp.wp.test/bidder/"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
 		t.Fatalf("Builder returned unexpected error %v", buildErr)
 	}
 
-	adapterstest.RunJSONBidderTest(t, "sspbctest", bidder)
+	adapterstest.RunJSONBidderTest(t, "gopltest", bidder)
 }
 
 func TestInvalidEndpointURL(t *testing.T) {
 	invalidEndpointURL := "http://ssp.wp.test   /bidder/"
 
-	_, buildErr := Builder(openrtb_ext.BidderSspBC, config.Adapter{
+	_, buildErr := Builder(openrtb_ext.BidderGopl, config.Adapter{
 		Endpoint: invalidEndpointURL}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr == nil {
@@ -35,7 +35,7 @@ func TestInvalidEndpointURL(t *testing.T) {
 }
 
 func TestMakeRequests(t *testing.T) {
-	bidder, buildErr := Builder(openrtb_ext.BidderSspBC, config.Adapter{
+	bidder, buildErr := Builder(openrtb_ext.BidderGopl, config.Adapter{
 		Endpoint: "http://ssp.wp.test/bidder/"}, config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
