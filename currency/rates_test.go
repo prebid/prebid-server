@@ -263,6 +263,42 @@ func TestGetRate_FindIntermediateConversionRate(t *testing.T) {
 	}
 }
 
+// TestGetRate_FindIntermediateConversionRate_Deterministic covers
+// https://github.com/prebid/prebid-server/issues/4956: when more than one base currency in
+// Rates.Conversions can bridge the same from/to pair and those bases imply different cross
+// rates, the returned rate must be the same on every call for the same input - previously
+// this depended on Go's runtime-randomized map iteration order and could return either
+// candidate rate from one call to the next.
+func TestGetRate_FindIntermediateConversionRate_Deterministic(t *testing.T) {
+	rates := NewRates(map[string]map[string]float64{
+		"USD": {
+			"EUR": 0.85,
+			"GBP": 0.75,
+		},
+		"CAD": {
+			"EUR": 0.63,
+			"GBP": 0.56,
+		},
+	})
+
+	fromUnit, err := currency.ParseISO("EUR")
+	assert.Nil(t, err)
+	toUnit, err := currency.ParseISO("GBP")
+	assert.Nil(t, err)
+
+	// "CAD" sorts before "USD", so the CAD bridge is expected to win. Computed via the same
+	// map-indexed float64 division the function performs at runtime, rather than a constant
+	// expression, since Go's constant folding can round differently than runtime float64
+	// division and produce a spurious 1-ULP mismatch.
+	expectedRate := rates.Conversions["CAD"]["GBP"] / rates.Conversions["CAD"]["EUR"]
+
+	for i := 0; i < 50; i++ {
+		rate, err := FindIntermediateConversionRate(rates, fromUnit, toUnit)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedRate, rate, "expected the same rate on every call, got a different result on call %d", i)
+	}
+}
+
 func TestGetRate_EmptyRates(t *testing.T) {
 
 	// Setup:
