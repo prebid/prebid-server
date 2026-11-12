@@ -12,6 +12,7 @@ type bidResponse struct {
 	Price      uint         `json:"price"`
 	Advertiser string       `json:"advertiser"`
 	Adsize     string       `json:"adsize"`
+	Adtype     string       `json:"adtype"`
 	Pid        uint64       `json:"pid"`
 	Did        uint64       `json:"did"`
 	Pvid       string       `json:"pvid"`
