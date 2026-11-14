@@ -1,0 +1,129 @@
+{
+  "mockBidRequest": {
+    "id": "req-banner",
+    "tmax": 500,
+    "cur": [
+      "USD"
+    ],
+    "site": {
+      "page": "https://news.example.com/a",
+      "domain": "news.example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey",
+            "placementId": "biddigi-placement-1"
+          }
+        },
+        "tagid": "div-1",
+        "bidfloor": 0.13,
+        "bidfloorcur": "USD"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-banner",
+          "tmax": 500,
+          "cur": [
+            "USD"
+          ],
+          "site": {
+            "page": "https://news.example.com/a",
+            "domain": "news.example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "biddigi": {
+                  "placementId": "biddigi-placement-1"
+                }
+              },
+              "tagid": "div-1",
+              "bidfloor": 0.13,
+              "bidfloorcur": "USD"
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-banner",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "biddigi",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 0.51,
+                  "adm": "<div>biddigi-creative</div>",
+                  "crid": "cr-1",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1,
+                  "exp": 300
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 0.51,
+            "adm": "<div>biddigi-creative</div>",
+            "crid": "cr-1",
+            "adomain": [
+              "advertiser.example"
+            ],
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "exp": 300
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
