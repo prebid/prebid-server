@@ -129,6 +129,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderFerio,
 	BidderFlatads,
 	BidderFlipp,
+	BidderFloxis,
 	BidderFreewheelSSP,
 	BidderFWSSP,
 	BidderFRVRAdNetwork,
@@ -193,6 +194,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderNextMillennium,
 	BidderNexx360,
 	BidderNoBid,
+	BidderOdeeo,
 	BidderOgury,
 	BidderOms,
 	BidderOneTag,
@@ -205,6 +207,8 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOutbrain,
 	BidderOwnAdx,
 	BidderPangle,
+	BidderPanxo,
+	BidderPeak226,
 	BidderPGAMSsp,
 	BidderPixfuture,
 	BidderPlaydigo,
@@ -251,6 +255,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderStackAdapt,
 	BidderStartIO,
 	BidderStroeerCore,
+	BidderSuperEdge,
 	BidderSynapseHX,
 	BidderTaboola,
 	BidderTAdvertisingBlis,
@@ -269,10 +274,12 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderTripleliftNative,
 	BidderTrustedstack,
 	BidderTrustX,
+	BidderTunnl,
 	BidderUcfunnel,
 	BidderUndertone,
 	BidderUnicorn,
 	BidderUnruly,
+	BidderViant,
 	BidderVidazoo,
 	BidderVideoByte,
 	BidderVideoHeroes,
@@ -517,6 +524,7 @@ const (
 	BidderFerio             BidderName = "ferio"
 	BidderFlatads           BidderName = "flatads"
 	BidderFlipp             BidderName = "flipp"
+	BidderFloxis            BidderName = "floxis"
 	BidderFreewheelSSP      BidderName = "freewheelssp"
 	BidderFWSSP             BidderName = "fwssp"
 	BidderFRVRAdNetwork     BidderName = "frvradn"
@@ -581,6 +589,7 @@ const (
 	BidderNextMillennium    BidderName = "nextmillennium"
 	BidderNexx360           BidderName = "nexx360"
 	BidderNoBid             BidderName = "nobid"
+	BidderOdeeo             BidderName = "odeeo"
 	BidderOgury             BidderName = "ogury"
 	BidderOms               BidderName = "oms"
 	BidderOneTag            BidderName = "onetag"
@@ -593,6 +602,8 @@ const (
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
+	BidderPanxo             BidderName = "panxo"
+	BidderPeak226           BidderName = "peak226"
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPixfuture         BidderName = "pixfuture"
 	BidderPlaydigo          BidderName = "playdigo"
@@ -639,6 +650,7 @@ const (
 	BidderStackAdapt        BidderName = "stackadapt"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
+	BidderSuperEdge         BidderName = "superedge"
 	BidderSynapseHX         BidderName = "synapseHX"
 	BidderTaboola           BidderName = "taboola"
 	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"
@@ -657,10 +669,12 @@ const (
 	BidderTripleliftNative  BidderName = "triplelift_native"
 	BidderTrustedstack      BidderName = "trustedstack"
 	BidderTrustX            BidderName = "trustx"
+	BidderTunnl             BidderName = "tunnl"
 	BidderUcfunnel          BidderName = "ucfunnel"
 	BidderUndertone         BidderName = "undertone"
 	BidderUnicorn           BidderName = "unicorn"
 	BidderUnruly            BidderName = "unruly"
+	BidderViant             BidderName = "viant"
 	BidderVidazoo           BidderName = "vidazoo"
 	BidderVideoByte         BidderName = "videobyte"
 	BidderVideoHeroes       BidderName = "videoheroes"

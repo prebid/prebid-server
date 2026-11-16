@@ -1,0 +1,49 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 100,
+        "bidfloorcur": "JPY",
+        "ext": {
+          "bidder": {
+            "sp": "123456789",
+            "tk": "a1b2c3d4"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "USD": {
+              "EUR": 0.8
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp \"test-imp-id\": unable to convert bidfloor from JPY to USD: ",
+      "comparison": "startswith"
+    }
+  ]
+}
