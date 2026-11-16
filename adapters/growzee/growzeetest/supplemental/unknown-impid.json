@@ -107,7 +107,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid bid-other has unknown impid other",
+      "value": "bid bid-other has impid other, the request was for imp imp-b",
       "comparison": "literal"
     }
   ]

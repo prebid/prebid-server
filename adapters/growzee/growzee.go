@@ -111,6 +111,23 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{err}
 	}
 
+	// Each call carries one imp: a bid must name that imp, not another one of the auction.
+	var outbound struct {
+		Imp []struct {
+			ID string `json:"id"`
+		} `json:"imp"`
+	}
+	if err := jsonutil.Unmarshal(requestData.Body, &outbound); err != nil || len(outbound.Imp) != 1 {
+		return nil, []error{&errortypes.FailedToUnmarshal{Message: "outbound request must carry exactly one imp"}}
+	}
+	impID := outbound.Imp[0].ID
+	var imp *openrtb2.Imp
+	for i := range request.Imp {
+		if request.Imp[i].ID == impID {
+			imp = &request.Imp[i]
+		}
+	}
+
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 	if response.Cur != "" {
 		bidResponse.Currency = response.Cur
@@ -119,7 +136,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
-			bidType, err := getBidType(bid, request.Imp)
+			if imp == nil || bid.ImpID != impID {
+				errs = append(errs, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("bid %s has impid %s, the request was for imp %s", bid.ID, bid.ImpID, impID),
+				})
+				continue
+			}
+			bidType, err := getBidType(bid, imp)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -131,7 +154,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 }
 
 // getBidType trusts mtype, then a single-format imp, then sniffs VAST on multi-format imps.
-func getBidType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+func getBidType(bid *openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -141,21 +164,15 @@ func getBidType(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, er
 		return openrtb_ext.BidTypeNative, nil
 	}
 
-	for _, imp := range imps {
-		if imp.ID != bid.ImpID {
-			continue
-		}
-		switch {
-		case imp.Video != nil && (imp.Banner == nil || isVAST(bid.AdM)):
-			return openrtb_ext.BidTypeVideo, nil
-		case imp.Banner != nil:
-			return openrtb_ext.BidTypeBanner, nil
-		case imp.Native != nil:
-			return openrtb_ext.BidTypeNative, nil
-		}
-		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("unsupported media type for imp %s", imp.ID)}
+	switch {
+	case imp.Video != nil && (imp.Banner == nil || isVAST(bid.AdM)):
+		return openrtb_ext.BidTypeVideo, nil
+	case imp.Banner != nil:
+		return openrtb_ext.BidTypeBanner, nil
+	case imp.Native != nil:
+		return openrtb_ext.BidTypeNative, nil
 	}
-	return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s has unknown impid %s", bid.ID, bid.ImpID)}
+	return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("unsupported media type for imp %s", imp.ID)}
 }
 
 func isVAST(adm string) bool {
