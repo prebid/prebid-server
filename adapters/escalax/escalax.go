@@ -118,20 +118,15 @@ func parseImpExt(imp *openrtb2.Imp) (*openrtb_ext.ExtEscalax, error) {
 }
 
 func resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
-	hasExchangeParams := ext.AccountID != nil || ext.SourceID != nil
 	isExchange := ext.AccountID != nil && ext.SourceID != nil
 	isSsp := ext.SupplyPlacementID != nil
 
 	switch {
-	case hasExchangeParams && isSsp:
-		return "", &errortypes.BadInput{
-			Message: "provide either accountId and sourceId, or supplyPlacementId, not both",
-		}
-	case isExchange:
-		return buildExchangeEndpoint(ext)
 	case isSsp:
 		return buildSspEndpoint(ext)
-	case hasExchangeParams:
+	case isExchange:
+		return buildExchangeEndpoint(ext)
+	case ext.AccountID != nil || ext.SourceID != nil:
 		return "", &errortypes.BadInput{
 			Message: "accountId and sourceId must be provided together",
 		}
@@ -143,10 +138,7 @@ func resolveEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 }
 
 func buildExchangeEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
-	subdomain, err := resolveSubdomain(exchangeRegionSubdomains, ext.Region)
-	if err != nil {
-		return "", err
-	}
+	subdomain := resolveSubdomain(exchangeRegionSubdomains, ext.Region)
 
 	endpointURL := &url.URL{
 		Scheme: "https",
@@ -163,10 +155,7 @@ func buildExchangeEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 }
 
 func buildSspEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
-	subdomain, err := resolveSubdomain(sspRegionSubdomains, ext.Region)
-	if err != nil {
-		return "", err
-	}
+	subdomain := resolveSubdomain(sspRegionSubdomains, ext.Region)
 
 	endpointURL := &url.URL{
 		Scheme: "https",
@@ -180,19 +169,13 @@ func buildSspEndpoint(ext *openrtb_ext.ExtEscalax) (string, error) {
 	return endpointURL.String(), nil
 }
 
-func resolveSubdomain(regionMap map[string]string, region *string) (string, error) {
-	key := defaultRegion
+func resolveSubdomain(regionMap map[string]string, region *string) string {
 	if region != nil {
-		key = *region
-	}
-
-	subdomain, ok := regionMap[key]
-	if !ok {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("unsupported region %q, expected one of us/eu/apac", key),
+		if subdomain, ok := regionMap[*region]; ok {
+			return subdomain
 		}
 	}
-	return subdomain, nil
+	return regionMap[defaultRegion]
 }
 
 func buildHeaders(request *openrtb2.BidRequest) http.Header {
