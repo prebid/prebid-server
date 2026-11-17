@@ -99,9 +99,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
 				BidType: openrtb_ext.BidTypeBanner,
-				Seat:    "mobkoi",
 			})
-
 		}
 	}
 	return bidResponse, nil
