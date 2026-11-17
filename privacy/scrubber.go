@@ -119,6 +119,8 @@ func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf
 	scrubDeviceIDs(reqWrapper)
 	scrubDeviceIP(reqWrapper, ipConf)
 	scrubUserDemographics(reqWrapper)
+	// Keep non-EID field scrubbing supported by this exported helper.
+	// EIDs also need to be removed from the native OpenRTB field.
 	if fieldName == "eids" {
 		ScrubEIDs(reqWrapper)
 	} else {
