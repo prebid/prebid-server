@@ -157,6 +157,7 @@ func resolveFloors(account config.Account, bidRequestWrapper *openrtb_ext.Reques
 	)
 
 	reqFloor := extractFloorsFromRequest(bidRequestWrapper)
+	// Fetch only the account URL; request floorendpoint is signaling data.
 	account.PriceFloors.Fetcher.AccountID = account.ID
 
 	if priceFloorFetcher != nil && account.PriceFloors.UseDynamicData {
