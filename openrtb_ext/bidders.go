@@ -208,6 +208,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderOutbrain,
 	BidderOwnAdx,
 	BidderPangle,
+	BidderPanxo,
 	BidderPeak226,
 	BidderPGAMSsp,
 	BidderPixfuture,
@@ -255,6 +256,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderStackAdapt,
 	BidderStartIO,
 	BidderStroeerCore,
+	BidderSuperEdge,
 	BidderSynapseHX,
 	BidderTaboola,
 	BidderTAdvertisingBlis,
@@ -602,6 +604,7 @@ const (
 	BidderOutbrain          BidderName = "outbrain"
 	BidderOwnAdx            BidderName = "ownadx"
 	BidderPangle            BidderName = "pangle"
+	BidderPanxo             BidderName = "panxo"
 	BidderPeak226           BidderName = "peak226"
 	BidderPGAMSsp           BidderName = "pgamssp"
 	BidderPixfuture         BidderName = "pixfuture"
@@ -649,6 +652,7 @@ const (
 	BidderStackAdapt        BidderName = "stackadapt"
 	BidderStartIO           BidderName = "startio"
 	BidderStroeerCore       BidderName = "stroeerCore"
+	BidderSuperEdge         BidderName = "superedge"
 	BidderSynapseHX         BidderName = "synapseHX"
 	BidderTaboola           BidderName = "taboola"
 	BidderTAdvertisingBlis  BidderName = "tadvertising_blis"

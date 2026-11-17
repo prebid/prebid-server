@@ -190,6 +190,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/outbrain"
 	"github.com/prebid/prebid-server/v4/adapters/ownadx"
 	"github.com/prebid/prebid-server/v4/adapters/pangle"
+	"github.com/prebid/prebid-server/v4/adapters/panxo"
 	"github.com/prebid/prebid-server/v4/adapters/peak226"
 	"github.com/prebid/prebid-server/v4/adapters/pgamssp"
 	"github.com/prebid/prebid-server/v4/adapters/pixfuture"
@@ -237,6 +238,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/stackadapt"
 	"github.com/prebid/prebid-server/v4/adapters/startio"
 	"github.com/prebid/prebid-server/v4/adapters/stroeerCore"
+	"github.com/prebid/prebid-server/v4/adapters/superedge"
 	"github.com/prebid/prebid-server/v4/adapters/synapseHX"
 	"github.com/prebid/prebid-server/v4/adapters/taboola"
 	"github.com/prebid/prebid-server/v4/adapters/tadvertising_blis"
@@ -480,6 +482,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderOutbrain:          outbrain.Builder,
 		openrtb_ext.BidderOwnAdx:            ownadx.Builder,
 		openrtb_ext.BidderPangle:            pangle.Builder,
+		openrtb_ext.BidderPanxo:             panxo.Builder,
 		openrtb_ext.BidderPeak226:           peak226.Builder,
 		openrtb_ext.BidderPGAMSsp:           pgamssp.Builder,
 		openrtb_ext.BidderPixfuture:         pixfuture.Builder,
@@ -527,6 +530,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderStackAdapt:        stackadapt.Builder,
 		openrtb_ext.BidderStartIO:           startio.Builder,
 		openrtb_ext.BidderStroeerCore:       stroeerCore.Builder,
+		openrtb_ext.BidderSuperEdge:         superedge.Builder,
 		openrtb_ext.BidderSynapseHX:         synapseHX.Builder,
 		openrtb_ext.BidderTaboola:           taboola.Builder,
 		openrtb_ext.BidderTAdvertisingBlis:  tadvertising_blis.Builder,
