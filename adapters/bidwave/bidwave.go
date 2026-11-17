@@ -94,7 +94,7 @@ func groupImpsByPublisherID(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestI
 	errs := make([]error, 0)
 
 	for i := range imps {
-		publisherID, err := parsePublisherID(imps[i])
+		publisherID, impExt, err := prepareImpExt(imps[i])
 		if err != nil {
 			errs = append(errs, err)
 			continue
@@ -105,7 +105,7 @@ func groupImpsByPublisherID(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestI
 			errs = append(errs, err)
 			continue
 		}
-		imp.Ext = nil
+		imp.Ext = impExt
 
 		if groupIndex, ok := groupIndexes[publisherID]; ok {
 			groups[groupIndex].imps = append(groups[groupIndex].imps, imp)
@@ -122,22 +122,32 @@ func groupImpsByPublisherID(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestI
 	return groups, errs
 }
 
-func parsePublisherID(imp openrtb2.Imp) (string, error) {
-	var ext adapters.ExtImpBidder
+func prepareImpExt(imp openrtb2.Imp) (string, json.RawMessage, error) {
+	var ext map[string]json.RawMessage
 	if err := jsonutil.Unmarshal(imp.Ext, &ext); err != nil {
-		return "", &errortypes.BadInput{
+		return "", nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("invalid imp.ext for impression %s: %s", imp.ID, err.Error()),
 		}
 	}
 
 	var params openrtb_ext.ExtImpBidwave
-	if err := jsonutil.Unmarshal(ext.Bidder, &params); err != nil {
-		return "", &errortypes.BadInput{
+	if err := jsonutil.Unmarshal(ext["bidder"], &params); err != nil {
+		return "", nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("invalid bidwave params for impression %s: %s", imp.ID, err.Error()),
 		}
 	}
 
-	return params.PublisherID, nil
+	delete(ext, "bidder")
+	if len(ext) == 0 {
+		return params.PublisherID, nil, nil
+	}
+
+	impExt, err := jsonutil.Marshal(ext)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return params.PublisherID, impExt, nil
 }
 
 func setBidwaveExt(rawExt json.RawMessage, publisherID string) (json.RawMessage, error) {
