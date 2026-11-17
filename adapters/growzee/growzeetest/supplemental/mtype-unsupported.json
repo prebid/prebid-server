@@ -14,11 +14,13 @@
     },
     "imp": [
       {
-        "id": "imp-a",
-        "audio": {
+        "id": "imp-v",
+        "video": {
           "mimes": [
-            "audio/mp4"
-          ]
+            "video/mp4"
+          ],
+          "w": 320,
+          "h": 480
         },
         "ext": {
           "bidder": {
@@ -61,17 +63,19 @@
           },
           "imp": [
             {
-              "id": "imp-a",
-              "audio": {
+              "id": "imp-v",
+              "video": {
                 "mimes": [
-                  "audio/mp4"
-                ]
+                  "video/mp4"
+                ],
+                "w": 320,
+                "h": 480
               }
             }
           ]
         },
         "impIDs": [
-          "imp-a"
+          "imp-v"
         ]
       },
       "mockResponse": {
@@ -83,11 +87,12 @@
               "seat": "growzee",
               "bid": [
                 {
-                  "id": "bid-imp-a",
-                  "impid": "imp-a",
+                  "id": "bid-imp-v",
+                  "impid": "imp-v",
                   "price": 1.5,
                   "adm": "<div>ad</div>",
-                  "crid": "c1"
+                  "crid": "c1",
+                  "mtype": 4
                 }
               ]
             }
@@ -104,7 +109,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "unsupported media type for imp imp-a",
+      "value": "bid bid-imp-v: unsupported mtype 4",
       "comparison": "literal"
     }
   ]

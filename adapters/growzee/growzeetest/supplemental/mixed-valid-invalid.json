@@ -14,9 +14,14 @@
     },
     "imp": [
       {
-        "id": "imp-n",
-        "native": {
-          "request": "{\"ver\":\"1.2\",\"assets\":[]}"
+        "id": "imp-b",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
         },
         "ext": {
           "bidder": {
@@ -59,15 +64,20 @@
           },
           "imp": [
             {
-              "id": "imp-n",
-              "native": {
-                "request": "{\"ver\":\"1.2\",\"assets\":[]}"
+              "id": "imp-b",
+              "banner": {
+                "format": [
+                  {
+                    "w": 320,
+                    "h": 50
+                  }
+                ]
               }
             }
           ]
         },
         "impIDs": [
-          "imp-n"
+          "imp-b"
         ]
       },
       "mockResponse": {
@@ -79,12 +89,18 @@
               "seat": "growzee",
               "bid": [
                 {
-                  "id": "bid-imp-n",
-                  "impid": "imp-n",
+                  "id": "bid-other",
+                  "impid": "other",
                   "price": 1.5,
-                  "adm": "{}",
-                  "crid": "c1",
-                  "mtype": 4
+                  "adm": "<div>ad</div>",
+                  "crid": "c1"
+                },
+                {
+                  "id": "bid-imp-b",
+                  "impid": "imp-b",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "crid": "c1"
                 }
               ]
             }
@@ -99,16 +115,21 @@
       "bids": [
         {
           "bid": {
-            "id": "bid-imp-n",
-            "impid": "imp-n",
+            "id": "bid-imp-b",
+            "impid": "imp-b",
             "price": 1.5,
-            "adm": "{}",
-            "crid": "c1",
-            "mtype": 4
+            "adm": "<div>ad</div>",
+            "crid": "c1"
           },
-          "type": "native"
+          "type": "banner"
         }
       ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid bid-other has impid other, not an imp of its request",
+      "comparison": "literal"
     }
   ]
 }

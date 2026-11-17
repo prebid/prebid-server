@@ -165,30 +165,22 @@ func requestedImp(request *openrtb2.BidRequest, sent []string, impID string) *op
 	return nil
 }
 
-// getBidType trusts mtype, then a single-format imp, then sniffs VAST on multi-format imps.
-// Without an imp (stored bid response) only mtype can tell.
+// getBidType trusts mtype, then the imp: video-only, or banner+video with a VAST adm, is video.
+// Prebid Server sends only banner and video imps; without an imp (stored bid response) only mtype can tell.
 func getBidType(bid *openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) {
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
-	}
-	if imp == nil {
-		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s: stored bid response without mtype", bid.ID)}
-	}
-
 	switch {
+	case bid.MType == openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case bid.MType == openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case bid.MType != 0:
+		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s: unsupported mtype %d", bid.ID, bid.MType)}
+	case imp == nil:
+		return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s: stored bid response without mtype", bid.ID)}
 	case imp.Video != nil && (imp.Banner == nil || isVAST(bid.AdM)):
 		return openrtb_ext.BidTypeVideo, nil
-	case imp.Banner != nil:
-		return openrtb_ext.BidTypeBanner, nil
-	case imp.Native != nil:
-		return openrtb_ext.BidTypeNative, nil
 	}
-	return "", &errortypes.BadServerResponse{Message: fmt.Sprintf("unsupported media type for imp %s", imp.ID)}
+	return openrtb_ext.BidTypeBanner, nil
 }
 
 func isVAST(adm string) bool {
