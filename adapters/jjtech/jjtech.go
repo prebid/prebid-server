@@ -85,7 +85,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	}}, errs
 }
 
-// parseImpParams validates the JJTech publisher params on an impression and returns them
+// parseImpParams decodes the JJTech publisher params on an impression and returns them
 // alongside the impression's full ext, decoded key by key so callers can rewrite only the
 // bidder entry and keep everything else Prebid Server core supplied.
 func parseImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpJJTech, map[string]json.RawMessage, error) {
@@ -100,12 +100,6 @@ func parseImpParams(imp openrtb2.Imp) (openrtb_ext.ExtImpJJTech, map[string]json
 	if err := jsonutil.Unmarshal(impExt["bidder"], &params); err != nil {
 		return openrtb_ext.ExtImpJJTech{}, nil, &errortypes.BadInput{
 			Message: fmt.Sprintf("imp %s: failed to parse jjtech params: %s", imp.ID, err.Error()),
-		}
-	}
-
-	if params.PlacementID == "" {
-		return openrtb_ext.ExtImpJJTech{}, nil, &errortypes.BadInput{
-			Message: fmt.Sprintf("imp %s: placementId is required", imp.ID),
 		}
 	}
 
