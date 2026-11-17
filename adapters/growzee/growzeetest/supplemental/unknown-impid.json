@@ -44,6 +44,9 @@
           ],
           "X-Openrtb-Version": [
             "2.5"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
           ]
         },
         "body": {
@@ -107,7 +110,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "bid bid-other has impid other, the request was for imp imp-b",
+      "value": "bid bid-other has impid other, not an imp of its request",
       "comparison": "literal"
     }
   ]

@@ -10,7 +10,8 @@
     "device": {
       "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       "ip": "1.2.3.4",
-      "os": "android"
+      "os": "android",
+      "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36"
     },
     "imp": [
       {
@@ -48,6 +49,12 @@
           ],
           "X-Openrtb-Version": [
             "2.5"
+          ],
+          "X-Forwarded-For": [
+            "1.2.3.4"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36"
           ]
         },
         "body": {
@@ -61,7 +68,8 @@
           "device": {
             "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "ip": "1.2.3.4",
-            "os": "android"
+            "os": "android",
+            "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36"
           },
           "imp": [
             {

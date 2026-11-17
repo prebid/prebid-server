@@ -22,17 +22,45 @@ func TestJsonSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "growzeetest", bidder)
 }
 
-func TestMakeBidsOutboundWithoutOneImp(t *testing.T) {
+// The JSON harness sends no ImpIDs, so these cases are built by hand.
+func makeBids(t *testing.T, reqData *adapters.RequestData, bid string) (*adapters.BidderResponse, []error) {
 	bidder, _ := Builder(openrtb_ext.BidderGrowzee, config.Adapter{
 		Endpoint: "https://bid.example.com/openrtb?id={{.PublisherID}}"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
-	for _, body := range []string{`{}`, `{"imp":[{"id":"a"},{"id":"b"}]}`, `not json`} {
-		resp, errs := bidder.MakeBids(&openrtb2.BidRequest{},
-			&adapters.RequestData{Body: []byte(body)},
-			&adapters.ResponseData{StatusCode: 200, Body: []byte(`{"seatbid":[]}`)})
-		assert.Nil(t, resp, body)
-		assert.Len(t, errs, 1, body)
+	request := &openrtb2.BidRequest{Imp: []openrtb2.Imp{
+		{ID: "imp-1", Banner: &openrtb2.Banner{}},
+		{ID: "imp-2", Video: &openrtb2.Video{}},
+	}}
+	return bidder.MakeBids(request, reqData,
+		&adapters.ResponseData{StatusCode: 200, Body: []byte(`{"seatbid":[{"bid":[` + bid + `]}]}`)})
+}
+
+// Two requests, one per publisher: the answer to imp-1's request names imp-2.
+func TestMakeBidsCrossRequestImpID(t *testing.T) {
+	reqData := &adapters.RequestData{Uri: "https://bid.example.com/openrtb?id=a", ImpIDs: []string{"imp-1"}}
+	for _, bid := range []string{
+		`{"id":"b","impid":"imp-2","price":1,"adm":"<VAST/>"}`,
+		`{"id":"b","impid":"imp-2","price":1,"adm":"<VAST/>","mtype":2}`,
+	} {
+		resp, errs := makeBids(t, reqData, bid)
+		assert.Empty(t, resp.Bids, bid)
+		assert.Len(t, errs, 1, bid)
 	}
+
+	resp, errs := makeBids(t, reqData, `{"id":"b","impid":"imp-1","price":1,"adm":"<div/>"}`)
+	assert.Empty(t, errs)
+	assert.Equal(t, openrtb_ext.BidTypeBanner, resp.Bids[0].BidType)
+}
+
+// A stored bid response has no Uri, no ImpIDs and no imp: only mtype types it.
+func TestMakeBidsStoredResponse(t *testing.T) {
+	resp, errs := makeBids(t, &adapters.RequestData{}, `{"id":"b","impid":"gone","price":1,"mtype":2}`)
+	assert.Empty(t, errs)
+	assert.Equal(t, openrtb_ext.BidTypeVideo, resp.Bids[0].BidType)
+
+	resp, errs = makeBids(t, &adapters.RequestData{}, `{"id":"b","impid":"gone","price":1}`)
+	assert.Empty(t, resp.Bids)
+	assert.Len(t, errs, 1)
 }
 
 func TestEndpointTemplateMalformed(t *testing.T) {
