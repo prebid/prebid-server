@@ -22,19 +22,24 @@ type ChangeBidders[T any] struct {
 	changeSetProcessedAuctionRequest ChangeSetProcessedAuctionRequest[T]
 }
 
-func (c ChangeSetProcessedAuctionRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, error) {
+func (c ChangeSetProcessedAuctionRequest[T]) castPayload(p T) (*openrtb_ext.RequestWrapper, BidderRemovalReporter, error) {
 	if payload, ok := any(p).(ProcessedAuctionRequestPayload); ok {
 		if payload.Request == nil || payload.Request.BidRequest == nil {
-			return nil, errors.New("payload contains a nil bid request")
+			return nil, nil, errors.New("payload contains a nil bid request")
 		}
-		return payload.Request, nil
+		return payload.Request, payload.bidderRemovalReporter, nil
 	}
-	return nil, errors.New("failed to cast ProcessedAuctionRequestPayload")
+	return nil, nil, errors.New("failed to cast ProcessedAuctionRequestPayload")
 }
 
 func (c ChangeBidders[T]) Add(finalBidders map[string]struct{}) {
+	c.AddWithReason(finalBidders, "")
+}
+
+// AddWithReason is Add, attaching reason to each bidder it removes when bidder removals are being reported.
+func (c ChangeBidders[T]) AddWithReason(finalBidders map[string]struct{}, reason string) {
 	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
-		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
+		bidRequest, reporter, err := c.changeSetProcessedAuctionRequest.castPayload(p)
 		if err == nil {
 			for _, impWrapper := range bidRequest.GetImp() {
 
@@ -50,6 +55,8 @@ func (c ChangeBidders[T]) Add(finalBidders map[string]struct{}) {
 				for impBidder, bidderParams := range impPrebid.Bidder {
 					if _, exists := finalBidders[impBidder]; exists {
 						resBidders[impBidder] = bidderParams
+					} else if reporter != nil {
+						reporter.ReportBidderRemoval(impWrapper.ID, impBidder, reason)
 					}
 				}
 				impPrebid.Bidder = resBidders
@@ -62,8 +69,13 @@ func (c ChangeBidders[T]) Add(finalBidders map[string]struct{}) {
 }
 
 func (c ChangeBidders[T]) Delete(biddersToDelete map[string]struct{}) {
+	c.DeleteWithReason(biddersToDelete, "")
+}
+
+// DeleteWithReason is Delete, attaching reason to each bidder it removes when bidder removals are being reported.
+func (c ChangeBidders[T]) DeleteWithReason(biddersToDelete map[string]struct{}, reason string) {
 	c.changeSetProcessedAuctionRequest.changeSet.AddMutation(func(p T) (T, error) {
-		bidRequest, err := c.changeSetProcessedAuctionRequest.castPayload(p)
+		bidRequest, reporter, err := c.changeSetProcessedAuctionRequest.castPayload(p)
 		if err == nil {
 			for _, impWrapper := range bidRequest.GetImp() {
 				impExt, impExtErr := impWrapper.GetImpExt()
@@ -80,6 +92,8 @@ func (c ChangeBidders[T]) Delete(biddersToDelete map[string]struct{}) {
 				for bidderName, bidderData := range impPrebid.Bidder {
 					if _, exists := biddersToDelete[bidderName]; !exists {
 						newImpBidders[bidderName] = bidderData
+					} else if reporter != nil {
+						reporter.ReportBidderRemoval(impWrapper.ID, bidderName, reason)
 					}
 				}
 

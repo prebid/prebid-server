@@ -32,29 +32,71 @@ func BuildInfoAwareBidder(bidder Bidder, info config.BidderInfo) Bidder {
 	}
 }
 
+// ImpRemovalReason says why InfoAwareBidder removed an impression before the adapter built requests.
+type ImpRemovalReason string
+
+const (
+	ImpRemovalSiteUnsupported        ImpRemovalReason = "site"
+	ImpRemovalAppUnsupported         ImpRemovalReason = "app"
+	ImpRemovalDOOHUnsupported        ImpRemovalReason = "dooh"
+	ImpRemovalMediaTypeUnsupported   ImpRemovalReason = "mediaType"
+	ImpRemovalMultiformatUnsupported ImpRemovalReason = "multiformat"
+)
+
+// ImpRemovalReporter observes impressions InfoAwareBidder removes before the adapter builds requests.
+type ImpRemovalReporter interface {
+	ReportImpRemoval(impID string, reason ImpRemovalReason)
+}
+
+func impRemovalReporterOf(reqInfo *ExtraRequestInfo) ImpRemovalReporter {
+	if reqInfo == nil {
+		return nil
+	}
+	return reqInfo.impRemovalReporter
+}
+
+func reportImpRemoval(reporter ImpRemovalReporter, impID string, reason ImpRemovalReason) {
+	if reporter != nil {
+		reporter.ReportImpRemoval(impID, reason)
+	}
+}
+
+func reportImpRemovals(reporter ImpRemovalReporter, imps []openrtb2.Imp, reason ImpRemovalReason) {
+	if reporter == nil {
+		return
+	}
+	for i := range imps {
+		reporter.ReportImpRemoval(imps[i].ID, reason)
+	}
+}
+
 func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
 	var allowedMediaTypes parsedSupports
+	reporter := impRemovalReporterOf(reqInfo)
 
 	if request.Site != nil {
 		if !i.info.site.enabled {
+			reportImpRemovals(reporter, request.Imp, ImpRemovalSiteUnsupported)
 			return nil, []error{&errortypes.Warning{Message: "this bidder does not support site requests"}}
 		}
 		allowedMediaTypes = i.info.site
 	}
 	if request.App != nil {
 		if !i.info.app.enabled {
+			reportImpRemovals(reporter, request.Imp, ImpRemovalAppUnsupported)
 			return nil, []error{&errortypes.Warning{Message: "this bidder does not support app requests"}}
 		}
 		allowedMediaTypes = i.info.app
 	}
 	if request.DOOH != nil {
 		if !i.info.dooh.enabled {
+			reportImpRemovals(reporter, request.Imp, ImpRemovalDOOHUnsupported)
 			return nil, []error{&errortypes.Warning{Message: "this bidder does not support dooh requests"}}
 		}
 		allowedMediaTypes = i.info.dooh
 	}
 
-	updated, updatedImps, errs := pruneImps(request.Imp, allowedMediaTypes, i.info.multiformat, reqInfo.PreferredMediaType)
+	updated, updatedImps, errs := pruneImps(request.Imp, allowedMediaTypes, i.info.multiformat, reqInfo.PreferredMediaType, reporter)
 	if updated {
 		request.Imp = updatedImps
 	}
@@ -70,7 +112,8 @@ func (i *InfoAwareBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *Ex
 
 // pruneImps trims imps that don't match the allowed types and removes imps that don't have the allowed types.
 // It also handles multi-format restrictions if the bidder doesn't support multi-format impressions.
-func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupport bool, preferredMediaType openrtb_ext.BidType) (bool, []openrtb2.Imp, []error) {
+// reporter, when not nil, observes each removed imp.
+func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupport bool, preferredMediaType openrtb_ext.BidType, reporter ImpRemovalReporter) (bool, []openrtb2.Imp, []error) {
 	var updated bool
 	var errs []error
 	writeIndex := 0
@@ -101,6 +144,7 @@ func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupp
 		if numOfFormats == 0 {
 			errs = append(errs, &errortypes.BadInput{Message: fmt.Sprintf("request.imp[%d] has no supported MediaTypes. It will be ignored", i)})
 			updated = true
+			reportImpRemoval(reporter, imp.ID, ImpRemovalMediaTypeUnsupported)
 			continue
 		}
 
@@ -113,6 +157,7 @@ func pruneImps(imps []openrtb2.Imp, allowedTypes parsedSupports, multiformatSupp
 			if removeImp {
 				errs = append(errs, multiformatErrs...)
 				updated = true
+				reportImpRemoval(reporter, imp.ID, ImpRemovalMultiformatUnsupported)
 				continue
 			}
 

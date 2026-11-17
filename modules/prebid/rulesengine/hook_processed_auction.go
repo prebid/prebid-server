@@ -15,6 +15,8 @@ type ModelGroup = cacheModelGroup[RequestWrapper, ProcessedAuctionHookResult]
 type includeBiddersState struct {
 	allowedBidders map[string]struct{}
 	contexts       []rules.ResultFunctionMeta
+	// includeReason labels bidders removed for not being in allowedBidders; the first includeBidders label wins.
+	includeReason string
 }
 
 type ProcessedAuctionHookResult struct {
@@ -48,7 +50,7 @@ func handleProcessedAuctionHook(
 		}
 
 		if len(result.IncludeBidders.allowedBidders) > 0 {
-			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Add(result.IncludeBidders.allowedBidders)
+			result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().AddWithReason(result.IncludeBidders.allowedBidders, result.IncludeBidders.includeReason)
 		}
 	}
 

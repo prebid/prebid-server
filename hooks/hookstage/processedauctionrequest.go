@@ -27,6 +27,18 @@ type ProcessedAuctionRequest interface {
 // Hooks are allowed to modify openrtb_ext.RequestWrapper using mutations.
 type ProcessedAuctionRequestPayload struct {
 	Request *openrtb_ext.RequestWrapper
+
+	bidderRemovalReporter BidderRemovalReporter
+}
+
+// BidderRemovalReporter observes each bidder that an applied ChangeBidders mutation removes from an impression.
+type BidderRemovalReporter interface {
+	ReportBidderRemoval(impID, bidder, reason string)
+}
+
+// SetBidderRemovalReporter is used by the hook executor. Hooks cannot read the reporter.
+func (parp *ProcessedAuctionRequestPayload) SetBidderRemovalReporter(reporter BidderRemovalReporter) {
+	parp.bidderRemovalReporter = reporter
 }
 
 func (parp *ProcessedAuctionRequestPayload) GetBidderRequestPayload() *openrtb_ext.RequestWrapper {

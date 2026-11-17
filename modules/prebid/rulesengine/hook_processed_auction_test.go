@@ -3,11 +3,13 @@ package rulesengine
 import (
 	"fmt"
 	hs "github.com/prebid/prebid-server/v4/hooks/hookstage"
+	"github.com/prebid/prebid-server/v4/modules/prebid/rulesengine/config"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/rules"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandleProcessedAuctionHook(t *testing.T) {
@@ -89,6 +91,68 @@ func TestHandleProcessedAuctionHook(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func TestHandleProcessedAuctionHookRemovalReason(t *testing.T) {
+	tests := []struct {
+		name           string
+		resultFunc     ProcessedAuctionResultFunc
+		expectedReason string
+	}{
+		{
+			name:           "exclude_with_analytics_value",
+			resultFunc:     &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1"}, AnalyticsValue: "drop-low-perf"}},
+			expectedReason: "drop-low-perf",
+		},
+		{
+			name:           "exclude_without_analytics_value",
+			resultFunc:     &ExcludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder1"}}},
+			expectedReason: ExcludeBiddersName,
+		},
+		{
+			name:           "include_with_analytics_value",
+			resultFunc:     &IncludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder2", "bidder3"}, AnalyticsValue: "keep-top"}},
+			expectedReason: "keep-top",
+		},
+		{
+			name:           "include_without_analytics_value",
+			resultFunc:     &IncludeBidders{Args: config.ResultFuncParams{Bidders: []string{"bidder2", "bidder3"}}},
+			expectedReason: IncludeBiddersName,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ruleSets := []cacheRuleSet[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{{
+				modelGroups: []cacheModelGroup[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{{
+					weight: 100,
+					tree: rules.Tree[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+						Root: &rules.Node[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{
+							ResultFunctions: []rules.ResultFunction[openrtb_ext.RequestWrapper, ProcessedAuctionHookResult]{tt.resultFunc},
+						},
+					},
+				}},
+			}}
+			payload := hs.ProcessedAuctionRequestPayload{Request: mockRequestWrapperWithBidders(t, []string{"bidder1", "bidder2", "bidder3"})}
+			var reporter removalReasonRecorder
+			payload.SetBidderRemovalReporter(&reporter)
+
+			hookResult, err := handleProcessedAuctionHook(ruleSets, payload)
+			require.NoError(t, err)
+			for _, mutation := range hookResult.ChangeSet.Mutations() {
+				payload, err = mutation.Apply(payload)
+				require.NoError(t, err)
+			}
+
+			assert.Equal(t, removalReasonRecorder{tt.expectedReason}, reporter)
+		})
+	}
+}
+
+type removalReasonRecorder []string
+
+func (r *removalReasonRecorder) ReportBidderRemoval(_, _, reason string) {
+	*r = append(*r, reason)
 }
 
 func TestSelectModelGroup(t *testing.T) {

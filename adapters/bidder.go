@@ -149,6 +149,13 @@ type ExtraRequestInfo struct {
 	GlobalPrivacyControlHeader string
 	CurrencyConversions        currency.Conversions
 	PreferredMediaType         openrtb_ext.BidType
+
+	impRemovalReporter ImpRemovalReporter
+}
+
+// SetImpRemovalReporter makes InfoAwareBidder report the impressions it removes before the adapter builds requests.
+func (r *ExtraRequestInfo) SetImpRemovalReporter(reporter ImpRemovalReporter) {
+	r.impRemovalReporter = reporter
 }
 
 func NewExtraRequestInfo(c currency.Conversions) ExtraRequestInfo {

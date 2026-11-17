@@ -12,7 +12,20 @@ import (
 type ValidationConfig struct {
 	SkipBidderParams bool
 	SkipNative       bool
+	// BidderRemovalReporter, when set, observes bidders that validation removes from an impression.
+	BidderRemovalReporter BidderRemovalReporter
 }
+
+// BidderRemovalReporter observes a bidder removed from one impression and why.
+type BidderRemovalReporter interface {
+	ReportBidderRemoval(impID, bidder, reason string)
+}
+
+// Reasons reported to a BidderRemovalReporter.
+const (
+	BidderRemovedDisabled = "bidderDisabled"
+	BidderRemovedUnknown  = "unknownBidder"
+)
 
 type RequestValidator interface {
 	ValidateImp(imp *openrtb_ext.ImpWrapper, cfg ValidationConfig, index int, aliases map[string]string, hasStoredAuctionResponses bool, storedBidResponses stored_responses.ImpBidderStoredResp) []error
@@ -139,11 +152,13 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 				errL = append(errL, &errortypes.BidderTemporarilyDisabled{Message: msg})
 				delete(prebid.Bidder, bidder)
 				prebidModified = true
+				reportBidderRemoval(cfg, imp.ID, bidder, BidderRemovedDisabled)
 			} else if bidderPromote {
 				errL = append(errL, &errortypes.Warning{Message: fmt.Sprintf("request.imp[%d].ext contains unknown bidder: '%s', ignoring", impIndex, bidder)})
 				ext[bidder] = val
 				delete(prebid.Bidder, bidder)
 				prebidModified = true
+				reportBidderRemoval(cfg, imp.ID, bidder, BidderRemovedUnknown)
 			} else {
 				return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder contains unknown bidder: %s. Did you forget an alias in request.ext.prebid.aliases?", impIndex, bidder)}
 			}
@@ -163,6 +178,12 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 	}
 
 	return errL
+}
+
+func reportBidderRemoval(cfg ValidationConfig, impID, bidder, reason string) {
+	if cfg.BidderRemovalReporter != nil {
+		cfg.BidderRemovalReporter.ReportBidderRemoval(impID, bidder, reason)
+	}
 }
 
 func (srv *standardRequestValidator) validateStoredBidResponses(prebid *openrtb_ext.ExtImpPrebid, storedBidResp stored_responses.ImpBidderStoredResp, impId string) error {

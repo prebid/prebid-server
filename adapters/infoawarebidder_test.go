@@ -780,7 +780,7 @@ func TestPruneImps(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		updated, imps, errs := pruneImps(test.imps, test.allowedTypes, test.multiformatSupport, test.preferredMediaType)
+		updated, imps, errs := pruneImps(test.imps, test.allowedTypes, test.multiformatSupport, test.preferredMediaType, nil)
 		assert.Equal(t, test.expectedUpdated, updated, test.description+":Updated")
 		assert.Equal(t, test.expectedImps, imps, test.description+":Imps")
 		assert.Equal(t, test.expectedErrors, errs, test.description+":Errors")
@@ -788,6 +788,60 @@ func TestPruneImps(t *testing.T) {
 }
 
 type mockBidder struct {
+}
+
+type impRemovalRecorder []string
+
+func (r *impRemovalRecorder) ReportImpRemoval(impID string, reason ImpRemovalReason) {
+	*r = append(*r, impID+"|"+string(reason))
+}
+
+func TestInfoAwareBidderReportsImpRemovals(t *testing.T) {
+	falseValue := false
+	info := config.BidderInfo{
+		Capabilities: &config.CapabilitiesInfo{
+			Site: &config.PlatformInfo{MediaTypes: []openrtb_ext.BidType{openrtb_ext.BidTypeBanner, openrtb_ext.BidTypeNative}},
+		},
+		OpenRTB: &config.OpenRTBInfo{MultiformatSupported: &falseValue},
+	}
+	tests := []struct {
+		description string
+		request     *openrtb2.BidRequest
+		expected    impRemovalRecorder
+	}{
+		{
+			description: "unsupported_channel_removes_every_imp",
+			request: &openrtb2.BidRequest{
+				App: &openrtb2.App{},
+				Imp: []openrtb2.Imp{{ID: "imp-1", Banner: &openrtb2.Banner{}}, {ID: "imp-2", Banner: &openrtb2.Banner{}}},
+			},
+			expected: impRemovalRecorder{"imp-1|app", "imp-2|app"},
+		},
+		{
+			description: "unsupported_media_type_and_multiformat",
+			request: &openrtb2.BidRequest{
+				Site: &openrtb2.Site{},
+				Imp: []openrtb2.Imp{
+					{ID: "imp-1", Banner: &openrtb2.Banner{}},
+					{ID: "imp-2", Video: &openrtb2.Video{}},
+					{ID: "imp-3", Banner: &openrtb2.Banner{}, Native: &openrtb2.Native{}},
+				},
+			},
+			expected: impRemovalRecorder{"imp-2|mediaType", "imp-3|multiformat"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			var reported impRemovalRecorder
+			reqInfo := &ExtraRequestInfo{}
+			reqInfo.SetImpRemovalReporter(&reported)
+
+			BuildInfoAwareBidder(&mockBidder{}, info).MakeRequests(test.request, reqInfo)
+
+			assert.Equal(t, test.expected, reported)
+		})
+	}
 }
 
 func (m *mockBidder) MakeRequests(request *openrtb2.BidRequest, reqInfo *ExtraRequestInfo) ([]*RequestData, []error) {
