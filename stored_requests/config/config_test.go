@@ -4,17 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/julienschmidt/httprouter"
+	accountservice "github.com/prebid/prebid-server/v4/account"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/metrics"
+	metricsconfig "github.com/prebid/prebid-server/v4/metrics/config"
 	"github.com/prebid/prebid-server/v4/stored_requests"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/db_provider"
 	"github.com/prebid/prebid-server/v4/stored_requests/backends/empty_fetcher"
@@ -27,6 +34,16 @@ import (
 func typedConfig(dataType config.DataType, sr *config.StoredRequests) *config.StoredRequests {
 	sr.SetDataType(dataType)
 	return sr
+}
+
+type trackingCloseProvider struct {
+	db_provider.DbProvider
+	closed bool
+}
+
+func (p *trackingCloseProvider) Close() error {
+	p.closed = true
+	return nil
 }
 
 func isEmptyCacheType(cache stored_requests.CacheJSON) bool {
@@ -158,9 +175,137 @@ func TestNewHTTPEvents(t *testing.T) {
 
 	metricsMock := &metrics.MetricsEngineMock{}
 
-	evProducers := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
-	assertSliceLength(t, evProducers, 1)
+	evProducers, tickerTasks := newEventProducers(cfg, server1.Client(), nil, metricsMock, nil)
+	require.Len(t, evProducers, 1)
+	require.Len(t, tickerTasks, 0)
 	assertHttpWithURL(t, evProducers[0], server1.URL)
+}
+
+func TestV2NewStoredRequestsUsesFetcherCacheInsteadOfLegacyAccountCache(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"accounts":{"pub-1":{"id":"pub-1"}}}`)
+	}))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Accounts: config.StoredRequests{
+			HTTP: config.HTTPFetcherConfig{
+				Endpoint:               server.URL,
+				UseRfcCompliantBuilder: true,
+			},
+			InMemoryCache: config.InMemoryCache{
+				Type: "unbounded",
+			},
+			V2Enabled: true,
+			CacheV2: config.FetcherConfig{
+				Type: "none",
+			},
+		},
+	}
+	cfg.Accounts.SetDataType(config.AccountDataType)
+	assert.NoError(t, cfg.MarshalAccountDefaults())
+
+	shutdown, _, _, accountsFetcher, _, _, _ := NewStoredRequests(cfg, &metricsconfig.NilMetricsEngine{}, server.Client(), httprouter.New())
+	defer shutdown()
+
+	account, errs := accountservice.GetAccount(context.Background(), cfg, accountsFetcher, "pub-1", &metricsconfig.NilMetricsEngine{})
+	assert.Empty(t, errs)
+	assert.Equal(t, "pub-1", account.ID)
+
+	account, errs = accountservice.GetAccount(context.Background(), cfg, accountsFetcher, "pub-1", &metricsconfig.NilMetricsEngine{})
+	assert.Empty(t, errs)
+	assert.Equal(t, "pub-1", account.ID)
+
+	assert.Equal(t, int32(2), atomic.LoadInt32(&calls), "v2 cache.type=none should reach the HTTP source every time, even if the legacy account cache is configured")
+}
+
+func TestV2NewStoredRequestsUsesLegacyAccountFetcherWhenDisabled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"accounts":{"pub-1":{"id":"pub-1"}}}`)
+	}))
+	defer server.Close()
+
+	cfg := &config.Configuration{
+		Accounts: config.StoredRequests{
+			HTTP: config.HTTPFetcherConfig{
+				Endpoint:               server.URL,
+				UseRfcCompliantBuilder: true,
+			},
+		},
+	}
+	cfg.Accounts.SetDataType(config.AccountDataType)
+	require.NoError(t, cfg.MarshalAccountDefaults())
+
+	shutdown, _, _, accountsFetcher, _, _, _ := NewStoredRequests(
+		cfg,
+		&metricsconfig.NilMetricsEngine{},
+		server.Client(),
+		httprouter.New(),
+	)
+	defer shutdown()
+
+	account, errs := accountservice.GetAccount(
+		context.Background(),
+		cfg,
+		accountsFetcher,
+		"pub-1",
+		&metricsconfig.NilMetricsEngine{},
+	)
+
+	require.Empty(t, errs)
+	require.NotNil(t, account)
+	assert.Equal(t, "pub-1", account.ID)
+}
+
+func TestV2AccountSourceUsesFilesystemBackend(t *testing.T) {
+	root := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(root, "accounts"), 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(root, "accounts", "pub-1.json"),
+		[]byte(`{"id":"pub-1"}`),
+		0644,
+	))
+	cfg := typedConfig(config.AccountDataType, &config.StoredRequests{
+		Files: config.FileFetcherConfig{
+			Enabled: true,
+			Path:    root,
+		},
+	})
+
+	source := newAccountSource(cfg, http.DefaultClient)
+	raw, found, err := source.Fetch(context.Background(), "pub-1")
+
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.JSONEq(t, `{"id":"pub-1"}`, string(raw))
+}
+
+func TestV2AccountSourceUsesNilSourceWhenNoBackendIsConfigured(t *testing.T) {
+	cfg := typedConfig(config.AccountDataType, &config.StoredRequests{})
+
+	source := newAccountSource(cfg, http.DefaultClient)
+	raw, found, err := source.Fetch(context.Background(), "missing")
+
+	require.NoError(t, err)
+	assert.False(t, found)
+	assert.Nil(t, raw)
+}
+
+func TestV2AccountSourceClosesDatabaseProviderOnShutdown(t *testing.T) {
+	provider := &trackingCloseProvider{}
+	_, shutdown := createAccountSource(
+		typedConfig(config.AccountDataType, &config.StoredRequests{}),
+		http.DefaultClient,
+		provider,
+	)
+
+	shutdown()
+
+	assert.True(t, provider.closed)
 }
 
 func TestNewEmptyCache(t *testing.T) {
@@ -224,8 +369,9 @@ func TestNewDatabaseEventProducers(t *testing.T) {
 	}
 	mock.ExpectQuery("^" + regexp.QuoteMeta(cfg.Database.CacheInitialization.Query) + "$").WillReturnError(errors.New("Query failed"))
 
-	evProducers := newEventProducers(cfg, client, provider, metricsMock, nil)
-	assertProducerLength(t, evProducers, 1)
+	evProducers, tickerTasks := newEventProducers(cfg, client, provider, metricsMock, nil)
+	require.Len(t, evProducers, 1)
+	require.Len(t, tickerTasks, 1)
 
 	assertExpectationsMet(t, mock)
 	metricsMock.AssertExpectations(t)
@@ -242,13 +388,6 @@ func TestNewEventsAPI(t *testing.T) {
 	}
 }
 
-func assertProducerLength(t *testing.T, producers []events.EventProducer, expectedLength int) {
-	t.Helper()
-	if len(producers) != expectedLength {
-		t.Errorf("Expected %d producers, but got %d", expectedLength, len(producers))
-	}
-}
-
 func assertExpectationsMet(t *testing.T, mock sqlmock.Sqlmock) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("sqlmock expectations were not met: %v", err)
@@ -260,14 +399,6 @@ func assertHttpWithURL(t *testing.T, ev events.EventProducer, url string) {
 		assertStringsEqual(t, casted.Endpoint, url)
 	} else {
 		t.Errorf("The EventProducer was not a *HTTPEvents")
-	}
-}
-
-func assertSliceLength(t *testing.T, producers []events.EventProducer, expected int) {
-	t.Helper()
-
-	if len(producers) != expected {
-		t.Fatalf("Expected %d EventProducers. Got: %v", expected, producers)
 	}
 }
 

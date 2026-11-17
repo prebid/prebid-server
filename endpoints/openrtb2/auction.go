@@ -1920,12 +1920,12 @@ func writeError(errs []error, w http.ResponseWriter, labels *metrics.Labels) boo
 		httpStatus := http.StatusBadRequest
 		metricsStatus := metrics.RequestStatusBadInput
 		for _, err := range errs {
-			erVal := errortypes.ReadCode(err)
-			if erVal == errortypes.BlockedAppErrorCode || erVal == errortypes.AccountDisabledErrorCode {
-				httpStatus = http.StatusServiceUnavailable
+			switch errortypes.ReadCode(err) {
+			case errortypes.BlockedAppErrorCode, errortypes.AccountDisabledErrorCode:
+				httpStatus = http.StatusForbidden
 				metricsStatus = metrics.RequestStatusBlockedApp
 				break
-			} else if erVal == errortypes.MalformedAcctErrorCode {
+			case errortypes.MalformedAcctErrorCode:
 				httpStatus = http.StatusInternalServerError
 				metricsStatus = metrics.RequestStatusAccountConfigErr
 				break

@@ -8,11 +8,13 @@ capabilities:
       - banner
       - video
       - native
+      - audio
   site:
     mediaTypes:
       - banner
       - video
       - native
+      - audio
 userSync:
   # TheTradeDesk supports user syncing, but requires configuration by the host. Contact a technical account manager
   # or this bidder directly at the email address in this file to ask about enabling user sync.
@@ -21,3 +23,4 @@ userSync:
     - iframe
 openrtb:
   gpp-supported: true
+  version: 2.6

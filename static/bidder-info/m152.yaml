@@ -1,3 +1,4 @@
+disabled: true
 # We have the following regional endpoint domains: 'east' - for US_EAST, 'eu' - for EU
 # Please deploy this config in each of your datacenters with the appropriate regional subdomain
 aliasOf: "teqblaze"
