@@ -49,9 +49,15 @@
           ],
           "X-Openrtb-Version": [
             "2.6"
+          ],
+          "User-Agent": [
+            "test-ua"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
           ]
         },
-        "uri": "https://exchange.sellwild.com/exchange/openrtb2/weatherbug",
+        "uri": "https://test.endpoint.com/openrtb2/weatherbug",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -108,8 +114,7 @@
                   "adm": "<VAST version=\"4.0\"></VAST>",
                   "crid": "crid-bid-1",
                   "w": 640,
-                  "h": 480,
-                  "mtype": 2
+                  "h": 480
                 }
               ]
             }
@@ -130,8 +135,7 @@
             "adm": "<VAST version=\"4.0\"></VAST>",
             "crid": "crid-bid-1",
             "w": 640,
-            "h": 480,
-            "mtype": 2
+            "h": 480
           },
           "type": "video"
         }

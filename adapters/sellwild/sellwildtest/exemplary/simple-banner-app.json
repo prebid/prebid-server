@@ -45,9 +45,15 @@
           ],
           "X-Openrtb-Version": [
             "2.6"
+          ],
+          "User-Agent": [
+            "test-ua"
+          ],
+          "X-Forwarded-For": [
+            "123.123.123.123"
           ]
         },
-        "uri": "https://exchange.sellwild.com/exchange/openrtb2/weatherbug",
+        "uri": "https://test.endpoint.com/openrtb2/weatherbug",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -100,8 +106,7 @@
                   "adm": "<div>ad</div>",
                   "crid": "crid-bid-1",
                   "w": 300,
-                  "h": 250,
-                  "mtype": 1
+                  "h": 250
                 }
               ]
             }
@@ -122,8 +127,7 @@
             "adm": "<div>ad</div>",
             "crid": "crid-bid-1",
             "w": 300,
-            "h": 250,
-            "mtype": 1
+            "h": 250
           },
           "type": "banner"
         }

@@ -66,6 +66,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 	headers.Add("X-Openrtb-Version", "2.6")
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
 
 	requests := make([]*adapters.RequestData, 0, len(keys))
 	for _, key := range keys {
@@ -118,11 +128,8 @@ func parseImpExt(imp openrtb2.Imp) (openrtb_ext.ExtImpSellwild, error) {
 		}
 	}
 
-	if strings.TrimSpace(sellwildExt.PartnerCode) == "" {
-		return openrtb_ext.ExtImpSellwild{}, &errortypes.BadInput{
-			Message: fmt.Sprintf("missing partnerCode for imp %s", imp.ID),
-		}
-	}
+	// The bidder-params schema enforces partnerCode, and requires a non-empty token, but a
+	// whitespace-only token passes the schema and can never authenticate.
 	if strings.TrimSpace(sellwildExt.Token) == "" {
 		return openrtb_ext.ExtImpSellwild{}, &errortypes.BadInput{
 			Message: fmt.Sprintf("missing token for imp %s", imp.ID),
@@ -146,11 +153,16 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 		return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
 	}
 
-	// Bids are resolved against the imps of the outbound request that received this response,
-	// not the whole auction, so a bid can never be attributed to another request's imp.
+	// Prebid Server answers a stored bid response with an empty URI, no ImpIDs and a body that is
+	// not a bid request; its imp has already been removed from the request, so those bids must
+	// carry mtype. Otherwise bids are resolved against the imps of the outbound request that
+	// received this response, so a bid can never be attributed to another request's imp.
+	storedResponse := requestData.Uri == "" && len(requestData.ImpIDs) == 0
 	var outbound openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(requestData.Body, &outbound); err != nil {
-		return nil, []error{err}
+	if !storedResponse {
+		if err := jsonutil.Unmarshal(requestData.Body, &outbound); err != nil {
+			return nil, []error{err}
+		}
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(outbound.Imp))
@@ -161,7 +173,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	var errs []error
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(seatBid.Bid[i], outbound.Imp)
+			bidType, err := getMediaTypeForBid(seatBid.Bid[i], outbound.Imp, storedResponse)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -180,12 +192,15 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 // getMediaTypeForBid resolves the bid type from bid.mtype. The exchange only sets mtype when the
 // underlying demand did, so when it is absent the type is taken from the impression, provided
 // that impression declared exactly one of banner, video or native. The bid's impid must belong
-// to imps either way.
-func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	imp, found := findImp(bid.ImpID, imps)
-	if !found {
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("unable to find imp %s for bid %s", bid.ImpID, bid.ID),
+// to imps either way, except for a stored bid response, which has no imps and must set mtype.
+func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp, storedResponse bool) (openrtb_ext.BidType, error) {
+	var imp openrtb2.Imp
+	if !storedResponse {
+		var found bool
+		if imp, found = findImp(bid.ImpID, imps); !found {
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("unable to find imp %s for bid %s", bid.ImpID, bid.ID),
+			}
 		}
 	}
 
@@ -197,6 +212,11 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidT
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	case 0:
+		if storedResponse {
+			return "", &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("stored bid response bid %s in imp %s is missing mtype", bid.ID, bid.ImpID),
+			}
+		}
 		return getMediaTypeFromImp(bid, imp)
 	default:
 		return "", &errortypes.BadServerResponse{
