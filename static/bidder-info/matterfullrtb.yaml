@@ -1,0 +1,17 @@
+endpoint: "https://us.matterfull.co/?uqhash={{.PublisherID}}"
+endpointCompression: gzip
+openrtb:
+  version: 2.6
+geoscope:
+  - USA
+maintainer:
+  email: "prebid_support@bematterfull.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+  app:
+    mediaTypes:
+      - banner
+      - video

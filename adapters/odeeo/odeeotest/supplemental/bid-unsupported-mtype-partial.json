@@ -1,0 +1,134 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sp": "123456789",
+            "tk": "a1b2c3d4"
+          }
+        }
+      },
+      {
+        "id": "test-imp-id-2",
+        "audio": {
+          "mimes": ["audio/mp4"]
+        },
+        "ext": {
+          "bidder": {
+            "sp": "123456789",
+            "tk": "a1b2c3d4"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.exchange.odeeo.io/v1/bidrequest/prebids2s",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "X-Openrtb-Version": ["2.6"],
+          "X-Odeeo-Sp": ["123456789"],
+          "X-Odeeo-Tk": ["a1b2c3d4"]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.example.game"
+          },
+          "cur": ["USD"],
+          "imp": [
+            {
+              "id": "test-imp-id-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              }
+            },
+            {
+              "id": "test-imp-id-2",
+              "audio": {
+                "mimes": ["audio/mp4"]
+              }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id-1", "test-imp-id-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "odeeo",
+              "bid": [
+                {
+                  "id": "bid-001",
+                  "impid": "test-imp-id-1",
+                  "price": 2.5,
+                  "adm": "{\"native\":{}}",
+                  "crid": "creative-789",
+                  "mtype": 4
+                },
+                {
+                  "id": "bid-002",
+                  "impid": "test-imp-id-2",
+                  "price": 1.2,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "creative-790",
+                  "mtype": 3
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-002",
+            "impid": "test-imp-id-2",
+            "price": 1.2,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "creative-790",
+            "mtype": 3
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "bid \"bid-001\" (imp \"test-imp-id-1\"): unsupported mtype 4",
+      "comparison": "literal"
+    }
+  ]
+}

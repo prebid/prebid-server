@@ -1,6 +1,7 @@
 endpoint: "http://lb-east.motorik.io/?k={{.AccountID}}&name={{.SourceId}}"
 maintainer:
   email: "support@motorik.io"
+gvlVendorID: 1409
 capabilities:
   app:
     mediaTypes:

@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "slot-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": { "accountID": "test-account" }
+        }
+      },
+      {
+        "id": "slot-video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": { "accountID": "test-account" }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://s2s.prebid.bid-na.ads.aps.amazon-adsystem.com/e/pb/bid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "slot-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": { "accountID": "test-account" }
+              }
+            },
+            {
+              "id": "slot-video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": { "accountID": "test-account" }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          },
+          "cur": [
+            "USD"
+          ],
+          "ext": {
+            "account": "test-account",
+            "sdk": {
+              "version": "1.0.0",
+              "source": "prebid-server"
+            }
+          }
+        },
+        "impIDs": [
+          "slot-banner",
+          "slot-video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "aps",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "slot-banner",
+                  "price": 1.5,
+                  "adm": "<div>banner ad</div>",
+                  "crid": "creative-1",
+                  "mtype": 1,
+                  "w": 300,
+                  "h": 250
+                },
+                {
+                  "id": "2",
+                  "impid": "slot-video",
+                  "price": 2.5,
+                  "nurl": "https://vast.aps.amazon-adsystem.com/vast?id=2",
+                  "crid": "creative-2",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "slot-banner",
+            "price": 1.5,
+            "adm": "<div>banner ad</div>",
+            "crid": "creative-1",
+            "mtype": 1,
+            "w": 300,
+            "h": 250
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "2",
+            "impid": "slot-video",
+            "price": 2.5,
+            "nurl": "https://vast.aps.amazon-adsystem.com/vast?id=2",
+            "crid": "creative-2",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
