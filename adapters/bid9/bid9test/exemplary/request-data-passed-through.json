@@ -90,6 +90,12 @@
           ],
           "Accept": [
             "application/json"
+          ],
+          "User-Agent": [
+            "test-ua"
+          ],
+          "X-Forwarded-For": [
+            "192.0.2.1"
           ]
         },
         "body": {

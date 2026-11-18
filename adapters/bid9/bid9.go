@@ -24,8 +24,8 @@ var (
 	// auctionMacroPattern matches any OpenRTB auction macro, such as ${AUCTION_PRICE}.
 	auctionMacroPattern = regexp.MustCompile(`\$\{AUCTION_[A-Z_]+\}`)
 	// emptyMacroParamPattern matches a query parameter whose whole value is a macro left without a value, with the
-	// separator before it and an optional "&" after it.
-	emptyMacroParamPattern = regexp.MustCompile(`([?&])[^=&?#\s"'<>]+=\$\{AUCTION_[A-Z_]+\}(&?)`)
+	// separator before it ("?", "&" or "&amp;", as in HTML attributes) and the separator after it, if any.
+	emptyMacroParamPattern = regexp.MustCompile(`(\?|&amp;|&)[^=&?#\s"'<>;]+=\$\{AUCTION_[A-Z_]+\}(&amp;|&)?`)
 )
 
 type adapter struct {
@@ -102,6 +102,17 @@ func (a *adapter) makeRequest(request openrtb2.BidRequest, imp openrtb2.Imp) (*a
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Set("User-Agent", request.Device.UA)
+		}
+		if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		}
+	}
 
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
@@ -147,7 +158,9 @@ func publisherWithID(publisher *openrtb2.Publisher, publisherID string) *openrtb
 
 // MakeBids maps one endpoint response to typed bids. Each response answers only the impression in its own request,
 // so bids are matched against the request that was sent, not against the auction's full list of impressions.
-func (a *adapter) MakeBids(_ *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+// A stored bid response (exchange/bidder.go prepareStoredResponse) comes with an empty URI, no ImpIDs and a text body,
+// and its impression was removed from the request: its bids are typed from mtype or the markup, without an imp check.
+func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
@@ -161,8 +174,13 @@ func (a *adapter) MakeBids(_ *openrtb2.BidRequest, requestData *adapters.Request
 		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("invalid response body: %s", err.Error())}}
 	}
 
+	storedResponse := requestData.Uri == "" && len(requestData.ImpIDs) == 0
 	var sentRequest openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(requestData.Body, &sentRequest); err != nil {
+	if storedResponse {
+		if internalRequest != nil {
+			sentRequest.ID = internalRequest.ID
+		}
+	} else if err := jsonutil.Unmarshal(requestData.Body, &sentRequest); err != nil {
 		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("invalid request body: %s", err.Error())}}
 	}
 
@@ -176,8 +194,11 @@ func (a *adapter) MakeBids(_ *openrtb2.BidRequest, requestData *adapters.Request
 	for _, seatBid := range response.SeatBid {
 		for i := range seatBid.Bid {
 			bid := &seatBid.Bid[i]
-			imp := findImp(sentRequest.Imp, bid.ImpID)
-			if imp == nil {
+			var imp *openrtb2.Imp
+			if !storedResponse {
+				imp = findImp(sentRequest.Imp, bid.ImpID)
+			}
+			if imp == nil && !storedResponse {
 				errs = append(errs, &errortypes.BadServerResponse{
 					Message: fmt.Sprintf("bid %s: impid %s does not match the request's impression", bid.ID, bid.ImpID),
 				})
@@ -235,11 +256,16 @@ func removeUnresolvedMacros(text string) string {
 	// repeat, because a match may use up the "&" that the next parameter starts with
 	for {
 		next := emptyMacroParamPattern.ReplaceAllStringFunc(text, func(param string) string {
-			separator, rest := param[:1], param[1:]
-			if strings.HasSuffix(rest, "&") {
-				return separator
+			parts := emptyMacroParamPattern.FindStringSubmatch(param)
+			before, after := parts[1], parts[2]
+			// the first parameter keeps "?" when another parameter follows; any other keeps the separator after it
+			if before == "?" && after != "" {
+				return "?"
 			}
-			return ""
+			if before == "?" {
+				return ""
+			}
+			return after
 		})
 		if next == text {
 			break
@@ -269,10 +295,10 @@ func getMediaType(bid *openrtb2.Bid, imp *openrtb2.Imp) openrtb_ext.BidType {
 		return openrtb_ext.BidTypeVideo
 	}
 
-	if imp.Video != nil && imp.Banner == nil {
+	if imp != nil && imp.Video != nil && imp.Banner == nil {
 		return openrtb_ext.BidTypeVideo
 	}
-	if imp.Banner != nil && imp.Video == nil {
+	if imp != nil && imp.Banner != nil && imp.Video == nil {
 		return openrtb_ext.BidTypeBanner
 	}
 	if vastPattern.MatchString(bid.AdM) {
