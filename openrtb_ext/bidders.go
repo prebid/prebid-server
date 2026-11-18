@@ -90,6 +90,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBrave,
 	BidderBWX,
 	BidderCadentApertureMX,
+	BidderCamino,
 	BidderCcx,
 	BidderClydo,
 	BidderCointraffic,
@@ -485,6 +486,7 @@ const (
 	BidderBrave             BidderName = "brave"
 	BidderBWX               BidderName = "bwx"
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
+	BidderCamino            BidderName = "camino"
 	BidderCcx               BidderName = "ccx"
 	BidderClydo             BidderName = "clydo"
 	BidderCointraffic       BidderName = "cointraffic"

@@ -1,0 +1,176 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/news"
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            },
+            {
+              "w": 300,
+              "h": 600
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "11111"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "22222",
+            "publisherId": "987"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/news",
+            "publisher": {
+              "id": "987"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  },
+                  {
+                    "w": 300,
+                    "h": 600
+                  }
+                ]
+              },
+              "ext": {
+                "placementId": "11111"
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 3],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "placementId": "22222"
+              }
+            }
+          ],
+          "ext": {
+            "session": {
+              "id": "test-request-id"
+            }
+          }
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "pubmatic",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-banner",
+                  "price": 0.75,
+                  "adm": "<div>banner</div>",
+                  "crid": "crid-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            },
+            {
+              "seat": "sonobi",
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-video",
+                  "price": 3.5,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "crid-2",
+                  "w": 640,
+                  "h": 480,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-banner",
+            "price": 0.75,
+            "adm": "<div>banner</div>",
+            "crid": "crid-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-video",
+            "price": 3.5,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "crid-2",
+            "w": 640,
+            "h": 480,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
