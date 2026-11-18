@@ -338,17 +338,13 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
-			var ext struct {
-				ATTS *openrtb_ext.IOSAppTrackingStatus `json:"atts"`
-			}
-			if len(request.Device.Ext) > 0 {
-				if err := json.Unmarshal(request.Device.Ext, &ext); err != nil {
-					ext.ATTS = nil
-				}
+			atts, attsErr := openrtb_ext.ParseDeviceExtATTS(request.Device.Ext)
+			if attsErr != nil {
+				atts = nil
 			}
 			deviceExt := rubiconDeviceExt{
 				RP:   rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio},
-				ATTS: ext.ATTS,
+				ATTS: atts,
 			}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
 			rubiconRequest.Device = &deviceCopy
