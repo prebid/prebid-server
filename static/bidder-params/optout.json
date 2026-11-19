@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "OptOut Bidder Parameters",
+  "description": "A schema which validates params accepted by the OptOut adapter",
+  "type": "object",
+  "properties": {
+    "publisher": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adSlot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "customs": {
+      "type": "object"
+    },
+    "includeOrtb2": {
+      "type": "boolean"
+    }
+  },
+  "required": ["publisher", "adSlot"]
+}

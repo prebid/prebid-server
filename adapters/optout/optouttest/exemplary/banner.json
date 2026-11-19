@@ -1,0 +1,101 @@
+{
+  "mockBidRequest": {
+    "id": "auction-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.test/story"
+    },
+    "regs": {
+      "gdpr": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/bid",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "https://example.test/story",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "",
+          "gdpr": 1
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "requestId": "imp-1",
+              "cpm": 1.2,
+              "currency": "EUR",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "bid": {
+            "id": "imp-1",
+            "impid": "imp-1",
+            "price": 1.2,
+            "adm": "<div>Sample creative</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "creative-1",
+            "exp": 60
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
