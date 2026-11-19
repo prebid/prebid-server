@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
@@ -106,7 +107,7 @@ func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest
 	return bidResponse, nil
 }
 
-// getMediaTypeForBid uses bid.mtype when it is set, and falls back to the impression otherwise.
+// getMediaTypeForBid uses bid.mtype when it is set, and falls back to the markup otherwise.
 func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidType {
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
@@ -118,25 +119,30 @@ func getMediaTypeForBid(bid openrtb2.Bid, imps []openrtb2.Imp) openrtb_ext.BidTy
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative
 	}
-	return getMediaTypeForImp(bid.ImpID, imps)
-}
-
-// getMediaTypeForImp figures out which media type this bid is for.
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner //default type
 	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Audio != nil {
-				mediaType = openrtb_ext.BidTypeAudio
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType
+		if imp.ID == bid.ImpID {
+			return getMediaTypeForMarkup(bid.AdM, imp)
 		}
 	}
-	return mediaType
+	return openrtb_ext.BidTypeBanner
+}
+
+// getMediaTypeForMarkup picks, among the media types the impression offers, the one the markup is in:
+// VAST for video or audio, a JSON object for native, anything else for banner.
+// An impression without banner keeps its own media type, whatever the markup.
+func getMediaTypeForMarkup(adm string, imp openrtb2.Imp) openrtb_ext.BidType {
+	isVast := strings.Contains(adm, "<VAST")
+	isJSON := strings.HasPrefix(strings.TrimSpace(adm), "{")
+	switch {
+	case imp.Video != nil && (isVast || imp.Banner == nil):
+		return openrtb_ext.BidTypeVideo
+	case imp.Audio != nil && (isVast || imp.Banner == nil):
+		return openrtb_ext.BidTypeAudio
+	case imp.Native != nil && (isJSON || imp.Banner == nil):
+		return openrtb_ext.BidTypeNative
+	default:
+		return openrtb_ext.BidTypeBanner
+	}
 }
 
 // Builder builds a new instance of the SmileWanted adapter for the given bidder with the given config.

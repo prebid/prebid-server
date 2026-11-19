@@ -2,6 +2,10 @@
   "mockBidRequest": {
     "id": "test-request-id",
     "at": 1,
+    "site": {
+      "page": "https://www.example.com/page",
+      "domain": "example.com"
+    },
     "imp": [
       {
         "id": "test-imp-id",
@@ -17,7 +21,6 @@
       }
     ]
   },
-
   "httpCalls": [
     {
       "expectedRequest": {
@@ -25,6 +28,10 @@
         "body": {
           "id": "test-request-id",
           "at": 1,
+          "site": {
+            "page": "https://www.example.com/page",
+            "domain": "example.com"
+          },
           "imp": [
             {
               "id": "test-imp-id",
@@ -40,7 +47,9 @@
             }
           ]
         },
-        "impIDs":["test-imp-id"]
+        "impIDs": [
+          "test-imp-id"
+        ]
       },
       "mockResponse": {
         "status": 200,
@@ -50,34 +59,37 @@
           "seatbid": [
             {
               "seat": "smilewanted",
-              "bid": [{
-                "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-                "impid": "test-imp-id",
-                "price": 0.5,
-                "adm": "some-test-ad",
-                "crid": "crid_10",
-                "mtype": 4
-              }]
+              "bid": [
+                {
+                  "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+                  "impid": "test-imp-id",
+                  "price": 0.5,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Title\"}}],\"link\":{\"url\":\"https://www.example.com\"}}",
+                  "crid": "crid_10",
+                  "mtype": 4
+                }
+              ]
             }
           ]
         }
       }
     }
   ],
-
   "expectedBidResponses": [
     {
-      "bids": [{
-        "bid": {
-          "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
-          "impid": "test-imp-id",
-          "price": 0.5,
-          "adm": "some-test-ad",
-          "crid": "crid_10",
-          "mtype": 4
-        },
-        "type": "native"
-      }]
+      "bids": [
+        {
+          "bid": {
+            "id": "8ee514f1-b2b8-4abb-89fd-084437d1e800",
+            "impid": "test-imp-id",
+            "price": 0.5,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Title\"}}],\"link\":{\"url\":\"https://www.example.com\"}}",
+            "crid": "crid_10",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
     }
   ]
 }
