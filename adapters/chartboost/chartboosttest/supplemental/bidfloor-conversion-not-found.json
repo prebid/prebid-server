@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "imp": [
+      {
+        "id": "imp-jpy-floor",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "bidfloor": 100,
+        "bidfloorcur": "JPY",
+        "ext": {
+          "bidder": {
+            "app_id": "5a4b1c2d3e4f5a6b7c8d9e0f",
+            "location_name": "default-banner"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "EUR": {"USD": 1.2}
+          }
+        }
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "Unable to convert bid floor of imp imp-jpy-floor from JPY to USD: Currency conversion rate not found: 'JPY' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}
