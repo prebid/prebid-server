@@ -148,7 +148,8 @@ type rubiconDeviceExtRP struct {
 }
 
 type rubiconDeviceExt struct {
-	RP rubiconDeviceExtRP `json:"rp"`
+	RP   rubiconDeviceExtRP                `json:"rp"`
+	ATTS *openrtb_ext.IOSAppTrackingStatus `json:"atts,omitempty"`
 }
 
 type rubiconBidResponse struct {
@@ -337,7 +338,14 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 
 		if request.Device != nil {
 			deviceCopy := *request.Device
-			deviceExt := rubiconDeviceExt{RP: rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio}}
+			atts, attsErr := openrtb_ext.ParseDeviceExtATTS(request.Device.Ext)
+			if attsErr != nil {
+				atts = nil
+			}
+			deviceExt := rubiconDeviceExt{
+				RP:   rubiconDeviceExtRP{PixelRatio: request.Device.PxRatio},
+				ATTS: atts,
+			}
 			deviceCopy.Ext, err = json.Marshal(&deviceExt)
 			rubiconRequest.Device = &deviceCopy
 		}
