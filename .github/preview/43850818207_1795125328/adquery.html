@@ -1,0 +1,477 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>adquery: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/adquery/adquery.go (98.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package adquery
+
+import (
+        "bytes"
+        "cmp"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "regexp"
+        "slices"
+        "strconv"
+        "strings"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+const (
+        defaultCurrency string = "PLN"
+        bidderName      string = "adquery"
+        prebidVersion   string = "server"
+        eidSource       string = "adquery.io"
+)
+
+type adapter struct {
+        endpoint string
+}
+
+// Builder builds a new instance of the Adquery adapter for the given bidder with the given config.
+func Builder(_ openrtb_ext.BidderName, config config.Adapter, _ config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        bidder := &amp;adapter{
+                endpoint: config.Endpoint,
+        }
+        return bidder, nil
+}</span>
+
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        headers := buildHeaders(request)
+
+        var result []*adapters.RequestData
+        var errs []error
+
+        // The EIDs are the same for every imp, so they are computed once per request.
+        eids, err := getEids(request.User)
+        if err != nil </span><span class="cov8" title="1">{
+                errs = append(errs, err)
+        }</span>
+
+        <span class="cov8" title="1">for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                ext, err := parseExt(imp.Ext)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, &amp;errortypes.BadInput{Message: err.Error()})
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">bidderRequest := buildRequest(request, &amp;imp, ext)
+                bidderRequest.Eids = eids
+
+                requestJSON, err := json.Marshal(bidderRequest)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, append(errs, err)
+                }</span>
+
+                <span class="cov8" title="1">data := &amp;adapters.RequestData{
+                        Method:  "POST",
+                        Uri:     a.endpoint,
+                        Body:    requestJSON,
+                        Headers: headers,
+                        ImpIDs:  []string{imp.ID},
+                }
+                result = append(result, data)</span>
+        }
+
+        <span class="cov8" title="1">return result, errs</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, _ *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+
+        <span class="cov8" title="1">err := adapters.CheckResponseStatusCodeForErrors(responseData)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">respData, price, width, height, errs := parseResponseJson(responseData.Body)
+        if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                return nil, errs
+        }</span>
+
+        <span class="cov8" title="1">if respData == nil </span><span class="cov8" title="1">{
+                return adapters.NewBidderResponse(), nil
+        }</span>
+
+        <span class="cov8" title="1">bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+        if respData.Currency != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = respData.Currency
+        }</span> else<span class="cov8" title="1"> {
+                bidResponse.Currency = defaultCurrency
+        }</span>
+
+        <span class="cov8" title="1">var bidReqIdRegex = regexp.MustCompile(`^` + request.ID)
+        impId := bidReqIdRegex.ReplaceAllLiteralString(respData.ReqID, "")
+
+        bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{
+                Bid: &amp;openrtb2.Bid{
+                        // There's much more possible fields to be added here, see OpenRTB docs for reference (type: Bid)
+                        ID:      respData.ReqID,
+                        ImpID:   impId,
+                        Price:   price,
+                        AdM:     fmt.Sprintf("&lt;script src=\"%s\"&gt;&lt;/script&gt;%s", respData.AdQLib, respData.Tag),
+                        ADomain: respData.ADomains,
+                        CrID:    fmt.Sprintf("%d", respData.CrID),
+                        W:       width,
+                        H:       height,
+                },
+                BidType: respData.MediaType.Name,
+        })
+
+        return bidResponse, nil</span>
+}
+
+func buildHeaders(bidReq *openrtb2.BidRequest) http.Header <span class="cov8" title="1">{
+        headers := http.Header{}
+
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("X-Openrtb-Version", "2.5")
+
+        if bidReq.Device != nil &amp;&amp; len(bidReq.Device.IP) &gt; 0 </span><span class="cov8" title="1">{
+                headers.Add("X-Forwarded-For", bidReq.Device.IP)
+        }</span>
+
+        <span class="cov8" title="1">return headers</span>
+}
+
+func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_ext.ImpExtAdQuery) *BidderRequest <span class="cov8" title="1">{
+        userId := ""
+        if bidReq.User != nil </span><span class="cov8" title="1">{
+                userId = bidReq.User.ID
+        }</span>
+
+        <span class="cov8" title="1">bidderRequest := &amp;BidderRequest{
+                V:                   prebidVersion,
+                PlacementCode:       ext.PlacementID,
+                AuctionId:           "",
+                BidType:             ext.Type,
+                AdUnitCode:          imp.TagID,
+                BidQid:              userId,
+                BidId:               fmt.Sprintf("%s%s", bidReq.ID, imp.ID),
+                Bidder:              bidderName,
+                BidderRequestId:     bidReq.ID,
+                BidRequestsCount:    1,
+                BidderRequestsCount: 1,
+                Sizes:               getImpSizes(imp),
+        }
+
+        if bidReq.Device != nil </span><span class="cov8" title="1">{
+                bidderRequest.BidIp = bidReq.Device.IP
+                bidderRequest.BidIpv6 = bidReq.Device.IPv6
+                bidderRequest.BidUa = bidReq.Device.UA
+        }</span>
+
+        <span class="cov8" title="1">if bidReq.Site != nil </span><span class="cov8" title="1">{
+                bidderRequest.BidPageUrl = bidReq.Site.Page
+        }</span>
+
+        <span class="cov8" title="1">return bidderRequest</span>
+}
+
+func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) <span class="cov8" title="1">{
+        var bext adapters.ExtImpBidder
+        err := jsonutil.Unmarshal(ext, &amp;bext)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">var adsExt openrtb_ext.ImpExtAdQuery
+        err = jsonutil.Unmarshal(bext.Bidder, &amp;adsExt)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        // not validating, because it should have been done earlier by the server
+        <span class="cov8" title="1">return &amp;adsExt, nil</span>
+}
+
+func parseResponseJson(respBody []byte) (*ResponseData, float64, int64, int64, []error) <span class="cov8" title="1">{
+        var response ResponseAdQuery
+        if err := jsonutil.Unmarshal(respBody, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, 0, 0, 0, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">if response.Data == nil </span><span class="cov8" title="1">{
+                return nil, 0, 0, 0, nil
+        }</span>
+
+        <span class="cov8" title="1">var errs []error
+        price, err := strconv.ParseFloat(response.Data.CPM, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                errs = append(errs, err)
+        }</span>
+        <span class="cov8" title="1">width, err := strconv.ParseInt(response.Data.MediaType.Width, 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                errs = append(errs, err)
+        }</span>
+        <span class="cov8" title="1">height, err := strconv.ParseInt(response.Data.MediaType.Height, 10, 64)
+        if err != nil </span><span class="cov8" title="1">{
+                errs = append(errs, err)
+        }</span>
+
+        <span class="cov8" title="1">if response.Data.MediaType.Name != openrtb_ext.BidTypeBanner </span><span class="cov8" title="1">{
+                return nil, 0, 0, 0, []error{fmt.Errorf("unsupported MediaType: %s", response.Data.MediaType.Name)}
+        }</span>
+
+        <span class="cov8" title="1">if len(errs) &gt; 0 </span><span class="cov8" title="1">{
+                return nil, 0, 0, 0, errs
+        }</span>
+        <span class="cov8" title="1">return response.Data, price, width, height, nil</span>
+}
+
+func getImpSizes(imp *openrtb2.Imp) string <span class="cov8" title="1">{
+        if imp.Banner == nil </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+
+        <span class="cov8" title="1">if len(imp.Banner.Format) &gt; 0 </span><span class="cov8" title="1">{
+                sizes := make([]string, len(imp.Banner.Format))
+                for i, format := range imp.Banner.Format </span><span class="cov8" title="1">{
+                        sizes[i] = strconv.FormatInt(format.W, 10) + "x" + strconv.FormatInt(format.H, 10)
+                }</span>
+
+                <span class="cov8" title="1">return strings.Join(sizes, ",")</span>
+        }
+
+        <span class="cov8" title="1">if imp.Banner.W != nil &amp;&amp; imp.Banner.H != nil </span><span class="cov8" title="1">{
+                return strconv.FormatInt(*imp.Banner.W, 10) + "x" + strconv.FormatInt(*imp.Banner.H, 10)
+        }</span>
+
+        <span class="cov8" title="1">return ""</span>
+}
+
+// maxEidUids caps the number of uids forwarded in Eids, across all EIDs.
+const maxEidUids = 50
+
+// getEids returns the user's EIDs to forward to adQuery with their original source. EIDs without a
+// source and uids without an id are dropped, and identical duplicates are removed. The order does
+// not depend on input order: adquery.io first, then by source and uids, ties broken by the remaining
+// fields (ext is compared as raw JSON). The cap is applied after sorting, so it never drops the
+// adquery.io uid. The request is not modified.
+func getEids(user *openrtb2.User) ([]openrtb2.EID, error) <span class="cov8" title="1">{
+        source, err := userEids(user)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">cleaned := make([]openrtb2.EID, 0, len(source))
+        for _, eid := range source </span><span class="cov8" title="1">{
+                if cleanedEid, ok := cleanEid(eid); ok </span><span class="cov8" title="1">{
+                        cleaned = append(cleaned, cleanedEid)
+                }</span>
+        }
+        <span class="cov8" title="1">cleaned = sortUniqueEids(cleaned)
+
+        var result []openrtb2.EID
+        budget := maxEidUids
+        for _, eid := range cleaned </span><span class="cov8" title="1">{
+                if budget &lt;= 0 </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if len(eid.UIDs) &gt; budget </span><span class="cov8" title="1">{
+                        eid.UIDs = eid.UIDs[:budget]
+                }</span>
+                <span class="cov8" title="1">result = append(result, eid)
+                budget -= len(eid.UIDs)</span>
+        }
+        // Cutting uids can turn an EID into a copy of another one, so the capped list is sorted and
+        // deduplicated again; adquery.io still sorts first.
+        <span class="cov8" title="1">return sortUniqueEids(result), nil</span>
+}
+
+func sortUniqueEids(eids []openrtb2.EID) []openrtb2.EID <span class="cov8" title="1">{
+        slices.SortFunc(eids, compareEids)
+        return slices.CompactFunc(eids, func(a, b openrtb2.EID) bool </span><span class="cov8" title="1">{ return compareEids(a, b) == 0 }</span>)
+}
+
+// userEids returns user.eids (ORTB 2.6) when set and user.ext.eids (2.5) otherwise, like PBS core.
+// adquery declares no openrtb version in its bidder info, so PBS downconverts to 2.5 and the EIDs
+// arrive in user.ext.eids; user.eids only matters if the bidder info ever declares 2.6. Only the
+// eids field of user.ext is decoded, so a malformed unrelated field does not drop the EIDs; an
+// undecodable user.ext.eids is skipped with a warning.
+func userEids(user *openrtb2.User) ([]openrtb2.EID, error) <span class="cov8" title="1">{
+        if user == nil </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if len(user.EIDs) &gt; 0 || len(user.Ext) == 0 </span><span class="cov8" title="1">{
+                return user.EIDs, nil
+        }</span>
+
+        <span class="cov8" title="1">var userExt struct {
+                Eids []openrtb2.EID `json:"eids"`
+        }
+        if err := jsonutil.Unmarshal(user.Ext, &amp;userExt); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.Warning{Message: fmt.Sprintf("ignoring user.ext.eids: %s", err.Error())}
+        }</span>
+        <span class="cov8" title="1">return userExt.Eids, nil</span>
+}
+
+// cleanEid returns a copy of eid with only its uids that have an id, sorted and without identical
+// duplicates; ok is false when eid has no source or no such uid. ext values are compacted, so the
+// same JSON with different whitespace compares (and dedupes) as equal. The input is not modified.
+func cleanEid(eid openrtb2.EID) (openrtb2.EID, bool) <span class="cov8" title="1">{
+        if eid.Source == "" </span><span class="cov8" title="1">{
+                return eid, false
+        }</span>
+        <span class="cov8" title="1">uids := make([]openrtb2.UID, 0, len(eid.UIDs))
+        for _, uid := range eid.UIDs </span><span class="cov8" title="1">{
+                if uid.ID != "" </span><span class="cov8" title="1">{
+                        uid.Ext = compactJSON(uid.Ext)
+                        uids = append(uids, uid)
+                }</span>
+        }
+        <span class="cov8" title="1">if len(uids) == 0 </span><span class="cov8" title="1">{
+                return eid, false
+        }</span>
+        <span class="cov8" title="1">slices.SortFunc(uids, compareUids)
+        eid.UIDs = slices.CompactFunc(uids, func(a, b openrtb2.UID) bool </span><span class="cov8" title="1">{ return compareUids(a, b) == 0 }</span>)
+        <span class="cov8" title="1">eid.Ext = compactJSON(eid.Ext)
+        return eid, true</span>
+}
+
+// compactJSON returns raw without insignificant whitespace, or raw itself when it is empty or invalid.
+func compactJSON(raw json.RawMessage) json.RawMessage <span class="cov8" title="1">{
+        if len(raw) == 0 </span><span class="cov8" title="1">{
+                return raw
+        }</span>
+        <span class="cov8" title="1">var buf bytes.Buffer
+        if err := json.Compact(&amp;buf, raw); err != nil </span><span class="cov8" title="1">{
+                return raw
+        }</span>
+        <span class="cov8" title="1">return buf.Bytes()</span>
+}
+
+func compareUids(a, b openrtb2.UID) int <span class="cov8" title="1">{
+        return cmp.Or(
+                strings.Compare(a.ID, b.ID),
+                cmp.Compare(a.AType, b.AType),
+                bytes.Compare(a.Ext, b.Ext),
+        )
+}</span>
+
+func compareEids(a, b openrtb2.EID) int <span class="cov8" title="1">{
+        aIsAdquery := a.Source == eidSource
+        bIsAdquery := b.Source == eidSource
+        if aIsAdquery != bIsAdquery </span><span class="cov8" title="1">{
+                if aIsAdquery </span><span class="cov8" title="1">{
+                        return -1
+                }</span>
+                <span class="cov8" title="1">return 1</span>
+        }
+        <span class="cov8" title="1">return cmp.Or(
+                strings.Compare(a.Source, b.Source),
+                slices.CompareFunc(a.UIDs, b.UIDs, compareUids),
+                strings.Compare(a.Inserter, b.Inserter),
+                strings.Compare(a.Matcher, b.Matcher),
+                cmp.Compare(a.MM, b.MM),
+                bytes.Compare(a.Ext, b.Ext),
+        )</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
