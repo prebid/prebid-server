@@ -78,6 +78,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderBidsCube,
 	BidderBidstack,
 	BidderBidtheatre,
+	BidderBidwave,
 	BidderBigoAd,
 	BidderBlasto,
 	BidderBliink,
@@ -92,6 +93,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderCadentApertureMX,
 	BidderCcx,
 	BidderChartboost,
+	BidderClickio,
 	BidderClydo,
 	BidderCointraffic,
 	BidderCoinzilla,
@@ -474,6 +476,7 @@ const (
 	BidderBidsCube          BidderName = "bidscube"
 	BidderBidstack          BidderName = "bidstack"
 	BidderBidtheatre        BidderName = "bidtheatre"
+	BidderBidwave           BidderName = "bidwave"
 	BidderBigoAd            BidderName = "bigoad"
 	BidderBlasto            BidderName = "blasto"
 	BidderBliink            BidderName = "bliink"
@@ -488,6 +491,7 @@ const (
 	BidderCadentApertureMX  BidderName = "cadent_aperture_mx"
 	BidderCcx               BidderName = "ccx"
 	BidderChartboost        BidderName = "chartboost"
+	BidderClickio           BidderName = "clickio"
 	BidderClydo             BidderName = "clydo"
 	BidderCointraffic       BidderName = "cointraffic"
 	BidderCoinzilla         BidderName = "coinzilla"

@@ -62,6 +62,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/bidscube"
 	"github.com/prebid/prebid-server/v4/adapters/bidstack"
 	"github.com/prebid/prebid-server/v4/adapters/bidtheatre"
+	"github.com/prebid/prebid-server/v4/adapters/bidwave"
 	"github.com/prebid/prebid-server/v4/adapters/bigoad"
 	"github.com/prebid/prebid-server/v4/adapters/blasto"
 	"github.com/prebid/prebid-server/v4/adapters/bliink"
@@ -76,6 +77,7 @@ import (
 	cadentaperturemx "github.com/prebid/prebid-server/v4/adapters/cadent_aperture_mx"
 	"github.com/prebid/prebid-server/v4/adapters/ccx"
 	"github.com/prebid/prebid-server/v4/adapters/chartboost"
+	"github.com/prebid/prebid-server/v4/adapters/clickio"
 	"github.com/prebid/prebid-server/v4/adapters/clydo"
 	"github.com/prebid/prebid-server/v4/adapters/cointraffic"
 	"github.com/prebid/prebid-server/v4/adapters/coinzilla"
@@ -351,6 +353,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBidsCube:          bidscube.Builder,
 		openrtb_ext.BidderBidstack:          bidstack.Builder,
 		openrtb_ext.BidderBidtheatre:        bidtheatre.Builder,
+		openrtb_ext.BidderBidwave:           bidwave.Builder,
 		openrtb_ext.BidderBigoAd:            bigoad.Builder,
 		openrtb_ext.BidderBlasto:            blasto.Builder,
 		openrtb_ext.BidderBliink:            bliink.Builder,
@@ -365,6 +368,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
 		openrtb_ext.BidderChartboost:        chartboost.Builder,
+		openrtb_ext.BidderClickio:           clickio.Builder,
 		openrtb_ext.BidderClydo:             clydo.Builder,
 		openrtb_ext.BidderCointraffic:       cointraffic.Builder,
 		openrtb_ext.BidderCoinzilla:         coinzilla.Builder,
