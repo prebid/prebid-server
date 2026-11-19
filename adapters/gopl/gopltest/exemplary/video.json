@@ -11,11 +11,11 @@
                     }
                 },
                 "secure": 1,
-                "audio": {
-                    "mimes": ["audio/mp3"],
-                    "minduration": 5,
-                    "maxduration": 30,
-                    "protocols": [1, 2]
+                "video": {
+                    "mimes": ["video/mp4"],
+                    "protocols": [2, 5],
+                    "w": 320,
+                    "h": 480
                   },
                 "tagid": "ad-test1"
             }
@@ -40,18 +40,18 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
                         "imp": [
                             {
                                 "id": "slot",
-                                "audio": {
-                                    "mimes": ["audio/mp3"],
-                                    "minduration": 5,
-                                    "maxduration": 30,
-                                    "protocols": [1, 2]
+                                "video": {
+                                    "mimes": ["video/mp4"],
+                                    "protocols": [2, 5],
+                                    "w": 320,
+                                    "h": 480
                                   },
                                 "tagid": "ad-test1",
                                 "secure": 1,
@@ -93,14 +93,18 @@
                     "id": "test-request",
                     "seatbid": [
                         {
-                            "seat": "sspbc-test",
-                            "bid": [{
-                                "adm": "test-audio-ad",
-                                "id": "response-005",
-                                "impid": "slot",
-                                "price": 20,
-                                "mtype": 3
-                              }]
+                            "seat": "gopl-test",
+                            "bid": [
+                                {
+                                    "adm": "test-video-ad",
+                                    "id": "response-005",
+                                    "impid": "slot",
+                                    "price": 20,
+                                    "mtype": 2,
+                                    "w": 320,
+                                    "h": 480
+                                }
+                            ]
                         }
                     ]
                 }
@@ -113,13 +117,15 @@
             "bids": [
                 {
                     "bid": {
-                        "adm": "test-audio-ad",
+                        "adm": "test-video-ad",
                         "id": "response-005",
                         "impid": "slot",
                         "price": 20,
-                        "mtype": 3
+                        "mtype": 2,
+                        "w": 320,
+                        "h": 480
                     },
-                    "type": "audio"
+                    "type": "video"
                 }
             ]
         }

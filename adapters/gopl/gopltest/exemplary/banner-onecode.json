@@ -4,21 +4,20 @@
         "imp": [
             {
                 "id": "slot",
-                "ext": {
-                    "bidder": {
-                        "siteId": "237503",
-                        "id": "005"
-                    }
-                },
+                "ext": {},
                 "secure": 1,
                 "banner": {
-                    "format": []
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
                 },
                 "tagid": "ad-test1"
             }
         ],
         "site": {
-            "id": "237503",
             "domain": "test.page",
             "page": "https://test.page/",
             "ref": "https://test.referer/"
@@ -38,26 +37,27 @@
     "httpCalls": [
         {
             "expectedRequest": {
-                "uri": "http://ssp.wp.test/bidder/?bdver=6.0",
+                "uri": "http://ssp.wp.test/bidder/?bdver=7.0",
                 "body": {
                     "bidRequest": {
                         "id": "test-request",
                         "imp": [
                             {
                                 "id": "slot",
-                                "banner": {},
+                                "banner": {
+                                    "format": [
+                                        {
+                                            "w": 300,
+                                            "h": 250
+                                        }
+                                    ]
+                                },
                                 "tagid": "ad-test1",
                                 "secure": 1,
-                                "ext": {
-                                    "bidder": {
-                                        "siteId": "237503",
-                                        "id": "005"
-                                    }
-                                }
+                                "ext": {}
                             }
                         ],
                         "site": {
-                            "id": "237503",
                             "domain": "test.page",
                             "page": "https://test.page/",
                             "ref": "https://test.referer/"
@@ -76,7 +76,7 @@
                     },
                     "requestInfo": {
                         "PbsEntryPoint": ""
-                    }   
+                    }
                 },
                 "impIDs":["slot"]
             },
@@ -91,7 +91,7 @@
                                 {
                                     "adm": "<!--preformatted-->test_ad",
                                     "adomain": [
-                                        "sspbc-test"
+                                        "gopl-test"
                                     ],
                                     "crid": "1234",
                                     "ext": {
@@ -111,10 +111,10 @@
                                     "mtype": 1
                                 }
                             ],
-                            "seat": "sspbc-test"
+                            "seat": "gopl-test"
                         }
                     ],
-                    "sn": "sspbc-test"
+                    "sn": "gopl-test"
                 }
             }
         }
@@ -130,7 +130,7 @@
                         "price": 20,
                         "adm": "<!--preformatted-->test_ad",
                         "adomain": [
-                            "sspbc-test"
+                            "gopl-test"
                         ],
                         "crid": "1234",
                         "w": 300,

@@ -1,16 +1,2 @@
-endpoint: "https://ssp.wp.pl/v2/bidder/prebidserver"
-maintainer:
-  email: "prebid-dev@grupawp.pl"
+aliasOf: gopl
 gvlVendorID: 676
-capabilities:
-  site:
-    mediaTypes:
-      - banner
-userSync:
-  default: iframe
-  iframe:
-    url: https://ssp.wp.pl/bidder/usersync?tcf=2&redirect={{.RedirectURL}}
-    userMacro: $UID
-  redirect:
-    url: https://ssp.wp.pl/v1/sync/prebid-server/pixel?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&redirect={{.RedirectURL}}
-    userMacro: $UID
