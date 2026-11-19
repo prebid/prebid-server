@@ -32,6 +32,7 @@ type AuctionObject struct {
 	HookExecutionOutcome []hookexecution.StageOutcome
 	SeatNonBid           []openrtb_ext.SeatNonBid
 	RequestWrapper       *openrtb_ext.RequestWrapper
+	Lifecycle            *AuctionLifecycle
 }
 
 // Loggable object of a transaction at /openrtb2/amp endpoint
