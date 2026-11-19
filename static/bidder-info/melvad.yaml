@@ -1,6 +1,6 @@
 endpoint: "https://rtb.bidder.melvad.com/ssps/1/{{.SspID}}"
 maintainer:
-  email: a.stukolkin@melvad.com
+  email: support@melvad.com
 endpointCompression: gzip
 modifyingVastXmlAllowed: true
 capabilities:
