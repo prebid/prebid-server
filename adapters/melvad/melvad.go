@@ -160,35 +160,64 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	return bidResponse, errs
 }
 
-// getMediaTypeForBid takes bid.mtype when the bidder sends it, else the media type of the impression the bid answers.
+// getMediaTypeForBid types a bid by its mtype, which the Melvad bidder sends with every bid, after checking that the
+// bid answers an impression of the request that has that format. A bid without mtype takes the format of its
+// impression only when the impression has one format; a guess between several formats is an error.
 func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
-	switch bid.MType {
-	case openrtb2.MarkupBanner:
-		return openrtb_ext.BidTypeBanner, nil
-	case openrtb2.MarkupVideo:
-		return openrtb_ext.BidTypeVideo, nil
-	case openrtb2.MarkupNative:
-		return openrtb_ext.BidTypeNative, nil
+	imp := impOf(bid.ImpID, imps)
+	if imp == nil {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("The bid %s is for the unknown impression %s", bid.ID, bid.ImpID),
+		}
 	}
 
-	for _, imp := range imps {
-		if imp.ID != bid.ImpID {
-			continue
-		}
-
-		switch {
-		case imp.Banner != nil:
-			return openrtb_ext.BidTypeBanner, nil
-		case imp.Video != nil:
-			return openrtb_ext.BidTypeVideo, nil
-		case imp.Native != nil:
-			return openrtb_ext.BidTypeNative, nil
+	switch {
+	case bid.MType == openrtb2.MarkupBanner && imp.Banner != nil:
+		return openrtb_ext.BidTypeBanner, nil
+	case bid.MType == openrtb2.MarkupVideo && imp.Video != nil:
+		return openrtb_ext.BidTypeVideo, nil
+	case bid.MType == openrtb2.MarkupNative && imp.Native != nil:
+		return openrtb_ext.BidTypeNative, nil
+	case bid.MType == 0:
+		if bidType, ok := onlyFormat(imp); ok {
+			return bidType, nil
 		}
 	}
 
 	return "", &errortypes.BadServerResponse{
 		Message: fmt.Sprintf("Unable to determine the media type of the bid %s for the impression %s", bid.ID, bid.ImpID),
 	}
+}
+
+// impOf returns the impression of the request with the id, nil when there is none.
+func impOf(id string, imps []openrtb2.Imp) *openrtb2.Imp {
+	for i := range imps {
+		if imps[i].ID == id {
+			return &imps[i]
+		}
+	}
+
+	return nil
+}
+
+// onlyFormat returns the format of an impression that has exactly one of banner, video and native.
+func onlyFormat(imp *openrtb2.Imp) (openrtb_ext.BidType, bool) {
+	var formats []openrtb_ext.BidType
+	if imp.Banner != nil {
+		formats = append(formats, openrtb_ext.BidTypeBanner)
+	}
+	if imp.Video != nil {
+		formats = append(formats, openrtb_ext.BidTypeVideo)
+	}
+	if imp.Native != nil {
+		formats = append(formats, openrtb_ext.BidTypeNative)
+	}
+
+	if len(formats) != 1 {
+		return "", false
+	}
+
+	return formats[0], true
 }
 
 // resolveMacros fills ${AUCTION_PRICE} in the markup and the billing url with the bid price.

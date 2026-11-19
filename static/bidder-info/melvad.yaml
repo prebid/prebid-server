@@ -16,5 +16,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
+    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
     userMacro: '{{oui}}'

@@ -36,6 +36,7 @@
                   "id": "bid-1",
                   "impid": "unknown-imp-id",
                   "price": 1.5,
+                  "mtype": 1,
                   "adm": "<div>ad</div>",
                   "crid": "crid-1"
                 },
@@ -62,7 +63,7 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "Unable to determine the media type of the bid bid-1 for the impression unknown-imp-id",
+      "value": "The bid bid-1 is for the unknown impression unknown-imp-id",
       "comparison": "literal"
     }
   ],
