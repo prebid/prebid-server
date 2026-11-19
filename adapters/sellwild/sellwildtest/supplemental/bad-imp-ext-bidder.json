@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": "not-an-object"
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "123.123.123.123"
+    },
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for imp imp-1: .*",
+      "comparison": "regex"
+    }
+  ],
+  "httpCalls": []
+}
