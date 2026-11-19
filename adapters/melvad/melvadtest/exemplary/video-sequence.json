@@ -156,6 +156,12 @@
           ],
           "Content-Type": [
             "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1"
+          ],
+          "X-Forwarded-For": [
+            "69.75.122.146"
           ]
         },
         "impIDs": [
@@ -206,7 +212,7 @@
             "adomain": [
               "melvad.com"
             ],
-            "burl": "https://rtb.melvad.com/billing/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "burl": "https://rtb.melvad.com/billing/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA?ap=1.9517991108&ac=USD&auid=o37934lssd34fgd",
             "cid": "5934",
             "crid": "11298",
             "id": "11298",

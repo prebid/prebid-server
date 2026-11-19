@@ -87,6 +87,19 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, sspID string, imps [
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
 
+	// the device of an app or a site: its user agent and its IP, as a browser would send them
+	if request.Device != nil {
+		if request.Device.UA != "" {
+			headers.Add("User-Agent", request.Device.UA)
+		}
+
+		if request.Device.IP != "" {
+			headers.Add("X-Forwarded-For", request.Device.IP)
+		} else if request.Device.IPv6 != "" {
+			headers.Add("X-Forwarded-For", request.Device.IPv6)
+		}
+	}
+
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     uri,
@@ -147,7 +160,7 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 				continue
 			}
 
-			resolveMacros(bid)
+			resolveMacros(bid, bidResponse.Currency, request.ID)
 
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     bid,
@@ -220,9 +233,14 @@ func onlyFormat(imp *openrtb2.Imp) (openrtb_ext.BidType, bool) {
 	return formats[0], true
 }
 
-// resolveMacros fills ${AUCTION_PRICE} in the markup and the billing url with the bid price.
-func resolveMacros(bid *openrtb2.Bid) {
-	price := strconv.FormatFloat(bid.Price, 'f', -1, 64)
-	bid.AdM = strings.ReplaceAll(bid.AdM, "${AUCTION_PRICE}", price)
-	bid.BURL = strings.ReplaceAll(bid.BURL, "${AUCTION_PRICE}", price)
+// resolveMacros fills the auction macros of the markup and of the billing url: ${AUCTION_PRICE} with the bid price,
+// ${AUCTION_CURRENCY} with the currency of the response and ${AUCTION_ID} with the id of the request.
+func resolveMacros(bid *openrtb2.Bid, currency, auctionID string) {
+	r := strings.NewReplacer(
+		"${AUCTION_PRICE}", strconv.FormatFloat(bid.Price, 'f', -1, 64),
+		"${AUCTION_CURRENCY}", currency,
+		"${AUCTION_ID}", auctionID,
+	)
+	bid.AdM = r.Replace(bid.AdM)
+	bid.BURL = r.Replace(bid.BURL)
 }

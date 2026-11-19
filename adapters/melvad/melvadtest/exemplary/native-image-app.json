@@ -118,6 +118,12 @@
           ],
           "Content-Type": [
             "application/json;charset=utf-8"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/112.0.5615.46 Mobile/15E148 Safari/604.1"
+          ],
+          "X-Forwarded-For": [
+            "69.75.122.146"
           ]
         },
         "impIDs": [
@@ -169,7 +175,7 @@
               "play.google.com"
             ],
             "bundle": "com.rovio.baba",
-            "burl": "https://rtb.melvad.com/billing/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?ap=1.9517991108&ac=${AUCTION_CURRENCY}&auid=${AUCTION_ID}",
+            "burl": "https://rtb.melvad.com/billing/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?ap=1.9517991108&ac=USD&auid=o37934lssd34fgd",
             "cid": "5935",
             "crid": "11294",
             "id": "11294",
