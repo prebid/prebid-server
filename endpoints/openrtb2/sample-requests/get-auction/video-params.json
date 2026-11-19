@@ -1,0 +1,94 @@
+{
+  "description": "GET video: explicit mtype=2 with all video params written to correct OpenRTB destinations; stored banner is removed",
+  "httpMethod": "GET",
+  "query": "srid=stored-video&mtype=2&mindur=5&maxdur=30&w=640&h=360&api=2,7&battr=1,2&delivery=1,2&linearity=1&minbr=100&maxbr=1000&maxex=5&maxseq=3&mincpms=1.25&poddur=60&podid=pod-alpha&podseq=1&proto=2,3&seq=1&slotinpod=2&startdelay=-1&skip=1&skipafter=5&skipmin=2&pos=1&placement=2&plcmt=1&playbackend=2&playbackmethod=1,2&boxingallowed=0&mimes=video%2Fmp4,video%2Fwebm&page=https://example.com",
+  "generatedRequestId": "test-get-uuid-video-params",
+  "mockStoredRequests": {
+    "stored-video": {
+      "site": {"page": "https://example.com"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ]
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-video-params",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-video-params",
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "mimes": ["video/mp4", "video/webm"],
+          "minduration": 5,
+          "maxduration": 30,
+          "startdelay": -1,
+          "maxseq": 3,
+          "poddur": 60,
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 360,
+          "podid": "pod-alpha",
+          "podseq": 1,
+          "placement": 2,
+          "plcmt": 1,
+          "linearity": 1,
+          "skip": 1,
+          "skipmin": 2,
+          "skipafter": 5,
+          "sequence": 1,
+          "slotinpod": 2,
+          "mincpmpersec": 1.25,
+          "battr": [1, 2],
+          "maxextended": 5,
+          "minbitrate": 100,
+          "maxbitrate": 1000,
+          "boxingallowed": 0,
+          "playbackmethod": [1, 2],
+          "playbackend": 2,
+          "delivery": [1, 2],
+          "pos": 1,
+          "api": [2, 7]
+        },
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "bidder": {"appnexus": {"placementId": 12345}}
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com",
+      "domain": "example.com",
+      "publisher": {"domain": "example.com"},
+      "ext": {"amp": 0}
+    },
+    "device": {"ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-video"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"}
+      }
+    }
+  }
+}

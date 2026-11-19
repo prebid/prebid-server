@@ -1,0 +1,19 @@
+{
+  "description": "GET dtype=8 against a stored request with no site/app/dooh injects dooh:{} and fails dooh validation, not the channel-determination error and not site validation",
+  "httpMethod": "GET",
+  "query": "srid=stored-no-context&dtype=8",
+  "generatedRequestId": "test-get-uuid-no-ctx-dooh",
+  "mockStoredRequests": {
+    "stored-no-context": {
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 300, "h": 250}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "expectedReturnCode": 400,
+  "expectedErrorMessage": "Invalid request: request.dooh should include at least one of request.dooh.id or request.dooh.venuetype.\n"
+}

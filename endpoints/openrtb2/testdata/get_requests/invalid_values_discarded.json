@@ -1,0 +1,37 @@
+{
+  "description": "Invalid values are discarded while stored values survive",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "api": [
+        1,
+        2
+      ],
+      "maxduration": 120,
+      "minduration": 10,
+      "protocols": [
+        1,
+        2,
+        3
+      ]
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026mindur=notanumber\u0026maxdur=INVALID\u0026api=1,bad,2",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "maxduration": 120,
+          "minduration": 10,
+          "protocols": [
+            1,
+            2,
+            3
+          ]
+        }
+      }
+    ],
+    "site": {}
+  }
+}

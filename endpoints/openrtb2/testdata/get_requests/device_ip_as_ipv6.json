@@ -1,0 +1,33 @@
+{
+  "description": "IPv6 address passed via ip= param routes to device.ipv6, not device.ip",
+  "expected_bid_request": {
+    "device": {
+      "ipv6": "2001:db8::9"
+    },
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "stored"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  },
+  "query": "srid=stored\u0026ip=2001%3Adb8%3A%3A9",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

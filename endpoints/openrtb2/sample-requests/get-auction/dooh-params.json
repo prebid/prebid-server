@@ -1,0 +1,69 @@
+{
+  "description": "GET dooh: stored dooh context; dtype=8, pubid and content params route to dooh object",
+  "httpMethod": "GET",
+  "query": "srid=stored-dooh&dtype=8&pubid=pub-dooh123&cgenre=outdoor&ctitle=Billboard&ccat=IAB17-18",
+  "generatedRequestId": "test-get-uuid-dooh-params",
+  "mockStoredRequests": {
+    "stored-dooh": {
+      "dooh": {"id": "dooh-screen-42"},
+      "imp": [
+        {
+          "id": "imp1",
+          "banner": {"format": [{"w": 1920, "h": 1080}]},
+          "ext": {"appnexus": {"placementId": 12345}}
+        }
+      ]
+    }
+  },
+  "config": {
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.50}
+    ],
+    "bidderInfoOverrides": {
+      "appnexus": {
+        "capabilities": {
+          "dooh": {"mediaTypes": ["banner"]}
+        }
+      }
+    }
+  },
+  "expectedReturnCode": 200,
+  "expectedBidResponse": {
+    "id": "test-get-uuid-dooh-params",
+    "seatbid": [
+      {
+        "bid": [{"id": "appnexus-bid", "impid": "imp1", "price": 1.50}],
+        "seat": "appnexus"
+      }
+    ],
+    "cur": "USD"
+  },
+  "expectedValidatedBidRequest": {
+    "id": "test-get-uuid-dooh-params",
+    "imp": [
+      {
+        "id": "imp1",
+        "banner": {"format": [{"w": 1920, "h": 1080}]},
+        "secure": 1,
+        "ext": {
+          "prebid": {
+            "bidder": {"appnexus": {"placementId": 12345}}
+          }
+        }
+      }
+    ],
+    "dooh": {
+      "id": "dooh-screen-42",
+      "publisher": {"id": "pub-dooh123"},
+      "content": {"title": "Billboard", "genre": "outdoor", "cat": ["IAB17-18"]}
+    },
+    "device": {"devicetype": 8, "ip": "192.0.2.1"},
+    "at": 1,
+    "ext": {
+      "prebid": {
+        "storedrequest": {"id": "stored-dooh"},
+        "server": {"externalurl": "", "gvlid": 0, "datacenter": "", "http_method": "GET"}
+      }
+    }
+  }
+}

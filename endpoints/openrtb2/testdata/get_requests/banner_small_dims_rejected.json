@@ -1,0 +1,15 @@
+{
+  "description": "w/h below bannerMinDim (10) produce no banner fields",
+  "expected_imp": {
+    "id": "imp1"
+  },
+  "query": "srid=testbanner\u0026mtype=1\u0026w=5\u0026h=6",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

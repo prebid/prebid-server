@@ -1,0 +1,31 @@
+{
+  "description": "Zero clears stored skip settings",
+  "expected_imp": {
+    "id": "imp1",
+    "video": {
+      "mimes": [
+        "video/mp4"
+      ],
+      "skip": 0,
+      "skipafter": 15,
+      "skipmin": 0
+    }
+  },
+  "query": "srid=testvideo\u0026mtype=2\u0026skip=0\u0026skipmin=0",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "skip": 1,
+          "skipafter": 15,
+          "skipmin": 5
+        }
+      }
+    ],
+    "site": {}
+  }
+}

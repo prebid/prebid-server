@@ -8,6 +8,7 @@ on:
         required: true
         description: 'Already built docker image to publish to docker hub'
 
+jobs:
   publish-docker-image:
     name: Publish docker image
     runs-on: ubuntu-latest

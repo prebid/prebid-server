@@ -1,0 +1,33 @@
+{
+  "description": "Device user agent supplied through the query",
+  "expected_bid_request": {
+    "device": {
+      "ua": "TestPlayer/2.0 SmartTV"
+    },
+    "ext": {
+      "prebid": {
+        "server": {
+          "http_method": "GET"
+        },
+        "storedrequest": {
+          "id": "testua"
+        }
+      }
+    },
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  },
+  "query": "srid=testua\u0026ua=TestPlayer%2F2.0+SmartTV",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}

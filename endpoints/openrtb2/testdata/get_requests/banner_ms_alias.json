@@ -1,0 +1,24 @@
+{
+  "description": "Banner sizes using the ms alias: ms fills the formats, h alone is a lone dimension that meets the minimum",
+  "expected_imp": {
+    "banner": {
+      "format": [
+        {
+          "h": 480,
+          "w": 640
+        }
+      ],
+      "h": 720
+    },
+    "id": "imp1"
+  },
+  "query": "srid=testbanner\u0026mtype=1\u0026ms=640x480\u0026h=720",
+  "stored_bid_request": {
+    "imp": [
+      {
+        "id": "imp1"
+      }
+    ],
+    "site": {}
+  }
+}
