@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "video-url",
+    "cur": [
+      "CHF"
+    ],
+    "imp": [
+      {
+        "id": "video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            3,
+            6
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "domainId": 42,
+            "placementId": 15
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.test/article"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://cwi.re/prebid/adapter-endpoint",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "video-url",
+          "cur": [
+            "CHF"
+          ],
+          "imp": [
+            {
+              "id": "video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  3,
+                  6
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "domainId": 42,
+                  "placementId": 15
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.test/article"
+          }
+        },
+        "impIDs": [
+          "video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "video-url",
+          "cur": "CHF",
+          "seatbid": [
+            {
+              "seat": "cwire",
+              "bid": [
+                {
+                  "id": "http",
+                  "impid": "video",
+                  "price": 8,
+                  "crid": "9999",
+                  "adm": "http://example.test/vast",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://example.test/win/http",
+                  "lurl": "https://example.test/loss/http",
+                  "mtype": 2
+                },
+                {
+                  "id": "https",
+                  "impid": "video",
+                  "price": 8,
+                  "crid": "9999",
+                  "adm": "https://example.test/vast?one=1&two=2",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://example.test/win/https",
+                  "lurl": "https://example.test/loss/https",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "CHF",
+      "bids": [
+        {
+          "bid": {
+            "id": "http",
+            "impid": "video",
+            "price": 8,
+            "crid": "9999",
+            "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>cwire</AdSystem><VASTAdTagURI>http://example.test/vast</VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://example.test/win/http",
+            "lurl": "https://example.test/loss/http",
+            "mtype": 2
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "https",
+            "impid": "video",
+            "price": 8,
+            "crid": "9999",
+            "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>cwire</AdSystem><VASTAdTagURI>https://example.test/vast?one=1&amp;two=2</VASTAdTagURI><Impression></Impression><Creatives></Creatives></Wrapper></Ad></VAST>",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://example.test/win/https",
+            "lurl": "https://example.test/loss/https",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

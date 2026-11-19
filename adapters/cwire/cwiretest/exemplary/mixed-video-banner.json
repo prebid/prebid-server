@@ -1,0 +1,201 @@
+{
+  "mockBidRequest": {
+    "id": "mixed-video-banner",
+    "cur": [
+      "CHF"
+    ],
+    "imp": [
+      {
+        "id": "video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "protocols": [
+            3,
+            6
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "domainId": 42,
+            "placementId": 15
+          }
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 640,
+              "h": 480
+            }
+          ]
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.test/article"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://cwi.re/prebid/adapter-endpoint",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "mixed-video-banner",
+          "cur": [
+            "CHF"
+          ],
+          "imp": [
+            {
+              "id": "video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "protocols": [
+                  3,
+                  6
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "domainId": 42,
+                  "placementId": 15
+                }
+              },
+              "banner": {
+                "format": [
+                  {
+                    "w": 640,
+                    "h": 480
+                  }
+                ]
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.test/article"
+          }
+        },
+        "impIDs": [
+          "video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "headers": {},
+        "body": {
+          "id": "mixed-video-banner",
+          "cur": "CHF",
+          "seatbid": [
+            {
+              "seat": "cwire",
+              "bid": [
+                {
+                  "id": "wrapper",
+                  "impid": "video",
+                  "price": 8,
+                  "crid": "9999",
+                  "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>example</AdSystem><VASTAdTagURI>https://example.test/vast?one=1&amp;two=2</VASTAdTagURI><Impression/><Creatives/></Wrapper></Ad></VAST>",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://example.test/win/wrapper",
+                  "lurl": "https://example.test/loss/wrapper",
+                  "mtype": 2
+                },
+                {
+                  "id": "banner-html",
+                  "impid": "video",
+                  "price": 8,
+                  "crid": "9999",
+                  "adm": "<div>Banner</div>",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://example.test/win/banner-html",
+                  "lurl": "https://example.test/loss/banner-html",
+                  "mtype": 1
+                },
+                {
+                  "id": "banner-url",
+                  "impid": "video",
+                  "price": 8,
+                  "crid": "9999",
+                  "adm": "https://example.test/banner",
+                  "w": 640,
+                  "h": 480,
+                  "nurl": "https://example.test/win/banner-url",
+                  "lurl": "https://example.test/loss/banner-url",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "CHF",
+      "bids": [
+        {
+          "bid": {
+            "id": "wrapper",
+            "impid": "video",
+            "price": 8,
+            "crid": "9999",
+            "adm": "<VAST version=\"3.0\"><Ad><Wrapper><AdSystem>example</AdSystem><VASTAdTagURI>https://example.test/vast?one=1&amp;two=2</VASTAdTagURI><Impression/><Creatives/></Wrapper></Ad></VAST>",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://example.test/win/wrapper",
+            "lurl": "https://example.test/loss/wrapper",
+            "mtype": 2
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "banner-html",
+            "impid": "video",
+            "price": 8,
+            "crid": "9999",
+            "adm": "<div>Banner</div>",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://example.test/win/banner-html",
+            "lurl": "https://example.test/loss/banner-html",
+            "mtype": 1
+          },
+          "type": "banner"
+        },
+        {
+          "bid": {
+            "id": "banner-url",
+            "impid": "video",
+            "price": 8,
+            "crid": "9999",
+            "adm": "https://example.test/banner",
+            "w": 640,
+            "h": 480,
+            "nurl": "https://example.test/win/banner-url",
+            "lurl": "https://example.test/loss/banner-url",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
