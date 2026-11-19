@@ -90,7 +90,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "https://test.endpoint.com/openrtb2/partnerA",
+        "uri": "https://test.endpoint.com/exchange/openrtb2/partnerA",
         "body": {
           "id": "test-request-id",
           "imp": [
@@ -200,7 +200,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "https://test.endpoint.com/openrtb2/partnerB",
+        "uri": "https://test.endpoint.com/exchange/openrtb2/partnerB",
         "body": {
           "id": "test-request-id",
           "imp": [

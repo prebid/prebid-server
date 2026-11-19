@@ -53,7 +53,7 @@
             "2001:db8::1"
           ]
         },
-        "uri": "https://test.endpoint.com/openrtb2/weatherbug",
+        "uri": "https://test.endpoint.com/exchange/openrtb2/weatherbug",
         "body": {
           "id": "test-request-id",
           "imp": [
