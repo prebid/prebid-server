@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>growzee: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/growzee/growzee.go (96.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package growzee
+
+import (
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "slices"
+        "strings"
+        "text/template"
+
+        "github.com/prebid/openrtb/v20/openrtb2"
+
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/macros"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+type adapter struct {
+        endpoint *template.Template
+}
+
+// Builder builds a new instance of the Growzee adapter for the given bidder with the given config.
+func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        tmpl, err := template.New("endpointTemplate").Parse(config.Endpoint)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
+        }</span>
+        <span class="cov8" title="1">return &amp;adapter{endpoint: tmpl}, nil</span>
+}
+
+// MakeRequests sends one request per imp: the Growzee endpoint accepts a single imp per auction.
+func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        var requests []*adapters.RequestData
+        var errs []error
+
+        headers := http.Header{}
+        headers.Add("Content-Type", "application/json;charset=utf-8")
+        headers.Add("Accept", "application/json")
+        headers.Add("X-Openrtb-Version", "2.5")
+        if d := request.Device; d != nil </span><span class="cov8" title="1">{
+                if d.UA != "" </span><span class="cov8" title="1">{
+                        headers.Add("User-Agent", d.UA)
+                }</span>
+                <span class="cov8" title="1">if d.IP != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", d.IP)
+                }</span> else<span class="cov8" title="1"> if d.IPv6 != "" </span><span class="cov8" title="1">{
+                        headers.Add("X-Forwarded-For", d.IPv6)
+                }</span>
+        }
+
+        <span class="cov8" title="1">reqCopy := *request
+        for _, imp := range request.Imp </span><span class="cov8" title="1">{
+                reqData, err := a.makeRequest(reqCopy, imp, reqInfo, headers)
+                if err != nil </span><span class="cov8" title="1">{
+                        errs = append(errs, err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">requests = append(requests, reqData)</span>
+        }
+        <span class="cov8" title="1">return requests, errs</span>
+}
+
+func (a *adapter) makeRequest(req openrtb2.BidRequest, imp openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo, headers http.Header) (*adapters.RequestData, error) <span class="cov8" title="1">{
+        var ext map[string]json.RawMessage
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{Message: fmt.Sprintf("imp %s: invalid ext: %v", imp.ID, err)}
+        }</span>
+        <span class="cov8" title="1">var params openrtb_ext.ExtImpGrowzee
+        if err := jsonutil.Unmarshal(ext["bidder"], &amp;params); err != nil </span><span class="cov8" title="1">{
+                return nil, &amp;errortypes.BadInput{Message: fmt.Sprintf("imp %s: invalid ext.bidder: %v", imp.ID, err)}
+        }</span>
+
+        <span class="cov8" title="1">uri, err := macros.ResolveMacros(a.endpoint, macros.EndpointTemplateParams{PublisherID: params.PublisherID})
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">if imp.BidFloor &gt; 0 &amp;&amp; imp.BidFloorCur != "" &amp;&amp; !strings.EqualFold(imp.BidFloorCur, "USD") </span><span class="cov8" title="1">{
+                floor, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">imp.BidFloor, imp.BidFloorCur = floor, "USD"</span>
+        }
+
+        // Keep the rest of imp.ext (skadn, gpid, prebid.is_rewarded_inventory); only the bidder params are ours.
+        <span class="cov8" title="1">delete(ext, "bidder")
+        if len(ext) == 0 </span><span class="cov8" title="1">{
+                imp.Ext = nil
+        }</span> else<span class="cov8" title="1"> if imp.Ext, err = jsonutil.Marshal(ext); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">req.Imp = []openrtb2.Imp{imp}
+        body, err := jsonutil.Marshal(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return &amp;adapters.RequestData{
+                Method:  http.MethodPost,
+                Uri:     uri,
+                Body:    body,
+                Headers: headers,
+                ImpIDs:  []string{imp.ID},
+        }, nil</span>
+}
+
+func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if adapters.IsResponseStatusCodeNoContent(responseData) </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        <span class="cov8" title="1">var response openrtb2.BidResponse
+        if err := jsonutil.Unmarshal(responseData.Body, &amp;response); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{err}
+        }</span>
+
+        // A stored bid response has no Uri and no ImpIDs, and its imp is gone from the request.
+        <span class="cov8" title="1">stored := requestData.Uri == "" &amp;&amp; len(requestData.ImpIDs) == 0
+
+        bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
+        if response.Cur != "" </span><span class="cov8" title="1">{
+                bidResponse.Currency = response.Cur
+        }</span>
+        <span class="cov8" title="1">var errs []error
+        for _, seatBid := range response.SeatBid </span><span class="cov8" title="1">{
+                for i := range seatBid.Bid </span><span class="cov8" title="1">{
+                        bid := &amp;seatBid.Bid[i]
+                        var imp *openrtb2.Imp
+                        if !stored </span><span class="cov8" title="1">{
+                                if imp = requestedImp(request, requestData.ImpIDs, bid.ImpID); imp == nil </span><span class="cov8" title="1">{
+                                        errs = append(errs, &amp;errortypes.BadServerResponse{
+                                                Message: fmt.Sprintf("bid %s has impid %s, not an imp of its request", bid.ID, bid.ImpID),
+                                        })
+                                        continue</span>
+                                }
+                        }
+                        <span class="cov8" title="1">bidType, err := getBidType(bid, imp)
+                        if err != nil </span><span class="cov8" title="1">{
+                                errs = append(errs, err)
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">bidResponse.Bids = append(bidResponse.Bids, &amp;adapters.TypedBid{Bid: bid, BidType: bidType})</span>
+                }
+        }
+        <span class="cov8" title="1">return bidResponse, errs</span>
+}
+
+// requestedImp returns the imp a bid names, only if it was sent in this request (ImpIDs).
+func requestedImp(request *openrtb2.BidRequest, sent []string, impID string) *openrtb2.Imp <span class="cov8" title="1">{
+        if len(sent) &gt; 0 &amp;&amp; !slices.Contains(sent, impID) </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">for i := range request.Imp </span><span class="cov8" title="1">{
+                if request.Imp[i].ID == impID </span><span class="cov8" title="1">{
+                        return &amp;request.Imp[i]
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// getBidType trusts mtype, then the imp: video-only, or banner+video with a VAST adm, is video.
+// Prebid Server sends only banner and video imps; without an imp (stored bid response) only mtype can tell.
+func getBidType(bid *openrtb2.Bid, imp *openrtb2.Imp) (openrtb_ext.BidType, error) <span class="cov8" title="1">{
+        switch </span>{
+        case bid.MType == openrtb2.MarkupBanner:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeBanner, nil</span>
+        case bid.MType == openrtb2.MarkupVideo:<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        case bid.MType != 0:<span class="cov8" title="1">
+                return "", &amp;errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s: unsupported mtype %d", bid.ID, bid.MType)}</span>
+        case imp == nil:<span class="cov8" title="1">
+                return "", &amp;errortypes.BadServerResponse{Message: fmt.Sprintf("bid %s: stored bid response without mtype", bid.ID)}</span>
+        case imp.Video != nil &amp;&amp; (imp.Banner == nil || isVAST(bid.AdM)):<span class="cov8" title="1">
+                return openrtb_ext.BidTypeVideo, nil</span>
+        }
+        <span class="cov8" title="1">return openrtb_ext.BidTypeBanner, nil</span>
+}
+
+func isVAST(adm string) bool <span class="cov8" title="1">{
+        return strings.Contains(adm[:min(len(adm), 512)], "&lt;VAST")
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
