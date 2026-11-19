@@ -1,0 +1,229 @@
+{
+  "mockBidRequest": {
+    "id": "auction-7731",
+    "imp": [
+      {
+        "id": "slot-hero",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 102
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app_001",
+      "bundle": "com.example.puzzlequest",
+      "publisher": {
+        "id": "2"
+      }
+    },
+    "user": {
+      "buyeruid": "wx-user-58c1e9"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=102",
+        "body": {
+          "id": "auction-7731-slot-hero-banner",
+          "imp": [
+            {
+              "id": "slot-hero",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 102
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app_001",
+            "bundle": "com.example.puzzlequest",
+            "publisher": {
+              "id": "2"
+            }
+          },
+          "user": {
+            "buyeruid": "wx-user-58c1e9"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "slot-hero"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "b6f0c3d1-8e2a-4c57-a1d9-3e7b5f02c816",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-hero-banner",
+                  "impid": "slot-hero",
+                  "price": 1.85,
+                  "cid": "1001",
+                  "crid": "cr-420",
+                  "adid": "cr-420",
+                  "adm": "<div>creative</div>",
+                  "mtype": 1,
+                  "adomain": [
+                    "brand.example"
+                  ]
+                }
+              ]
+            }
+          ],
+          "bidid": "wx-resp-4f2c"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=102",
+        "body": {
+          "id": "auction-7731-slot-hero-video",
+          "imp": [
+            {
+              "id": "slot-hero",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 102
+                }
+              }
+            }
+          ],
+          "app": {
+            "id": "app_001",
+            "bundle": "com.example.puzzlequest",
+            "publisher": {
+              "id": "2"
+            }
+          },
+          "user": {
+            "buyeruid": "wx-user-58c1e9"
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "slot-hero"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "b6f0c3d1-8e2a-4c57-a1d9-3e7b5f02c816",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-hero-video",
+                  "impid": "slot-hero",
+                  "price": 1.25,
+                  "cid": "camp-640",
+                  "crid": "cr-530",
+                  "adid": "cr-530",
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "cat": [
+                    "IAB2"
+                  ],
+                  "mtype": 2,
+                  "adomain": [
+                    "video-brand.example"
+                  ]
+                }
+              ]
+            }
+          ],
+          "bidid": "wx-resp-4f2c"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-hero-banner",
+            "impid": "slot-hero",
+            "price": 1.85,
+            "adm": "<div>creative</div>",
+            "adomain": [
+              "brand.example"
+            ],
+            "cid": "1001",
+            "adid": "cr-420",
+            "crid": "cr-420",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-hero-video",
+            "impid": "slot-hero",
+            "price": 1.25,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "adomain": [
+              "video-brand.example"
+            ],
+            "cid": "camp-640",
+            "adid": "cr-530",
+            "crid": "cr-530",
+            "cat": [
+              "IAB2"
+            ],
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

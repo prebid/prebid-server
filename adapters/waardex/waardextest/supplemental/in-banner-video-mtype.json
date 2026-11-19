@@ -1,0 +1,111 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://news.example/article",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "req-1-imp-1-banner",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ],
+                "w": 300,
+                "h": 250
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://news.example/article",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "421",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.25,
+                  "mtype": 2,
+                  "crid": "crid-1",
+                  "adm": "<div id=\"ibv\"><script src=\"https://player.example/ibv.js\"></script></div>"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.25,
+            "mtype": 1,
+            "crid": "crid-1",
+            "adm": "<div id=\"ibv\"><script src=\"https://player.example/ibv.js\"></script></div>"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

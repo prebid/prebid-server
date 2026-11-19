@@ -1,0 +1,110 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "zoneId": 101
+          }
+        }
+      }
+    ],
+    "app": {
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "pub-1"
+      }
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "body": {
+          "id": "req-1-imp-1-video",
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "zoneId": 101
+                }
+              }
+            }
+          ],
+          "app": {
+            "bundle": "com.example.game",
+            "publisher": {
+              "id": "pub-1"
+            }
+          },
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "1",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.25,
+                  "crid": "crid-1",
+                  "adm": "<VAST version=\"3.0\"><Ad><InLine><Impression><![CDATA[https://imp.example/g?p=${AUCTION_PRICE}]]></Impression></InLine></Ad></VAST>",
+                  "nurl": "https://imp.example/win?p=${AUCTION_PRICE}",
+                  "burl": "https://imp.example/bill?p=${AUCTION_PRICE}"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.25,
+            "crid": "crid-1",
+            "adm": "<VAST version=\"3.0\"><Ad><InLine><Impression><![CDATA[https://imp.example/g?p=1.25]]></Impression></InLine></Ad></VAST>",
+            "nurl": "https://imp.example/win?p=1.25",
+            "burl": "https://imp.example/bill?p=1.25",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
