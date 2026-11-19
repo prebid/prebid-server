@@ -184,6 +184,7 @@
                   "lurl": "https://rtb.melvad.com/loss/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA",
                   "price": 1.9517991108,
+                  "mtype": 2,
                   "protocol": 3
                 }
               ],
@@ -213,6 +214,7 @@
             "lurl": "https://rtb.melvad.com/loss/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/ZCqhIHsjZYA1t3OG_2XGehrBPe-yhuEzmRifRfmCnKNy82ifOi1OIhOqqbY2iwXbHW26NSsW3C1Ajr1zG-EKa1Oh-SWCfGkzRYN1pCNSJXaORa4lbF3i9pQKRfO_ZQiVBDbo84qUL1CFmve0_xKTxSDwdEbFXSciTcsM-tDgDfmKeEFx4o_Qp1rrh91HFgS_C8Lq-SjANDqxyfk0bIsiUUEhVrwes_tBJIdazVZn4UTQvyBdmM5G306LAepg5IYFaCXblW1Ox8sjJzpIOdOk-zqcg_jRugqrHOcZ8ok2AVmWKCl8SP5fNIgIVdyf9KEU92agsq_zD4ccixSpWA",
             "price": 1.9517991108,
+            "mtype": 2,
             "protocol": 3
           },
           "type": "video"

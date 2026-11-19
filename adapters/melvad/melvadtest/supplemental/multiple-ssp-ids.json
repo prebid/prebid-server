@@ -16,20 +16,9 @@
         "id": "imp-c",
         "banner": {"w": 320, "h": 50},
         "ext": {"bidder": {"sspId": "prebid"}}
-      },
-      {
-        "id": "imp-d",
-        "banner": {"w": 320, "h": 50},
-        "ext": {"bidder": {}}
       }
     ]
   },
-  "expectedMakeRequestsErrors": [
-    {
-      "value": "Impression imp-d: ext.bidder.sspId is required",
-      "comparison": "literal"
-    }
-  ],
   "httpCalls": [
     {
       "expectedRequest": {

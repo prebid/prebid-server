@@ -182,6 +182,7 @@
                   "lurl": "https://rtb.melvad.com/loss/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A",
                   "price": 1.9517991108,
+                  "mtype": 2,
                   "protocol": 3
                 }
               ],
@@ -211,6 +212,7 @@
             "lurl": "https://rtb.melvad.com/loss/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/xLRHoRkMB5rdmd0LxNc0ZnFpQZoRhHeI8qfaQ9sKWjnn4Wm6Tf3e4mwIuJqAnNZe3WRLwUGLrVhKyDK6yxOxljDmobcCMfDEl7GB9-sdzNjkdMszjKbF3tMY5gmpxuE2oFuwn-wJl55BgK-jzmiZs1qZonOTeH3lpHSMuz-SQNO3BMxJFK6vKQm8PSN33YDB1dubFgBSHaIhoJNVE_OWSb-m7fNNhVeuGxTITp_abrqBWWJ_BGsSRyS1CHzbxkH5dNWfDzx1v68qB-xGyI6OamzW6rR-xs44lMgSJjMCpKv_P7MxuMZseMer7uKQta-KxR011z3fL1OA0KbR6peUZ0f0FUydPlPpEY8RR4BhjpKzdE3yFroaw1mg-k82wbmyGxMv_xCcf63hC_A",
             "price": 1.9517991108,
+            "mtype": 2,
             "protocol": 3
           },
           "type": "video"

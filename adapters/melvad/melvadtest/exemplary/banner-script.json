@@ -201,6 +201,7 @@
                   "lurl": "https://rtb.melvad.com/loss/O33Dp9Quvmxwe8e52QhCxArV6WXXEA8E0CNS303oMrem---w74DahAW7_QUmdfm1PtuJrhTlXtOy8k0mrGI2jMfmLFmAJXmAeZtnilOqj14o_1Jws1VQIlU8DGdR-dzXN7BwC1jMM30l8_WA8jksegGtTZJNQdT-2xl7l0y2ECa28ten7CwwiZfWNDW0lRMGbuHh35T1NUAK28a3iN8MqyS5dkyC-NLDh5qyh-FJjxJwzV7XJCY1gI_SsvXjIdOh9xbGiY5W1vEZpd_sF0XgQJQ3umEw6OTO2FagvRm-Qw9P7BBRZtCGgoCHguvGuzNB7_QwVqcSd2gt_0SSt2CEOq_FtFcG88AY-DkeUEGss7WutHXVfYcrGW76IYUtYZDVrJIrWFvWT19r_w?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/O33Dp9Quvmxwe8e52QhCxArV6WXXEA8E0CNS303oMrem---w74DahAW7_QUmdfm1PtuJrhTlXtOy8k0mrGI2jMfmLFmAJXmAeZtnilOqj14o_1Jws1VQIlU8DGdR-dzXN7BwC1jMM30l8_WA8jksegGtTZJNQdT-2xl7l0y2ECa28ten7CwwiZfWNDW0lRMGbuHh35T1NUAK28a3iN8MqyS5dkyC-NLDh5qyh-FJjxJwzV7XJCY1gI_SsvXjIdOh9xbGiY5W1vEZpd_sF0XgQJQ3umEw6OTO2FagvRm-Qw9P7BBRZtCGgoCHguvGuzNB7_QwVqcSd2gt_0SSt2CEOq_FtFcG88AY-DkeUEGss7WutHXVfYcrGW76IYUtYZDVrJIrWFvWT19r_w",
                   "price": 1.9517991108,
+                  "mtype": 1,
                   "w": 300
                 }
               ],
@@ -231,6 +232,7 @@
             "lurl": "https://rtb.melvad.com/loss/O33Dp9Quvmxwe8e52QhCxArV6WXXEA8E0CNS303oMrem---w74DahAW7_QUmdfm1PtuJrhTlXtOy8k0mrGI2jMfmLFmAJXmAeZtnilOqj14o_1Jws1VQIlU8DGdR-dzXN7BwC1jMM30l8_WA8jksegGtTZJNQdT-2xl7l0y2ECa28ten7CwwiZfWNDW0lRMGbuHh35T1NUAK28a3iN8MqyS5dkyC-NLDh5qyh-FJjxJwzV7XJCY1gI_SsvXjIdOh9xbGiY5W1vEZpd_sF0XgQJQ3umEw6OTO2FagvRm-Qw9P7BBRZtCGgoCHguvGuzNB7_QwVqcSd2gt_0SSt2CEOq_FtFcG88AY-DkeUEGss7WutHXVfYcrGW76IYUtYZDVrJIrWFvWT19r_w?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/O33Dp9Quvmxwe8e52QhCxArV6WXXEA8E0CNS303oMrem---w74DahAW7_QUmdfm1PtuJrhTlXtOy8k0mrGI2jMfmLFmAJXmAeZtnilOqj14o_1Jws1VQIlU8DGdR-dzXN7BwC1jMM30l8_WA8jksegGtTZJNQdT-2xl7l0y2ECa28ten7CwwiZfWNDW0lRMGbuHh35T1NUAK28a3iN8MqyS5dkyC-NLDh5qyh-FJjxJwzV7XJCY1gI_SsvXjIdOh9xbGiY5W1vEZpd_sF0XgQJQ3umEw6OTO2FagvRm-Qw9P7BBRZtCGgoCHguvGuzNB7_QwVqcSd2gt_0SSt2CEOq_FtFcG88AY-DkeUEGss7WutHXVfYcrGW76IYUtYZDVrJIrWFvWT19r_w",
             "price": 1.9517991108,
+            "mtype": 1,
             "w": 300
           },
           "type": "banner"

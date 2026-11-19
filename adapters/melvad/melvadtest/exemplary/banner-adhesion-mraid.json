@@ -198,6 +198,7 @@
                   "lurl": "https://rtb.melvad.com/loss/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ",
                   "price": 1.9517991108,
+                  "mtype": 1,
                   "w": 375
                 }
               ],
@@ -229,6 +230,7 @@
             "lurl": "https://rtb.melvad.com/loss/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/7qQHv3fIP07722_M8-YEx0gc3Ia9IIAg56COvOj6tq1CZeNS3isr5YMSjnmimtb2joPpO3bjBo0QkbY_kirL6c7ASyJQs9xEdSwPX7QbyaNqSqpmymg00rK7e4LOe_uW3WOv0QI9yi3TzCgKlnVQMReFVZhQ-GO6DWWfs1nVk-qixbRIfnhreDFpFtcD-bvmFhIrEHIAZq--aADNeMMohKypSZqVKgsHCdcDzXpNNqW9cfMxioA0fidAc75GTWIshOCp6vMP3ICFaQ-lz9lr9nqndZqdfFMPscynWF-6TCUJdI5sj9JiU_2Oxc2ZiVvjohvZK8qvsYWEe7zKusO_vB7r-oTpjwqG5vq6274mS1NtU8wyj8SXd3tbNTla_DXJY9ojxbP05qedmAdD0xVsEA8HWV8Vh7m5AhF8nf2a77q9A793FgaxnYOfZX3FKIT5VcjQUx908SKa-vn1pxstMA_NFhwQQVg5xQ",
             "price": 1.9517991108,
+            "mtype": 1,
             "w": 375
           },
           "type": "banner"

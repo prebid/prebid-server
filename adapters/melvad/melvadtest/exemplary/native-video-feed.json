@@ -146,6 +146,7 @@
                   "lurl": "https://rtb.melvad.com/loss/BzvX-ydBrtcv7gla8vhJSCmUJUhWkppI4xBmgCRTifmO6pk8k_PLuBOmrrhkSn3xcTT-UrEQz7Wl28A15vE1OaEC7YuFu2_cd4NY6jeoo4m_6NhK9St_Q18I0YmBmKFN9br_yaSIq1jK46tDDapMtj4kejj9psS1DzP2WWYyaMU5O2kaOdS_zsi-sFhJt_zDzUXdX6C1Z8kGDpYHHDguSb36iLz5BzO7H0SeB0pCXEArcBTpFoKh3ux_5czby8Xay2MkQ095ZxnaOvIV1yun5Er8Eui-QINe4vc3yh3f9mVrzS_c_jwmfi_DA6Qe8XdsgAde6rRiTgl9s_z0AMJ52WgNioW9kEBdReWgMazLe1nR2Ll7kHczpbjitgLa3SO67d23Dg6Sqr_7Y5Q?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/BzvX-ydBrtcv7gla8vhJSCmUJUhWkppI4xBmgCRTifmO6pk8k_PLuBOmrrhkSn3xcTT-UrEQz7Wl28A15vE1OaEC7YuFu2_cd4NY6jeoo4m_6NhK9St_Q18I0YmBmKFN9br_yaSIq1jK46tDDapMtj4kejj9psS1DzP2WWYyaMU5O2kaOdS_zsi-sFhJt_zDzUXdX6C1Z8kGDpYHHDguSb36iLz5BzO7H0SeB0pCXEArcBTpFoKh3ux_5czby8Xay2MkQ095ZxnaOvIV1yun5Er8Eui-QINe4vc3yh3f9mVrzS_c_jwmfi_DA6Qe8XdsgAde6rRiTgl9s_z0AMJ52WgNioW9kEBdReWgMazLe1nR2Ll7kHczpbjitgLa3SO67d23Dg6Sqr_7Y5Q",
                   "price": 1.9517991108,
+                  "mtype": 4,
                   "protocol": 3
                 }
               ],
@@ -175,6 +176,7 @@
             "lurl": "https://rtb.melvad.com/loss/BzvX-ydBrtcv7gla8vhJSCmUJUhWkppI4xBmgCRTifmO6pk8k_PLuBOmrrhkSn3xcTT-UrEQz7Wl28A15vE1OaEC7YuFu2_cd4NY6jeoo4m_6NhK9St_Q18I0YmBmKFN9br_yaSIq1jK46tDDapMtj4kejj9psS1DzP2WWYyaMU5O2kaOdS_zsi-sFhJt_zDzUXdX6C1Z8kGDpYHHDguSb36iLz5BzO7H0SeB0pCXEArcBTpFoKh3ux_5czby8Xay2MkQ095ZxnaOvIV1yun5Er8Eui-QINe4vc3yh3f9mVrzS_c_jwmfi_DA6Qe8XdsgAde6rRiTgl9s_z0AMJ52WgNioW9kEBdReWgMazLe1nR2Ll7kHczpbjitgLa3SO67d23Dg6Sqr_7Y5Q?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/BzvX-ydBrtcv7gla8vhJSCmUJUhWkppI4xBmgCRTifmO6pk8k_PLuBOmrrhkSn3xcTT-UrEQz7Wl28A15vE1OaEC7YuFu2_cd4NY6jeoo4m_6NhK9St_Q18I0YmBmKFN9br_yaSIq1jK46tDDapMtj4kejj9psS1DzP2WWYyaMU5O2kaOdS_zsi-sFhJt_zDzUXdX6C1Z8kGDpYHHDguSb36iLz5BzO7H0SeB0pCXEArcBTpFoKh3ux_5czby8Xay2MkQ095ZxnaOvIV1yun5Er8Eui-QINe4vc3yh3f9mVrzS_c_jwmfi_DA6Qe8XdsgAde6rRiTgl9s_z0AMJ52WgNioW9kEBdReWgMazLe1nR2Ll7kHczpbjitgLa3SO67d23Dg6Sqr_7Y5Q",
             "price": 1.9517991108,
+            "mtype": 4,
             "protocol": 3
           },
           "type": "native"

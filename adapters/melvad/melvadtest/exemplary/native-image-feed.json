@@ -145,7 +145,8 @@
                   "impid": "1",
                   "lurl": "https://rtb.melvad.com/loss/JeEqCuuYDRaCcDW_66LXwCwxT3g8rrx7z2etFRkaNyx77jRWzTfEviELkKsKhQplLYJ5yL_v11pGvbOPfroY4Y_XQWtNT-_kCCAQAv-PWiZnyOHlHRWT8ylZQIVoF5IcCH3RCico3EK0lGQOuhjxXuk2-XqtQkez7-TrTgZi5yuOQaCsgPHbvphQ8ich_6zqznUX0K37m45Avo6DMIpUnC4XFDvuC-vVte5X7sw7cL7HOHw-2t7cLeLp40f7BZv_KiNQocxUlcEieH3MxH0r4ZXqW5uip-kLNw7zvZ9Lax9uhjNLI0Nwm7NuVJrzx1_eRHp1hnrfEHA71T3dVpR4nynhmjQcj_SX-gkmjqhXZJHp94Sngi6GvNFpv25RrP0lPdDZ9ATmBQPhyYk?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/JeEqCuuYDRaCcDW_66LXwCwxT3g8rrx7z2etFRkaNyx77jRWzTfEviELkKsKhQplLYJ5yL_v11pGvbOPfroY4Y_XQWtNT-_kCCAQAv-PWiZnyOHlHRWT8ylZQIVoF5IcCH3RCico3EK0lGQOuhjxXuk2-XqtQkez7-TrTgZi5yuOQaCsgPHbvphQ8ich_6zqznUX0K37m45Avo6DMIpUnC4XFDvuC-vVte5X7sw7cL7HOHw-2t7cLeLp40f7BZv_KiNQocxUlcEieH3MxH0r4ZXqW5uip-kLNw7zvZ9Lax9uhjNLI0Nwm7NuVJrzx1_eRHp1hnrfEHA71T3dVpR4nynhmjQcj_SX-gkmjqhXZJHp94Sngi6GvNFpv25RrP0lPdDZ9ATmBQPhyYk",
-                  "price": 1.9517991108
+                  "price": 1.9517991108,
+                  "mtype": 4
                 }
               ],
               "seat": "a-e687c7a804"
@@ -173,7 +174,8 @@
             "impid": "1",
             "lurl": "https://rtb.melvad.com/loss/JeEqCuuYDRaCcDW_66LXwCwxT3g8rrx7z2etFRkaNyx77jRWzTfEviELkKsKhQplLYJ5yL_v11pGvbOPfroY4Y_XQWtNT-_kCCAQAv-PWiZnyOHlHRWT8ylZQIVoF5IcCH3RCico3EK0lGQOuhjxXuk2-XqtQkez7-TrTgZi5yuOQaCsgPHbvphQ8ich_6zqznUX0K37m45Avo6DMIpUnC4XFDvuC-vVte5X7sw7cL7HOHw-2t7cLeLp40f7BZv_KiNQocxUlcEieH3MxH0r4ZXqW5uip-kLNw7zvZ9Lax9uhjNLI0Nwm7NuVJrzx1_eRHp1hnrfEHA71T3dVpR4nynhmjQcj_SX-gkmjqhXZJHp94Sngi6GvNFpv25RrP0lPdDZ9ATmBQPhyYk?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/JeEqCuuYDRaCcDW_66LXwCwxT3g8rrx7z2etFRkaNyx77jRWzTfEviELkKsKhQplLYJ5yL_v11pGvbOPfroY4Y_XQWtNT-_kCCAQAv-PWiZnyOHlHRWT8ylZQIVoF5IcCH3RCico3EK0lGQOuhjxXuk2-XqtQkez7-TrTgZi5yuOQaCsgPHbvphQ8ich_6zqznUX0K37m45Avo6DMIpUnC4XFDvuC-vVte5X7sw7cL7HOHw-2t7cLeLp40f7BZv_KiNQocxUlcEieH3MxH0r4ZXqW5uip-kLNw7zvZ9Lax9uhjNLI0Nwm7NuVJrzx1_eRHp1hnrfEHA71T3dVpR4nynhmjQcj_SX-gkmjqhXZJHp94Sngi6GvNFpv25RrP0lPdDZ9ATmBQPhyYk",
-            "price": 1.9517991108
+            "price": 1.9517991108,
+            "mtype": 4
           },
           "type": "native"
         }

@@ -1,6 +1,6 @@
 endpoint: "https://rtb.bidder.melvad.com/ssps/1/{{.SspID}}"
 maintainer:
-  email: support@melvad.com
+  email: a.stukolkin@melvad.com
 endpointCompression: gzip
 modifyingVastXmlAllowed: true
 capabilities:
@@ -16,5 +16,5 @@ capabilities:
       - native
 userSync:
   redirect:
-    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}
+    url: https://sync.dmp.melvad.com/match/1?ssp_id=11&rt={{.RedirectURL}}&gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}
     userMacro: '{{oui}}'

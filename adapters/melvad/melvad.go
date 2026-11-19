@@ -111,12 +111,6 @@ func impSspID(imp *openrtb2.Imp) (string, error) {
 		}
 	}
 
-	if melvadExt.SspID == "" {
-		return "", &errortypes.BadInput{
-			Message: fmt.Sprintf("Impression %s: ext.bidder.sspId is required", imp.ID),
-		}
-	}
-
 	return melvadExt.SspID, nil
 }
 

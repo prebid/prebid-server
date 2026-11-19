@@ -146,7 +146,8 @@
                   "impid": "1",
                   "lurl": "https://rtb.melvad.com/loss/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh",
-                  "price": 1.9517991108
+                  "price": 1.9517991108,
+                  "mtype": 4
                 }
               ],
               "seat": "a-e687c7a804"
@@ -175,7 +176,8 @@
             "impid": "1",
             "lurl": "https://rtb.melvad.com/loss/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/FIWgaME0NgG27UDtPMqWFFJUjKjue2c8k7pf8ToYhLO-8c7-eg6e5_qWEMKG1ABEKFESLSlB8GqC6mz_9fNN2qOTqccoqeP3CgVnFNd3fM-s1aZNfuI-tKrLCEvYtvhgaLx_OHSpXW6Fq8Wm5iEvU_JWu55CQObIkAJs1DYZ8kizy0kSpr-yLAtLS-zHzIUpyK4rN-oVb1evahQL12oHeHA7MBCNXz83iLSoU-00t7uful4nkHcBAzY_l4ECAXxdr8XGMSnTCzCQoq7UHG_D_-rMlR-wgWd31EYRCgH8QQRVOj7GzT83wlbQC7t_g9w3Y2ydm2RYJ2taxepoq5iMV1hcXXVKkv9o-VsSml1lvC9RC5obNQirI6oBggjKD7hHGJWZ3hoTlq_Ms9YzyTe8GSvUfzUPpmf_Hwe7hUQqxAS3FkccOPcCAaiFuyMwJ79ZTndZTWvH8BvbxNnet1DYAzHw9JQrxrMH5oeR1jyfNb2JubnzUmYjvEd39NnBMh1yheKYkK5zf-dtIXR-E7bNwOuMSmnOKy8dpbiQwUkuJRv_enMLBdCWjCRj1_GIZNlUSPwtPYQh",
-            "price": 1.9517991108
+            "price": 1.9517991108,
+            "mtype": 4
           },
           "type": "native"
         }

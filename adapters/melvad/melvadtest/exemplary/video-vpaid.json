@@ -185,6 +185,7 @@
                   "lurl": "https://rtb.melvad.com/loss/b3lL6Il1hEjvgEMYEOHZ7HayCcXassx-LEobRDebmp4cQs17QoZCdcIjNvNMbpICnUWzsjO9pH61dmVAXsYTlM61muaPx1mQ_thqHp7hIfEI-SioQA1dHkyubO4uvvvZHFdgMxozMrCsT4EkNdCxAEkXwT2o3GIL71n8IKyUtNoTVAFML-cGqlUAGpftlrNhHmdEw9qV_ZbjsJRV5aXemxoYJJ10Xmw5E5xzfz_9tBh_m0YGE7aOQcpxscbeEcUk6RSN6y1wMvX4XvdZHGFEVja2sAiDwF7g4Hg1_xt9Ga7NBVGBvGxsOTcGeluWtY75-qWPG8KfJL79svUZ2ib_kaA4yUCXdAOqXgKmbeQj9lUtksGjcG5Z4y4?al=${AUCTION_LOSS}",
                   "nurl": "https://rtb.melvad.com/win/b3lL6Il1hEjvgEMYEOHZ7HayCcXassx-LEobRDebmp4cQs17QoZCdcIjNvNMbpICnUWzsjO9pH61dmVAXsYTlM61muaPx1mQ_thqHp7hIfEI-SioQA1dHkyubO4uvvvZHFdgMxozMrCsT4EkNdCxAEkXwT2o3GIL71n8IKyUtNoTVAFML-cGqlUAGpftlrNhHmdEw9qV_ZbjsJRV5aXemxoYJJ10Xmw5E5xzfz_9tBh_m0YGE7aOQcpxscbeEcUk6RSN6y1wMvX4XvdZHGFEVja2sAiDwF7g4Hg1_xt9Ga7NBVGBvGxsOTcGeluWtY75-qWPG8KfJL79svUZ2ib_kaA4yUCXdAOqXgKmbeQj9lUtksGjcG5Z4y4",
                   "price": 1.9492729777,
+                  "mtype": 2,
                   "protocol": 3
                 }
               ],
@@ -215,6 +216,7 @@
             "lurl": "https://rtb.melvad.com/loss/b3lL6Il1hEjvgEMYEOHZ7HayCcXassx-LEobRDebmp4cQs17QoZCdcIjNvNMbpICnUWzsjO9pH61dmVAXsYTlM61muaPx1mQ_thqHp7hIfEI-SioQA1dHkyubO4uvvvZHFdgMxozMrCsT4EkNdCxAEkXwT2o3GIL71n8IKyUtNoTVAFML-cGqlUAGpftlrNhHmdEw9qV_ZbjsJRV5aXemxoYJJ10Xmw5E5xzfz_9tBh_m0YGE7aOQcpxscbeEcUk6RSN6y1wMvX4XvdZHGFEVja2sAiDwF7g4Hg1_xt9Ga7NBVGBvGxsOTcGeluWtY75-qWPG8KfJL79svUZ2ib_kaA4yUCXdAOqXgKmbeQj9lUtksGjcG5Z4y4?al=${AUCTION_LOSS}",
             "nurl": "https://rtb.melvad.com/win/b3lL6Il1hEjvgEMYEOHZ7HayCcXassx-LEobRDebmp4cQs17QoZCdcIjNvNMbpICnUWzsjO9pH61dmVAXsYTlM61muaPx1mQ_thqHp7hIfEI-SioQA1dHkyubO4uvvvZHFdgMxozMrCsT4EkNdCxAEkXwT2o3GIL71n8IKyUtNoTVAFML-cGqlUAGpftlrNhHmdEw9qV_ZbjsJRV5aXemxoYJJ10Xmw5E5xzfz_9tBh_m0YGE7aOQcpxscbeEcUk6RSN6y1wMvX4XvdZHGFEVja2sAiDwF7g4Hg1_xt9Ga7NBVGBvGxsOTcGeluWtY75-qWPG8KfJL79svUZ2ib_kaA4yUCXdAOqXgKmbeQj9lUtksGjcG5Z4y4",
             "price": 1.9492729777,
+            "mtype": 2,
             "protocol": 3
           },
           "type": "video"
