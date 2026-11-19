@@ -2,6 +2,7 @@ package openrtb2
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/config"
@@ -10,36 +11,48 @@ import (
 )
 
 func processInterstitials(req *openrtb_ext.RequestWrapper) error {
-	unmarshalled := true
-	for _, imp := range req.GetImp() {
-		if imp.Instl == 1 {
-			var prebid *openrtb_ext.ExtDevicePrebid
-			if unmarshalled {
-				if req.Device.Ext == nil {
-					// No special interstitial support requested, so bail as there is nothing to do
-					return nil
-				}
-				deviceExt, err := req.GetDeviceExt()
+	return processInterstitialsWithUsePxRatioResolver(req, usePxRatioForInterstitials)
+}
 
-				if err != nil {
-					return err
-				}
-				prebid = deviceExt.GetPrebid()
-				if prebid == nil || prebid.Interstitial == nil {
-					// No special interstitial support requested, so bail as there is nothing to do
-					return nil
-				}
+func processInterstitialsWithUsePxRatioResolver(req *openrtb_ext.RequestWrapper, resolveUsePxRatio func(*openrtb_ext.RequestWrapper) bool) error {
+	var prebid *openrtb_ext.ExtDevicePrebid
+	resolved := false
+	usePxRatio := false
+
+	for _, imp := range req.GetImp() {
+		if imp.Instl != 1 {
+			continue
+		}
+
+		if !resolved {
+			if req.Device == nil {
+				return &errortypes.BadInput{Message: fmt.Sprintf("Unable to read max interstitial size for Imp id=%s (No Device and no Format objects)", imp.ID)}
 			}
-			err := processInterstitialsForImp(imp, prebid, req.Device)
+			if req.Device.Ext == nil {
+				// No special interstitial support requested, so bail as there is nothing to do
+				return nil
+			}
+			deviceExt, err := req.GetDeviceExt()
+
 			if err != nil {
 				return err
 			}
+			prebid = deviceExt.GetPrebid()
+			if prebid == nil || prebid.Interstitial == nil {
+				// No special interstitial support requested, so bail as there is nothing to do
+				return nil
+			}
+			usePxRatio = resolveUsePxRatio(req)
+			resolved = true
+		}
+		if err := processInterstitialsForImp(imp, prebid, req.Device, usePxRatio); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device) error {
+func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openrtb_ext.ExtDevicePrebid, device *openrtb2.Device, usePxRatio bool) error {
 	var maxWidth, maxHeight, minWidth, minHeight int64
 	if imp.Banner == nil {
 		// custom interstitial support is only available for banner requests.
@@ -56,6 +69,10 @@ func processInterstitialsForImp(imp *openrtb_ext.ImpWrapper, devExtPrebid *openr
 		}
 		maxWidth = device.W
 		maxHeight = device.H
+	}
+	if usePxRatio && device != nil {
+		maxWidth = deviceSizeToDips(maxWidth, device.PxRatio)
+		maxHeight = deviceSizeToDips(maxHeight, device.PxRatio)
 	}
 	minWidth = (maxWidth * devExtPrebid.Interstitial.MinWidthPerc) / 100
 	minHeight = (maxHeight * devExtPrebid.Interstitial.MinHeightPerc) / 100
@@ -82,4 +99,26 @@ func genInterstitialFormat(minWidth, maxWidth, minHeight, maxHeight int64) []ope
 		formatList = append(formatList, openrtb2.Format{W: int64(size.Width), H: int64(size.Height)})
 	}
 	return formatList
+}
+
+func usePxRatioForInterstitials(req *openrtb_ext.RequestWrapper) bool {
+	requestExt, err := req.GetRequestExt()
+	if err != nil {
+		return false
+	}
+
+	requestPrebid := requestExt.GetPrebid()
+	return requestPrebid != nil && requestPrebid.Sdk != nil && requestPrebid.Sdk.UsePxRatio
+}
+
+func deviceSizeToDips(size int64, pxRatio float64) int64 {
+	if pxRatio <= 0 || math.IsNaN(pxRatio) {
+		return size
+	}
+
+	dips := int64(math.Round(float64(size) / pxRatio))
+	if dips < 1 {
+		return 1
+	}
+	return dips
 }
