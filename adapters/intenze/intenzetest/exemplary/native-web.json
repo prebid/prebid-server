@@ -53,7 +53,7 @@
             "2607:fb90:f27:4512:d800:cb23:a603:e245"
           ]
         },
-        "uri": "http://lb-east.intenze.co/?pass=accountId",
+        "uri": "https://lb-east.intenze.co/?pass=accountId",
         "body": {
           "id": "some-request-id",
           "device": {

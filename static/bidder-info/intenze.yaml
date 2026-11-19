@@ -1,6 +1,8 @@
 endpoint: "http://lb-east.intenze.co/?pass={{.AccountID}}"
+endpointCompression: gzip
 maintainer:
   email: "connect@intenze.co"
+gvlVendorID: 1457
 capabilities:
   app:
     mediaTypes:

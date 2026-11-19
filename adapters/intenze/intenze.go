@@ -4,30 +4,32 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"text/template"
+	"net/url"
 
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/adapters"
 	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
-	"github.com/prebid/prebid-server/v4/macros"
+
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
 )
 
-type adapter struct {
-	endpoint *template.Template
+type adapter struct{}
+
+var exchangeSubdomainsRegions = map[string]string{
+	"us-east": "lb-east",
+	"eu":      "n2",
+	"apac":    "lb-apac",
+}
+var sspSubdomainsRegions = map[string]string{
+	"us-east": "us-east-ssp",
+	"eu":      "eu-ssp",
+	"apac":    "apac-ssp",
 }
 
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
-	template, err := template.New("endpointTemplate").Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse endpoint url template: %v", err)
-	}
-
-	bidder := &adapter{
-		endpoint: template,
-	}
+	bidder := &adapter{}
 	return bidder, nil
 }
 
@@ -54,31 +56,73 @@ func getHeaders(request *openrtb2.BidRequest) http.Header {
 	return headers
 }
 
-func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestsToBidder []*adapters.RequestData, errs []error) {
-	impExt, err := getImpressionExt(&openRTBRequest.Imp[0])
-	if err != nil {
-		return nil, []error{err}
+func impError(impID string, err error) error {
+	return &errortypes.BadInput{
+		Message: fmt.Sprintf("imp %s: %s", impID, err.Error()),
+	}
+}
+
+func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
+	var errs []error
+	requests := make([]*adapters.RequestData, 0, len(openRTBRequest.Imp))
+
+	for _, imp := range openRTBRequest.Imp {
+		impExt, err := getImpressionExt(&imp)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+
+		endpoint, err := a.buildEndpointURL(impExt)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+
+		cleanExt, err := stripBidderParams(imp.Ext)
+		if err != nil {
+			errs = append(errs, impError(imp.ID, err))
+			continue
+		}
+		imp.Ext = cleanExt
+
+		reqCopy := *openRTBRequest
+		reqCopy.Imp = []openrtb2.Imp{imp}
+
+		reqJSON, err := jsonutil.Marshal(reqCopy)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		requests = append(requests, &adapters.RequestData{
+			Method:  http.MethodPost,
+			Uri:     endpoint,
+			Body:    reqJSON,
+			Headers: getHeaders(&reqCopy),
+			ImpIDs:  openrtb_ext.GetImpIDs(reqCopy.Imp),
+		})
 	}
 
-	openRTBRequest.Imp[0].Ext = nil
+	return requests, errs
+}
 
-	url, err := a.buildEndpointURL(impExt)
-	if err != nil {
-		return nil, []error{err}
+func stripBidderParams(ext json.RawMessage) (json.RawMessage, error) {
+	if len(ext) == 0 {
+		return nil, nil
 	}
 
-	reqJSON, err := json.Marshal(openRTBRequest)
-	if err != nil {
-		return nil, []error{err}
+	var fields map[string]json.RawMessage
+	if err := jsonutil.Unmarshal(ext, &fields); err != nil {
+		return nil, err
 	}
 
-	return []*adapters.RequestData{{
-		Method:  http.MethodPost,
-		Body:    reqJSON,
-		Uri:     url,
-		Headers: getHeaders(openRTBRequest),
-		ImpIDs:  openrtb_ext.GetImpIDs(openRTBRequest.Imp),
-	}}, nil
+	delete(fields, "bidder")
+	if len(fields) == 0 {
+		return nil, nil
+	}
+
+	return jsonutil.Marshal(fields)
 }
 
 func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
@@ -99,8 +143,48 @@ func getImpressionExt(imp *openrtb2.Imp) (*openrtb_ext.ExtIntenze, error) {
 }
 
 func (a *adapter) buildEndpointURL(params *openrtb_ext.ExtIntenze) (string, error) {
-	endpointParams := macros.EndpointTemplateParams{AccountID: params.AccountID}
-	return macros.ResolveMacros(a.endpoint, endpointParams)
+	if params.AccountID == nil && params.PlacementID == nil {
+		return "", &errortypes.BadInput{
+			Message: "either accountId or placementId expected",
+		}
+	}
+
+	if params.AccountID != nil && params.PlacementID != nil {
+		return "", &errortypes.BadInput{
+			Message: "accountId and placementId cannot be used together",
+		}
+	}
+
+	var route = ""
+	var subdomain, queryKey, queryValue string
+	var regionMap map[string]string
+
+	if params.AccountID != nil {
+		subdomain = "lb-east"
+		queryKey = "pass"
+		queryValue = *params.AccountID
+		regionMap = exchangeSubdomainsRegions
+	} else {
+		subdomain = "us-east-ssp"
+		queryKey = "placementId"
+		route = "pbs-serve"
+		queryValue = *params.PlacementID
+		regionMap = sspSubdomainsRegions
+	}
+
+	if params.Region != nil {
+		var exists bool
+		subdomain, exists = regionMap[*params.Region]
+		if !exists {
+			return "", &errortypes.BadInput{
+				Message: fmt.Sprintf("invalid region: %s. Expected us-east, eu or apac", *params.Region),
+			}
+		}
+	}
+
+	endpoint := fmt.Sprintf("https://%s.intenze.co/%s?%s=%s", subdomain, route, queryKey, url.QueryEscape(queryValue))
+
+	return endpoint, nil
 }
 
 func checkResponseStatusCodes(response *adapters.ResponseData) error {
@@ -113,7 +197,7 @@ func checkResponseStatusCodes(response *adapters.ResponseData) error {
 	return adapters.CheckResponseStatusCodeForErrors(response)
 }
 
-func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (bidderResponse *adapters.BidderResponse, errs []error) {
+func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder *adapters.RequestData, bidderRawResponse *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if adapters.IsResponseStatusCodeNoContent(bidderRawResponse) {
 		return nil, nil
 	}
@@ -123,9 +207,8 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		return nil, []error{httpStatusError}
 	}
 
-	responseBody := bidderRawResponse.Body
 	var bidResp openrtb2.BidResponse
-	if err := jsonutil.Unmarshal(responseBody, &bidResp); err != nil {
+	if err := jsonutil.Unmarshal(bidderRawResponse.Body, &bidResp); err != nil {
 		return nil, []error{&errortypes.BadServerResponse{
 			Message: "Bad Server Response",
 		}}
@@ -137,25 +220,28 @@ func (a *adapter) MakeBids(openRTBRequest *openrtb2.BidRequest, requestToBidder 
 		}}
 	}
 
-	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
-	var bidsArray []*adapters.TypedBid
+	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(requestToBidder.ImpIDs))
+	if len(bidResp.Cur) != 0 {
+		bidResponse.Currency = bidResp.Cur
+	}
 
+	var errs []error
 	for _, sb := range bidResp.SeatBid {
-		for idx, bid := range sb.Bid {
-			bidType, err := getMediaTypeForImp(bid)
+		for idx := range sb.Bid {
+			bidType, err := getMediaTypeForImp(sb.Bid[idx])
 			if err != nil {
-				return nil, []error{err}
+				errs = append(errs, err)
+				continue
 			}
 
-			bidsArray = append(bidsArray, &adapters.TypedBid{
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &sb.Bid[idx],
 				BidType: bidType,
 			})
 		}
 	}
 
-	bidResponse.Bids = bidsArray
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
@@ -167,6 +253,8 @@ func getMediaTypeForImp(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 	case openrtb2.MarkupNative:
 		return openrtb_ext.BidTypeNative, nil
 	default:
-		return "", fmt.Errorf("unsupported MType %d", bid.MType)
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("unsupported MType %d", bid.MType),
+		}
 	}
 }

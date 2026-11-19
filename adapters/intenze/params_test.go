@@ -9,6 +9,10 @@ import (
 
 var validParams = []string{
 	`{"accountId": "hash"}`,
+	`{"placementId": "id"}`,
+	`{"region": "us-east", "placementId": "id"}`,
+	`{"region": "eu", "accountId": "hash"}`,
+	`{"region": "apac", "placementId": "id"}`,
 }
 
 func TestValidParams(t *testing.T) {
@@ -32,8 +36,14 @@ var invalidParams = []string{
 	`4.2`,
 	`[]`,
 	`{}`,
-	`{"adCode": "string", "seatCode": 5, "originalPublisherid": "string"}`,
-	`{  "accountid": "" }`,
+	`{"region": "eu"}`,
+	`{"accountId": "hash", "placementId": "id"}`,
+	`{"accountId": ""}`,
+	`{"placementId": ""}`,
+	`{"accountId": 123}`,
+	`{"placementId": 123}`,
+	`{"region": "", "placementId": "id"}`,
+	`{"region": "mars", "placementId": "id"}`,
 }
 
 func TestInvalidParams(t *testing.T) {
