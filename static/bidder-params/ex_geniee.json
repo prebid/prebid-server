@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Geniee Exchange Adapter Params",
+  "description": "A schema which validates params accepted by the Geniee Exchange adapter",
+  "type": "object",
+  "properties": {
+    "partnerId": {
+      "type": "integer",
+      "description": "Supply partner integration ID issued by Geniee",
+      "minimum": 1
+    },
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ad slot name chosen by the supply partner, unique within that partner. Alphanumerics, hyphen and underscore, at most 40 characters. Matched case-insensitively, so Sidebar and sidebar name the same slot. Only needed when the partner wants its reports split per slot"
+    }
+  },
+  "required": ["partnerId"]
+}

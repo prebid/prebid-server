@@ -1,0 +1,190 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "at": 1,
+    "cur": [
+      "JPY"
+    ],
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "banner-imp-id",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "partnerId": 4321,
+            "placementId": "slot-1"
+          }
+        }
+      },
+      {
+        "id": "video-imp-id",
+        "video": {
+          "mimes": ["video/mp4"],
+          "w": 640,
+          "h": 360
+        },
+        "ext": {
+          "bidder": {
+            "partnerId": 4321,
+            "placementId": "slot-2"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://aladdin.genieesspv.jp/yie/ld/exchange?id=4321",
+        "body": {
+          "id": "test-request-id-banner-imp-id",
+          "at": 1,
+          "cur": [
+            "JPY"
+          ],
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "banner-imp-id",
+              "tagid": "slot-1",
+              "banner": {
+                "w": 300,
+                "h": 250
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "banner-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-banner-imp-id",
+          "cur": "JPY",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-banner",
+                  "impid": "banner-imp-id",
+                  "price": 250,
+                  "adm": "<div>creative</div>",
+                  "crid": "creative-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://aladdin.genieesspv.jp/yie/ld/exchange?id=4321",
+        "body": {
+          "id": "test-request-id-video-imp-id",
+          "at": 1,
+          "cur": [
+            "JPY"
+          ],
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "video-imp-id",
+              "tagid": "slot-2",
+              "video": {
+                "mimes": ["video/mp4"],
+                "w": 640,
+                "h": 360
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "video-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id-video-imp-id",
+          "cur": "JPY",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-video",
+                  "impid": "video-imp-id",
+                  "price": 400,
+                  "adm": "<VAST version=\"4.0\"><Ad><InLine><Impression><![CDATA[https://example.com/impression]]></Impression></InLine></Ad></VAST>",
+                  "crid": "creative-2",
+                  "w": 640,
+                  "h": 360,
+                  "dur": 15,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "JPY",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-banner",
+            "impid": "banner-imp-id",
+            "price": 250,
+            "adm": "<div>creative</div>",
+            "crid": "creative-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "JPY",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-video",
+            "impid": "video-imp-id",
+            "price": 400,
+            "adm": "<VAST version=\"4.0\"><Ad><InLine><Impression><![CDATA[https://example.com/impression]]></Impression></InLine></Ad></VAST>",
+            "crid": "creative-2",
+            "w": 640,
+            "h": 360,
+            "dur": 15,
+            "mtype": 2
+          },
+          "type": "video",
+          "video": {
+            "duration": 15,
+            "primary_category": ""
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "at": 1,
+    "cur": [
+      "JPY"
+    ],
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "w": 0,
+          "h": 0
+        },
+        "ext": {
+          "bidder": {
+            "partnerId": 4321,
+            "placementId": "slot-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp \"test-imp-id\": banner has no size",
+      "comparison": "literal"
+    }
+  ]
+}
