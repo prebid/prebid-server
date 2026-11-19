@@ -68,7 +68,7 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *Processe
 		excludedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
 	}
 
-	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().Delete(excludedBidders)
+	result.HookResult.ChangeSet.ProcessedAuctionRequest().Bidders().DeleteWithReason(excludedBidders, removalReason(eb.Args.AnalyticsValue, ExcludeBiddersName))
 
 	// Only warn about bidders that are actually present in the request, so the debug output
 	// reflects what was really removed rather than the rule's full configured exclusion list.
@@ -81,6 +81,14 @@ func (eb *ExcludeBidders) Call(req *openrtb_ext.RequestWrapper, result *Processe
 		)
 	}
 	return nil
+}
+
+// removalReason labels removed bidders with the rule's analyticsvalue, or the function name when it is unset.
+func removalReason(analyticsValue, functionName string) string {
+	if analyticsValue != "" {
+		return analyticsValue
+	}
+	return functionName
 }
 
 func (eb *ExcludeBidders) Name() string {
@@ -206,6 +214,9 @@ type IncludeBidders struct {
 func (ib *IncludeBidders) Call(req *openrtb_ext.RequestWrapper, result *ProcessedAuctionHookResult, meta rules.ResultFunctionMeta) error {
 	for _, bidderName := range ib.Args.Bidders {
 		result.IncludeBidders.allowedBidders[bidderName] = struct{}{} // Ensure the bidder is included in the allowed bidders
+	}
+	if result.IncludeBidders.includeReason == "" {
+		result.IncludeBidders.includeReason = removalReason(ib.Args.AnalyticsValue, IncludeBiddersName)
 	}
 	// Record the ruleset context so that, once every ruleset has run and the final allow-list is
 	// known, we can surface a debug warning naming the bidders that were implicitly removed because

@@ -297,3 +297,48 @@ func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json
 	return v.Error
 }
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
+
+type bidderRemovalRecorder []string
+
+func (r *bidderRemovalRecorder) ReportBidderRemoval(impID, bidder, reason string) {
+	*r = append(*r, impID+"|"+bidder+"|"+reason)
+}
+
+func TestValidateImpExtReportsBidderRemovals(t *testing.T) {
+	tests := []struct {
+		description string
+		impExt      json.RawMessage
+		expected    bidderRemovalRecorder
+	}{
+		{
+			description: "disabled_bidder",
+			impExt:      json.RawMessage(`{"prebid":{"bidder":{"appnexus":{},"disabledbidder":{}}}}`),
+			expected:    bidderRemovalRecorder{"imp1|disabledbidder|" + BidderRemovedDisabled},
+		},
+		{
+			description: "unknown_bidder_in_legacy_location",
+			impExt:      json.RawMessage(`{"appnexus":{},"unknownbidder":{}}`),
+			expected:    bidderRemovalRecorder{"imp1|unknownbidder|" + BidderRemovedUnknown},
+		},
+		{
+			description: "nothing_removed",
+			impExt:      json.RawMessage(`{"prebid":{"bidder":{"appnexus":{}}}}`),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			impWrapper := &openrtb_ext.ImpWrapper{Imp: &openrtb2.Imp{ID: "imp1", Ext: test.impExt}}
+			rv := standardRequestValidator{
+				bidderMap:       openrtb_ext.BuildBidderMap(),
+				disabledBidders: map[string]string{"disabledbidder": "disabled"},
+				paramsValidator: mockBidderParamValidator{},
+			}
+			var reported bidderRemovalRecorder
+
+			rv.validateImpExt(impWrapper, ValidationConfig{BidderRemovalReporter: &reported}, nil, 0, false, nil)
+
+			assert.Equal(t, test.expected, reported)
+		})
+	}
+}

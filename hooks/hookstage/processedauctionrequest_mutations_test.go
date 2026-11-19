@@ -246,3 +246,81 @@ func TestDeletePrebidBidders(t *testing.T) {
 	}
 
 }
+
+type recordedBidderRemoval struct{ impID, bidder, reason string }
+
+type bidderRemovalRecorder []recordedBidderRemoval
+
+func (r *bidderRemovalRecorder) ReportBidderRemoval(impID, bidder, reason string) {
+	*r = append(*r, recordedBidderRemoval{impID, bidder, reason})
+}
+
+func TestBidderMutationsReportRemovals(t *testing.T) {
+	tests := []struct {
+		name        string
+		addMutation func(ChangeBidders[ProcessedAuctionRequestPayload])
+		reporter    bool
+		want        []recordedBidderRemoval
+	}{
+		{
+			name: "delete-reports-removed-bidder-and-reason",
+			addMutation: func(b ChangeBidders[ProcessedAuctionRequestPayload]) {
+				b.DeleteWithReason(map[string]struct{}{"bidderB": {}}, "excludeBidders")
+			},
+			reporter: true,
+			want:     []recordedBidderRemoval{{"imp1", "bidderB", "excludeBidders"}},
+		},
+		{
+			name: "add-reports-bidders-not-allowed",
+			addMutation: func(b ChangeBidders[ProcessedAuctionRequestPayload]) {
+				b.AddWithReason(map[string]struct{}{"bidderA": {}}, "includeBidders")
+			},
+			reporter: true,
+			want:     []recordedBidderRemoval{{"imp1", "bidderB", "includeBidders"}},
+		},
+		{
+			name: "existing-delete-reports-without-reason",
+			addMutation: func(b ChangeBidders[ProcessedAuctionRequestPayload]) {
+				b.Delete(map[string]struct{}{"bidderB": {}})
+			},
+			reporter: true,
+			want:     []recordedBidderRemoval{{"imp1", "bidderB", ""}},
+		},
+		{
+			name: "no-reporter-still-removes",
+			addMutation: func(b ChangeBidders[ProcessedAuctionRequestPayload]) {
+				b.DeleteWithReason(map[string]struct{}{"bidderB": {}}, "excludeBidders")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			wrapper := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "imp1"}}}}
+			impExt, err := wrapper.GetImp()[0].GetImpExt()
+			assert.NoError(t, err)
+			impExt.SetPrebid(&openrtb_ext.ExtImpPrebid{Bidder: map[string]json.RawMessage{
+				"bidderA": json.RawMessage(`{}`),
+				"bidderB": json.RawMessage(`{}`),
+			}})
+
+			var removals bidderRemovalRecorder
+			payload := ProcessedAuctionRequestPayload{Request: wrapper}
+			if test.reporter {
+				payload.SetBidderRemovalReporter(&removals)
+			}
+			changeSet := &ChangeSet[ProcessedAuctionRequestPayload]{}
+			test.addMutation(changeSet.ProcessedAuctionRequest().Bidders())
+
+			for _, mutation := range changeSet.Mutations() {
+				_, err = mutation.Apply(payload)
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, []recordedBidderRemoval(test.want), []recordedBidderRemoval(removals))
+			updatedExt, err := wrapper.GetImp()[0].GetImpExt()
+			assert.NoError(t, err)
+			assert.Equal(t, map[string]json.RawMessage{"bidderA": json.RawMessage(`{}`)}, updatedExt.GetPrebid().Bidder)
+		})
+	}
+}

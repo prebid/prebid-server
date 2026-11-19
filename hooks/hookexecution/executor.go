@@ -59,6 +59,8 @@ type hookExecutor struct {
 	moduleContexts  *moduleContexts
 	metricEngine    metrics.MetricsEngine
 	activityControl privacy.ActivityControl
+	// bidderRemovalReporter is nil unless the auction's lifecycle is being recorded
+	bidderRemovalReporter hookstage.BidderRemovalReporter
 	// Mutex needed for BidderRequest and RawBidderResponse Stages as they are run in several goroutines
 	sync.Mutex
 }
@@ -84,6 +86,11 @@ func (e *hookExecutor) SetAccount(account *config.Account) {
 
 func (e *hookExecutor) SetActivityControl(activityControl privacy.ActivityControl) {
 	e.activityControl = activityControl
+}
+
+// SetBidderRemovalReporter reports bidders removed by processed-auction-request bidder mutations.
+func (e *hookExecutor) SetBidderRemovalReporter(reporter hookstage.BidderRemovalReporter) {
+	e.bidderRemovalReporter = reporter
 }
 
 func (e *hookExecutor) GetOutcomes() []StageOutcome {
@@ -170,6 +177,7 @@ func (e *hookExecutor) ExecuteProcessedAuctionStage(request *openrtb_ext.Request
 	stageName := hooks.StageProcessedAuctionRequest.String()
 	executionCtx := e.newContext(stageName)
 	payload := hookstage.ProcessedAuctionRequestPayload{Request: request}
+	payload.SetBidderRemovalReporter(e.bidderRemovalReporter)
 
 	outcome, _, contexts, reject := executeStage(executionCtx, plan, payload, handler, e.metricEngine)
 	outcome.Entity = entityAuctionRequest
