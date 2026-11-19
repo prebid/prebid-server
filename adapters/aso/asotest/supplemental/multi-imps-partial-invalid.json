@@ -1,0 +1,92 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "bundle": "com.prebid"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "zone": 100
+          }
+        }
+      },
+      {
+        "id": "imp-invalid",
+        "banner": {
+          "format": [{"w": 300, "h": 250}]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "abc"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [{"w": 320, "h": 50}]
+        },
+        "ext": {
+          "bidder": {
+            "zone": 100
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://srv.aso1.net/pbs/bidder?zid=100",
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "bundle": "com.prebid"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [{"w": 300, "h": 250}]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": 100
+                }
+              }
+            },
+            {
+              "id": "imp-2",
+              "banner": {
+                "format": [{"w": 320, "h": 50}]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": 100
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": ["imp-1", "imp-2"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid bidderExt.Bidder",
+      "comparison": "startswith"
+    }
+  ],
+  "expectedBidResponses": []
+}

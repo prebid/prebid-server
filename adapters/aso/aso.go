@@ -34,11 +34,9 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 }
 
 func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-
-	var requests []*adapters.RequestData
 	var errors []error
 
-	requestCopy := *request
+	impsByEndpoint := make(map[string][]openrtb2.Imp)
 
 	for _, imp := range request.Imp {
 		var bidderExt adapters.ExtImpBidder
@@ -57,13 +55,20 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 			continue
 		}
 
-		requestCopy.Imp = []openrtb2.Imp{imp}
 		endpoint, err := a.buildEndpointURL(&impExt)
-
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
+
+		impsByEndpoint[endpoint] = append(impsByEndpoint[endpoint], imp)
+	}
+
+	requests := make([]*adapters.RequestData, 0, len(impsByEndpoint))
+	requestCopy := *request
+
+	for endpoint, imps := range impsByEndpoint {
+		requestCopy.Imp = imps
 
 		reqJSON, err := json.Marshal(requestCopy)
 		if err != nil {
@@ -75,14 +80,13 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		headers.Add("Content-Type", "application/json;charset=utf-8")
 		headers.Add("Accept", "application/json")
 
-		requestData := &adapters.RequestData{
+		requests = append(requests, &adapters.RequestData{
 			Method:  http.MethodPost,
 			Uri:     endpoint,
 			Body:    reqJSON,
 			Headers: headers,
 			ImpIDs:  openrtb_ext.GetImpIDs(requestCopy.Imp),
-		}
-		requests = append(requests, requestData)
+		})
 	}
 	return requests, errors
 }
