@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-nosupply",
+    "at": 1,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": {} }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optima: imp imp-1 is missing required param supply_id",
+      "comparison": "literal"
+    },
+    {
+      "value": "optima: no valid impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "test-req-at3",
+    "at": 3,
+    "app": {
+      "bundle": "com.example.game"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": { "w": 320, "h": 50 },
+        "ext": { "bidder": { "supply_id": "testkey" } }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optima: auction type 3 is not supported; only first price (1) and second price (2) are served",
+      "comparison": "literal"
+    }
+  ]
+}
