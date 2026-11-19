@@ -1,0 +1,95 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "video-imp",
+        "video": {"w": 640, "h": 360, "mimes": ["video/mp4"]},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      },
+      {
+        "id": "native-imp",
+        "native": {"request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}", "ver": "1.2"},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "video-imp",
+              "video": {"w": 640, "h": 360, "mimes": ["video/mp4"]},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            },
+            {
+              "id": "native-imp",
+              "native": {"request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}", "ver": "1.2"},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            }
+          ]
+        },
+        "impIDs": ["video-imp", "native-imp"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-video",
+                  "impid": "video-imp",
+                  "price": 3,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "crid-video"
+                },
+                {
+                  "id": "bid-native",
+                  "impid": "native-imp",
+                  "price": 1,
+                  "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Ad\"}}]}}",
+                  "crid": "crid-native"
+                }
+              ],
+              "seat": "melvad"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "video-imp",
+            "price": 3,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "crid-video"
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-native",
+            "impid": "native-imp",
+            "price": 1,
+            "adm": "{\"native\":{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Ad\"}}]}}",
+            "crid": "crid-native"
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

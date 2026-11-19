@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {"w": 300, "h": 250},
+        "video": {"w": 640, "h": 360, "mimes": ["video/mp4"]},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {"w": 300, "h": 250},
+              "video": {"w": 640, "h": 360, "mimes": ["video/mp4"]},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "test-imp-id",
+                  "price": 2.5,
+                  "mtype": 2,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "burl": "https://rtb.melvad.com/billing/abc?ap=${AUCTION_PRICE}",
+                  "crid": "crid-1"
+                }
+              ],
+              "seat": "melvad"
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "test-imp-id",
+            "price": 2.5,
+            "mtype": 2,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "burl": "https://rtb.melvad.com/billing/abc?ap=2.5",
+            "crid": "crid-1"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

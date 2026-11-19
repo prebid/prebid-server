@@ -1,0 +1,20 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {"w": 300, "h": 250},
+        "ext": {"bidder": {"sspId": 11}}
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "^Impression test-imp-id: ext.bidder not valid or can't be unmarshalled: ",
+      "comparison": "regex"
+    }
+  ],
+  "httpCalls": [],
+  "expectedBidResponses": []
+}

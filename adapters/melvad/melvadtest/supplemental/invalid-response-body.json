@@ -1,0 +1,41 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {"w": 300, "h": 250},
+        "ext": {"bidder": {"sspId": "prebid"}}
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://rtb.bidder.melvad.com/ssps/1/prebid",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {"w": 300, "h": 250},
+              "ext": {"bidder": {"sspId": "prebid"}}
+            }
+          ]
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "not a json"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "^Bad server response: ",
+      "comparison": "regex"
+    }
+  ],
+  "expectedBidResponses": []
+}
