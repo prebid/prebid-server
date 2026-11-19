@@ -1,0 +1,612 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>optout: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/prebid/prebid-server/v4/adapters/optout/optout.go (93.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Package optout implements the Opt Out Prebid Server bidder adapter.
+package optout
+
+import (
+        "encoding/json"
+        "fmt"
+        "math"
+        "net/http"
+        "strings"
+
+        "github.com/prebid/go-gdpr/consentconstants"
+        vendorconsent "github.com/prebid/go-gdpr/vendorconsent/tcf2"
+        "github.com/prebid/openrtb/v20/openrtb2"
+        "github.com/prebid/prebid-server/v4/adapters"
+        "github.com/prebid/prebid-server/v4/config"
+        "github.com/prebid/prebid-server/v4/errortypes"
+        "github.com/prebid/prebid-server/v4/openrtb_ext"
+        "github.com/prebid/prebid-server/v4/util/jsonutil"
+)
+
+const (
+        defaultCurrency        = "EUR"
+        defaultTTL             = 300
+        optoutVendorID  uint16 = 227
+        matcherName            = "PREBID"
+)
+
+type adapter struct{ endpoint string }
+
+type optoutSlot struct {
+        AdSlot  string            `json:"adSlot"`
+        ID      string            `json:"id"`
+        Sizes   []adSize          `json:"sizes,omitempty"`
+        Customs map[string]string `json:"customs,omitempty"`
+}
+
+type adSize struct {
+        Width  int64 `json:"width"`
+        Height int64 `json:"height"`
+}
+
+type currencySettings struct {
+        AdServerCurrency      string `json:"adServerCurrency"`
+        GranularityMultiplier int    `json:"granularityMultiplier"`
+}
+
+type viewer struct {
+        Id      string `json:"id,omitempty"`
+        Matcher string `json:"matcher,omitempty"`
+}
+
+type optoutRequest struct {
+        Publisher  string            `json:"publisher"`
+        Slots      []optoutSlot      `json:"slots"`
+        Currency   currencySettings  `json:"cur"`
+        URL        string            `json:"url"`
+        SDKVersion string            `json:"sdk_version"`
+        Consent    string            `json:"gdpr_consent"`
+        GDPR       int               `json:"gdpr"`
+        OS         string            `json:"os,omitempty"`
+        Viewer     *viewer           `json:"viewer,omitempty"`
+        Customs    map[string]string `json:"customs,omitempty"`
+        ORTB2      string            `json:"ortb2,omitempty"`
+}
+
+type optoutBid struct {
+        RequestID  string          `json:"requestId"`
+        CPM        float64         `json:"cpm"`
+        Currency   string          `json:"currency"`
+        Width      int64           `json:"width"`
+        Height     int64           `json:"height"`
+        Ad         string          `json:"ad"`
+        TTL        int64           `json:"ttl"`
+        CreativeID string          `json:"creativeId"`
+        OptOutExt  json.RawMessage `json:"optOutExt"`
+        Meta       json.RawMessage `json:"meta"`
+}
+
+// Builder requires the single Opt Out DSP endpoint from the server configuration.
+func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) <span class="cov8" title="1">{
+        if cfg.Endpoint == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("optout: missing endpoint")
+        }</span>
+        <span class="cov8" title="1">return &amp;adapter{endpoint: cfg.Endpoint}, nil</span>
+}
+
+func decodeParams(imp openrtb2.Imp) (openrtb_ext.ImpExtOptout, error) <span class="cov8" title="1">{
+        var ext adapters.ExtImpBidder
+        if err := jsonutil.Unmarshal(imp.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return openrtb_ext.ImpExtOptout{}, fmt.Errorf("invalid impression extension: %w", err)
+        }</span>
+        <span class="cov8" title="1">var p openrtb_ext.ImpExtOptout
+        if len(ext.Bidder) == 0 </span><span class="cov8" title="1">{
+                return p, fmt.Errorf("missing bidder parameters")
+        }</span>
+        <span class="cov8" title="1">if err := jsonutil.Unmarshal(ext.Bidder, &amp;p); err != nil </span><span class="cov8" title="1">{
+                return p, fmt.Errorf("invalid bidder parameters: %w", err)
+        }</span>
+        <span class="cov8" title="1">if p.Publisher == "" || p.AdSlot == "" </span><span class="cov8" title="1">{
+                return p, fmt.Errorf("publisher and adSlot are required")
+        }</span>
+        <span class="cov8" title="1">return p, nil</span>
+}
+
+func normalizeCustoms(customs map[string]interface{}) map[string]string <span class="cov8" title="1">{
+        result := map[string]string{}
+        for k, v := range customs </span><span class="cov8" title="1">{
+                if v == nil </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">switch value := v.(type) </span>{
+                case []interface{}:<span class="cov8" title="1">
+                        vals := make([]string, len(value))
+                        for i, item := range value </span><span class="cov8" title="1">{
+                                if item != nil </span><span class="cov8" title="1">{
+                                        vals[i] = fmt.Sprint(item)
+                                }</span>
+                        }
+                        <span class="cov8" title="1">result[k] = strings.Join(vals, ",")</span>
+                case map[string]interface{}:<span class="cov8" title="1">
+                        if b, err := jsonutil.Marshal(value); err == nil </span><span class="cov8" title="1">{
+                                result[k] = string(b)
+                        }</span>
+                case string:<span class="cov8" title="1">
+                        result[k] = value</span>
+                default:<span class="cov8" title="1">
+                        result[k] = fmt.Sprint(value)</span>
+                }
+        }
+        <span class="cov8" title="1">return result</span>
+}
+
+func mergeCustoms(dst map[string]string, data map[string]interface{}) <span class="cov8" title="1">{
+        for k, v := range normalizeCustoms(data) </span><span class="cov8" title="1">{
+                dst[k] = v
+        }</span>
+}
+
+func mergeExtData(dst map[string]string, ext json.RawMessage, source string) error <span class="cov8" title="1">{
+        if len(ext) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">var wrapped struct {
+                Data map[string]interface{} `json:"data"`
+        }
+        if err := jsonutil.Unmarshal(ext, &amp;wrapped); err != nil </span><span class="cov8" title="1">{
+                return &amp;errortypes.BadInput{Message: fmt.Sprintf("optout: invalid %s.ext: %v", source, err)}
+        }</span>
+        <span class="cov8" title="1">mergeCustoms(dst, wrapped.Data)
+        return nil</span>
+}
+
+func readConsent(req *openrtb2.BidRequest) string <span class="cov8" title="1">{
+        if req == nil || req.User == nil </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+
+        // OpenRTB 2.6: consent is directly in user.consent
+        <span class="cov8" title="1">if req.User.Consent != "" </span><span class="cov8" title="1">{
+                return req.User.Consent
+        }</span>
+
+        // OpenRTB 2.5 and older: consent is in user.ext.consent
+        <span class="cov8" title="1">var ext struct {
+                Consent string `json:"consent"`
+        }
+
+        if err := jsonutil.Unmarshal(req.User.Ext, &amp;ext); err != nil </span><span class="cov8" title="1">{
+                return ""
+        }</span>
+
+        <span class="cov8" title="1">return ext.Consent</span>
+}
+
+// mayForwardPersonalData requires explicit TCF Purpose 2 and vendor consent
+// when GDPR applies. Unknown GDPR applicability fails closed.
+// This is an additional data-minimization rule, not a full TCF legal-basis check.
+func mayForwardPersonalData(req *openrtb2.BidRequest, tcString string) bool <span class="cov8" title="1">{
+        if req == nil || req.Regs == nil || req.Regs.GDPR == nil </span><span class="cov8" title="1">{
+                return false
+        }</span>
+
+        <span class="cov8" title="1">if *req.Regs.GDPR == 0 </span><span class="cov8" title="1">{
+                return true // GDPR explicitly does not apply; respect other privacy controls upstream.
+        }</span>
+        <span class="cov8" title="1">if tcString == "" </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov8" title="1">consent, err := vendorconsent.ParseString(tcString)
+        if err != nil || consent.Version() != 2 </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov0" title="0">return consent.PurposeAllowed(consentconstants.Purpose(2)) &amp;&amp;
+                consent.VendorConsent(optoutVendorID)</span>
+}
+
+// makeForwardableORTB2 creates a separate OpenRTB request for forwarding.
+// Never mutate the request shared by Prebid Server and other adapters.
+// When the privacy check fails, replace the complete user object with a
+// marker-only object and redact any IP addresses in device.
+func makeForwardableORTB2(req *openrtb2.BidRequest, allowPersonalData bool) (*openrtb2.BidRequest, error) <span class="cov8" title="1">{
+        raw, err := jsonutil.Marshal(req)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">var copied openrtb2.BidRequest
+        if err := jsonutil.Unmarshal(raw, &amp;copied); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if !allowPersonalData </span><span class="cov8" title="1">{
+                copied.User = &amp;openrtb2.User{
+                        Ext: json.RawMessage(`{"optout":{"redacted":true}}`),
+                }
+                if copied.Device != nil </span><span class="cov8" title="1">{
+                        if copied.Device.IP != "" </span><span class="cov8" title="1">{
+                                copied.Device.IP = ""
+                        }</span>
+                        <span class="cov8" title="1">if copied.Device.IPv6 != "" </span><span class="cov8" title="1">{
+                                copied.Device.IPv6 = ""
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return &amp;copied, nil</span>
+}
+
+func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) <span class="cov8" title="1">{
+        if req == nil </span><span class="cov8" title="1">{
+                return nil, []error{
+                        &amp;errortypes.BadInput{Message: "optout: nil request"},
+                }
+        }</span>
+
+        <span class="cov8" title="1">var errors []error
+        var publisher string
+        var slots []optoutSlot
+        var impIDs []string
+        var includeOrtb2 bool
+
+        for _, imp := range req.Imp </span><span class="cov8" title="1">{
+                if imp.Banner == nil </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadInput{Message: fmt.Sprintf("optout: imp %s is not banner", imp.ID)})
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">p, err := decodeParams(imp)
+                if err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadInput{Message: fmt.Sprintf("optout: imp %s: %v", imp.ID, err)})
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if publisher == "" </span><span class="cov8" title="1">{
+                        publisher = p.Publisher
+                }</span> else<span class="cov8" title="1"> if p.Publisher != publisher </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadInput{
+                                Message: fmt.Sprintf("optout: imp %s has publisher %s, expected %s", imp.ID, p.Publisher, publisher),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">slots = append(slots, optoutSlot{
+                        AdSlot:  p.AdSlot,
+                        ID:      imp.ID,
+                        Sizes:   getAllowedSizes(imp),
+                        Customs: normalizeCustoms(p.Customs),
+                })
+                impIDs = append(impIDs, imp.ID)
+                includeOrtb2 = includeOrtb2 || p.IncludeOrtb2</span>
+        }
+
+        <span class="cov8" title="1">if len(slots) == 0 </span><span class="cov8" title="1">{
+                return nil, errors
+        }</span>
+
+        <span class="cov8" title="1">gdpr := 1
+        if req.Regs != nil &amp;&amp; req.Regs.GDPR != nil &amp;&amp; *req.Regs.GDPR == 0 </span><span class="cov8" title="1">{
+                gdpr = 0
+        }</span>
+        <span class="cov8" title="1">consent := readConsent(req)
+        // Apply preliminary consent-based personal data filtering.
+        forwardPersonalData := mayForwardPersonalData(req, consent)
+        // Build a privacy-filtered clone for ortb2 and the top-level device field.
+        forwardable, err := makeForwardableORTB2(req, forwardPersonalData)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, []error{&amp;errortypes.BadInput{Message: fmt.Sprintf("optout: cannot clone OpenRTB request: %v", err)}}
+        }</span>
+
+        <span class="cov8" title="1">currency := defaultCurrency
+        if len(req.Cur) &gt; 0 </span><span class="cov8" title="1">{
+                currency = req.Cur[0]
+        }</span>
+        <span class="cov8" title="1">pageURL := ""
+        if req.Site != nil </span><span class="cov8" title="1">{
+                pageURL = req.Site.Page
+        }</span>
+        // Shared first-party data belongs in request-level customs. Slot customs
+        // are already attached independently to each slot above.
+        <span class="cov8" title="1">requestCustoms := make(map[string]string)
+        if req.Site != nil </span><span class="cov8" title="1">{
+                if err := mergeExtData(requestCustoms, req.Site.Ext, "site"); err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if req.App != nil </span><span class="cov8" title="1">{
+                if err := mergeExtData(requestCustoms, req.App.Ext, "app"); err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if forwardPersonalData &amp;&amp; req.User != nil </span><span class="cov8" title="1">{
+                if err := mergeExtData(requestCustoms, req.User.Ext, "user"); err != nil </span><span class="cov8" title="1">{
+                        errors = append(errors, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">data := optoutRequest{
+                Publisher:  publisher,
+                Slots:      slots,
+                Currency:   currencySettings{AdServerCurrency: currency, GranularityMultiplier: 1},
+                URL:        pageURL,
+                SDKVersion: "prebid-server",
+                Consent:    consent,
+                GDPR:       gdpr,
+                Customs:    requestCustoms,
+        }
+        if forwardable.Device != nil </span><span class="cov8" title="1">{
+                data.OS = forwardable.Device.OS
+        }</span>
+        <span class="cov8" title="1">if forwardPersonalData &amp;&amp; forwardable.User != nil &amp;&amp; forwardable.User.BuyerUID != "" </span><span class="cov0" title="0">{
+                data.Viewer = &amp;viewer{
+                        Id:      forwardable.User.BuyerUID,
+                        Matcher: matcherName,
+                }
+        }</span>
+        <span class="cov8" title="1">if includeOrtb2 </span><span class="cov8" title="1">{
+                ortbJSON, err := jsonutil.Marshal(forwardable)
+                if err != nil </span><span class="cov0" title="0">{
+                        errors = append(errors, err)
+                }</span> else<span class="cov8" title="1"> {
+                        data.ORTB2 = string(ortbJSON)
+                }</span>
+        }
+
+        <span class="cov8" title="1">body, err := jsonutil.Marshal(data)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, append(errors, err)
+        }</span>
+        <span class="cov8" title="1">headers := http.Header{"Content-Type": []string{"application/json"}}
+        if req.Device != nil </span><span class="cov8" title="1">{
+                if req.Device.UA != "" </span><span class="cov8" title="1">{
+                        headers.Set("X-Device-User-Agent", req.Device.UA)
+                }</span>
+                <span class="cov8" title="1">if forwardPersonalData </span><span class="cov0" title="0">{
+                        ip := req.Device.IP
+                        if ip == "" </span><span class="cov0" title="0">{
+                                ip = req.Device.IPv6
+                        }</span>
+                        <span class="cov0" title="0">if ip != "" </span><span class="cov0" title="0">{
+                                headers.Set("X-Forwarded-For", ip)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">result := []*adapters.RequestData{{
+                Method:  http.MethodPost,
+                Uri:     a.endpoint,
+                Body:    body,
+                Headers: headers,
+                ImpIDs:  impIDs,
+        }}
+
+        return result, errors</span>
+}
+
+func getAllowedSizes(imp openrtb2.Imp) []adSize <span class="cov8" title="1">{
+        // Deduplicate banner sizes.
+        seen := make(map[adSize]bool)
+        sizes := make([]adSize, 0)
+        if imp.Banner.W != nil &amp;&amp; imp.Banner.H != nil </span><span class="cov8" title="1">{
+                size := adSize{*imp.Banner.W, *imp.Banner.H}
+                if !seen[size] </span><span class="cov8" title="1">{
+                        seen[size] = true
+                        sizes = append(sizes, size)
+                }</span>
+        }
+        <span class="cov8" title="1">for _, f := range imp.Banner.Format </span><span class="cov8" title="1">{
+                size := adSize{f.W, f.H}
+                if !seen[size] </span><span class="cov8" title="1">{
+                        seen[size] = true
+                        sizes = append(sizes, size)
+                }</span>
+        }
+        <span class="cov8" title="1">return sizes</span>
+}
+
+// MakeBids validates the DSP response before converting it into OpenRTB bids.
+func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) <span class="cov8" title="1">{
+        if response == nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: "optout: nil response"}}
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode == http.StatusNoContent </span><span class="cov8" title="1">{
+                return nil, nil
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode == http.StatusBadRequest </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadInput{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
+        }</span>
+        <span class="cov8" title="1">if response.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
+        }</span>
+        <span class="cov8" title="1">if outgoing == nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: "optout: missing outgoing request"}}
+        }</span>
+
+        <span class="cov8" title="1">var sent struct {
+                Slots []optoutSlot `json:"slots"`
+        }
+        if err := jsonutil.Unmarshal(outgoing.Body, &amp;sent); err != nil </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: fmt.Sprintf("optout: invalid outgoing request: %v", err)}}
+        }</span>
+        <span class="cov8" title="1">if len(sent.Slots) == 0 </span><span class="cov8" title="1">{
+                return nil, []error{&amp;errortypes.BadServerResponse{Message: "optout: outgoing request has no slots"}}
+        }</span>
+
+        <span class="cov8" title="1">validImpIDs := make(map[string]bool, len(sent.Slots))
+        for _, slot := range sent.Slots </span><span class="cov8" title="1">{
+                validImpIDs[slot.ID] = true
+        }</span>
+
+        // The DSP can return either a JSON array or an object containing "bids".
+        <span class="cov8" title="1">var bids []optoutBid
+        if err := jsonutil.Unmarshal(response.Body, &amp;bids); err != nil </span><span class="cov8" title="1">{
+                var wrapped struct {
+                        Bids []optoutBid `json:"bids"`
+                }
+                if err2 := jsonutil.Unmarshal(response.Body, &amp;wrapped); err2 != nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadServerResponse{Message: fmt.Sprintf("optout: invalid response JSON: %v", err2)}}
+                }</span>
+                <span class="cov8" title="1">if wrapped.Bids == nil </span><span class="cov8" title="1">{
+                        return nil, []error{&amp;errortypes.BadServerResponse{Message: "optout: DSP response is missing bids array"}}
+                }</span>
+                <span class="cov8" title="1">bids = wrapped.Bids</span>
+        }
+
+        <span class="cov8" title="1">result := adapters.NewBidderResponse()
+        currency := ""
+        var errors []error
+        for _, b := range bids </span><span class="cov8" title="1">{
+                if !validImpIDs[b.RequestID] </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("optout: unknown impression ID %q", b.RequestID),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if b.Currency == "" || b.Ad == "" || b.Width &lt;= 0 || b.Height &lt;= 0 ||
+                        b.CPM &lt; 0 || math.IsNaN(b.CPM) || math.IsInf(b.CPM, 0) </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("optout: invalid bid for impression %q", b.RequestID),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">if currency != "" &amp;&amp; currency != b.Currency </span><span class="cov8" title="1">{
+                        errors = append(errors, &amp;errortypes.BadServerResponse{
+                                Message: fmt.Sprintf("optout: mixed response currencies (%s and %s)", currency, b.Currency),
+                        })
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">var bidExt json.RawMessage
+                if len(b.OptOutExt) &gt; 0 &amp;&amp; string(b.OptOutExt) != "null" </span><span class="cov8" title="1">{
+                        var ext map[string]json.RawMessage
+                        if err := jsonutil.Unmarshal(b.OptOutExt, &amp;ext); err != nil || ext == nil </span><span class="cov8" title="1">{
+                                errors = append(errors, &amp;errortypes.BadServerResponse{
+                                        Message: fmt.Sprintf("optout: invalid bid extension for impression %q", b.RequestID),
+                                })
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">bidExt = b.OptOutExt</span>
+                }
+
+                <span class="cov8" title="1">ttl := b.TTL
+                if ttl &lt;= 0 </span><span class="cov8" title="1">{
+                        ttl = defaultTTL
+                }</span>
+
+                // The Opt Out endpoint has no separate bid ID, so the impression ID is reused.
+                // This is unique because the endpoint returns at most one bid per slot
+                <span class="cov8" title="1">bid := &amp;openrtb2.Bid{
+                        ID:    b.RequestID,
+                        ImpID: b.RequestID,
+                        Price: b.CPM,
+                        AdM:   b.Ad,
+                        W:     b.Width,
+                        H:     b.Height,
+                        CrID:  b.CreativeID,
+                        Exp:   ttl,
+                        Ext:   bidExt,
+                }
+                currency = b.Currency
+                result.Bids = append(result.Bids, &amp;adapters.TypedBid{
+                        Bid: bid, BidType: openrtb_ext.BidTypeBanner,
+                })</span>
+        }
+        <span class="cov8" title="1">if currency == "" </span><span class="cov8" title="1">{
+                currency = defaultCurrency
+        }</span>
+        <span class="cov8" title="1">result.Currency = currency
+
+        return result, errors</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
