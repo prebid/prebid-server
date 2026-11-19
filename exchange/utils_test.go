@@ -6004,3 +6004,97 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 func intPtr(i int) *int {
 	return &i
 }
+
+func TestApplyPrivacyProhibitedGeoState(t *testing.T) {
+	tests := []struct {
+		description      string
+		userRegion       string
+		deviceRegion     string
+		prohibitedStates []string
+		expectScrubbed   bool
+	}{
+		{
+			description:      "user in prohibited state MD — geo scrubbed",
+			userRegion:       "MD",
+			prohibitedStates: []string{"MD", "NJ", "CT", "VA", "OR"},
+			expectScrubbed:   true,
+		},
+		{
+			description:      "device in prohibited state OR — geo scrubbed",
+			deviceRegion:     "OR",
+			prohibitedStates: []string{"MD", "NJ", "CT", "VA", "OR"},
+			expectScrubbed:   true,
+		},
+		{
+			description:      "user in non-prohibited state CA — geo not scrubbed",
+			userRegion:       "CA",
+			prohibitedStates: []string{"MD", "NJ", "CT", "VA", "OR"},
+			expectScrubbed:   false,
+		},
+		{
+			description:      "empty prohibited list — geo not scrubbed",
+			userRegion:       "MD",
+			prohibitedStates: []string{},
+			expectScrubbed:   false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			req := newBidRequest()
+			req.User.Geo = &openrtb2.Geo{
+				Lat:    ptrutil.ToPtr(38.9072),
+				Lon:    ptrutil.ToPtr(-77.0369),
+				Region: tc.userRegion,
+			}
+			if tc.deviceRegion != "" {
+				req.Device.Geo = &openrtb2.Geo{
+					Lat:    ptrutil.ToPtr(38.9072),
+					Lon:    ptrutil.ToPtr(-77.0369),
+					Region: tc.deviceRegion,
+				}
+			}
+
+			privacyConfig := config.Privacy{
+				Geo: config.GeoPrivacy{
+					USStatesWithSaleProhibition: tc.prohibitedStates,
+				},
+			}
+
+			auctionReq := AuctionRequest{
+				BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+				UserSyncs:         &emptyUsersync{},
+				Account:           config.Account{},
+				TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+				Activities:        privacy.ActivityControl{},
+			}
+
+			reqSplitter := &requestSplitter{
+				bidderToSyncerKey: map[string]string{},
+				me:                &metrics.MetricsEngineMock{},
+				privacyConfig:     privacyConfig,
+				gdprPermsBuilder: fakePermissionsBuilder{
+					permissions: &permissionsMock{allowAllBidders: true},
+				}.Builder,
+				hostSChainNode: nil,
+				bidderInfo:     config.BidderInfos{"appnexus": config.BidderInfo{}},
+			}
+
+			results, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, map[string]float64{})
+			assert.Empty(t, errs)
+			assert.Len(t, results, 1)
+
+			result := results[0].BidRequest
+			originalLat := 38.9072
+			originalLon := -77.0369
+			if tc.expectScrubbed {
+				// scrubGeoPrecision rounds to 2 decimal places — value changes but is not nil
+				assert.NotEqual(t, originalLat, *result.User.Geo.Lat, tc.description+": user Lat should be rounded")
+				assert.NotEqual(t, originalLon, *result.User.Geo.Lon, tc.description+": user Lon should be rounded")
+			} else {
+				assert.Equal(t, originalLat, *result.User.Geo.Lat, tc.description+": user Lat should be unchanged")
+				assert.Equal(t, originalLon, *result.User.Geo.Lon, tc.description+": user Lon should be unchanged")
+			}
+		})
+	}
+}

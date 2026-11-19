@@ -68,6 +68,7 @@ type Configuration struct {
 	GDPR                 GDPR              `mapstructure:"gdpr"`
 	CCPA                 CCPA              `mapstructure:"ccpa"`
 	LMT                  LMT               `mapstructure:"lmt"`
+	GeoPrivacy           GeoPrivacy        `mapstructure:"geo_privacy"`
 	CurrencyConverter    CurrencyConverter `mapstructure:"currency_converter"`
 	DefReqConfig         DefReqConfig      `mapstructure:"default_request"`
 
@@ -265,6 +266,15 @@ type Privacy struct {
 	CCPA CCPA
 	GDPR GDPR
 	LMT  LMT
+	Geo  GeoPrivacy
+}
+
+// GeoPrivacy holds geo-related privacy configuration.
+type GeoPrivacy struct {
+	// USStatesWithSaleProhibition is a list of US state codes (e.g. "MD", "NJ", "CT", "VA", "OR")
+	// in which the sale of precise geolocation data is prohibited. When a user or device geo.region
+	// matches one of these states, lat/lon will be rounded and IP masked. Empty by default (opt-in).
+	USStatesWithSaleProhibition []string `mapstructure:"us_states_with_geo_prohibition"`
 }
 
 type GDPR struct {
@@ -1224,6 +1234,7 @@ func SetupViper(v *viper.Viper, filename string, bidderInfos BidderInfos) {
 		"SVK", "SVN", "ESP", "SWE", "GBR"})
 	v.SetDefault("ccpa.enforce", false)
 	v.SetDefault("lmt.enforce", true)
+	v.SetDefault("geo_privacy.us_states_with_geo_prohibition", []string{})
 	v.SetDefault("currency_converter.fetch_url", "https://cdn.jsdelivr.net/gh/prebid/currency-file@1/latest.json")
 	v.SetDefault("currency_converter.fetch_timeout_ms", 60000)      // 60 seconds
 	v.SetDefault("currency_converter.fetch_interval_seconds", 1800) // fetch currency rates every 30 minutes

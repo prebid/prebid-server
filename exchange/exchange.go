@@ -145,6 +145,7 @@ func NewExchange(adapters map[openrtb_ext.BidderName]AdaptedBidder, cache prebid
 		CCPA: cfg.CCPA,
 		GDPR: cfg.GDPR,
 		LMT:  cfg.LMT,
+		Geo:  cfg.GeoPrivacy,
 	}
 	requestSplitter := requestSplitter{
 		bidderToSyncerKey: bidderToSyncerKey,
