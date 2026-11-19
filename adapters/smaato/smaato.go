@@ -18,7 +18,7 @@ import (
 	"github.com/prebid/prebid-server/v4/util/timeutil"
 )
 
-const clientVersion = "prebid_server_1.3"
+const clientVersion = "prebid_server_1.4"
 
 type adMarkupType string
 
@@ -82,22 +82,31 @@ func (adapter *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adap
 		return nil, []error{&errortypes.BadInput{Message: "No impressions in bid request."}}
 	}
 
-	if err := convertBidFloorCurrency(request.Imp, reqInfo); err != nil {
-		return nil, []error{err}
+	imps, errs := convertBidFloorCurrency(request.Imp, reqInfo)
+	if len(imps) == 0 {
+		return nil, errs
 	}
 
+	requestCopy := *request
+	requestCopy.Imp = imps
+	requestCopy.Cur = []string{"USD"}
+
 	// set data in request that is common for all requests
-	if err := prepareCommonRequest(request); err != nil {
-		return nil, []error{err}
+	if err := prepareCommonRequest(&requestCopy); err != nil {
+		return nil, append(errs, err)
 	}
 
 	isVideoEntryPoint := reqInfo.PbsEntryPoint == metrics.ReqTypeVideo
 
+	var requests []*adapters.RequestData
+	var requestErrs []error
 	if isVideoEntryPoint {
-		return adapter.makePodRequests(request)
+		requests, requestErrs = adapter.makePodRequests(&requestCopy)
 	} else {
-		return adapter.makeIndividualRequests(request)
+		requests, requestErrs = adapter.makeIndividualRequests(&requestCopy)
 	}
+
+	return requests, append(errs, requestErrs...)
 }
 
 // MakeBids unpacks the server's response into Bids.
@@ -118,6 +127,7 @@ func (adapter *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalR
 	}
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(5)
+	bidResponse.Currency = "USD"
 
 	adMarkupType, err := getAdMarkupType(response)
 	if err != nil {
@@ -325,21 +335,25 @@ func convertAdMarkupTypeToMediaType(adMarkupType adMarkupType) (openrtb_ext.BidT
 	}
 }
 
-func convertBidFloorCurrency(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
-	for i := range imps {
-		if imps[i].BidFloor <= 0 || imps[i].BidFloorCur == "" || strings.EqualFold(imps[i].BidFloorCur, "USD") {
-			continue
-		}
+func convertBidFloorCurrency(imps []openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) ([]openrtb2.Imp, []error) {
+	convertedImps := make([]openrtb2.Imp, 0, len(imps))
+	var errs []error
+	for _, imp := range imps {
+		if imp.BidFloor > 0 && imp.BidFloorCur != "" && !strings.EqualFold(imp.BidFloorCur, "USD") {
+			convertedValue, err := reqInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
+			if err != nil {
+				errs = append(errs, &errortypes.BadInput{
+					Message: fmt.Sprintf("Unable to convert bid floor currency for imp %s: %v", imp.ID, err),
+				})
+				continue
+			}
 
-		convertedValue, err := reqInfo.ConvertCurrency(imps[i].BidFloor, imps[i].BidFloorCur, "USD")
-		if err != nil {
-			return err
+			imp.BidFloor = convertedValue
+			imp.BidFloorCur = "USD"
 		}
-
-		imps[i].BidFloor = convertedValue
-		imps[i].BidFloorCur = "USD"
+		convertedImps = append(convertedImps, imp)
 	}
-	return nil
+	return convertedImps, errs
 }
 
 func prepareCommonRequest(request *openrtb2.BidRequest) error {

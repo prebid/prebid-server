@@ -118,3 +118,23 @@ type mockTime struct {
 func (mt *mockTime) Now() time.Time {
 	return mt.time
 }
+
+func TestMakeRequestsDoesNotModifyRequestCur(t *testing.T) {
+	bidder := &adapter{endpoint: "https://prebid/bidder"}
+	request := &openrtb2.BidRequest{
+		ID:   "request-id",
+		Cur:  []string{"EUR"},
+		Site: &openrtb2.Site{Publisher: &openrtb2.Publisher{}},
+		Imp: []openrtb2.Imp{{
+			ID:     "imp-id",
+			Banner: &openrtb2.Banner{},
+			Ext:    json.RawMessage(`{"bidder":{"publisherId":"1100042525","adspaceId":"130563103"}}`),
+		}},
+	}
+
+	requests, errs := bidder.MakeRequests(request, &adapters.ExtraRequestInfo{})
+
+	assert.Empty(t, errs)
+	assert.Len(t, requests, 1)
+	assert.Equal(t, []string{"EUR"}, request.Cur)
+}

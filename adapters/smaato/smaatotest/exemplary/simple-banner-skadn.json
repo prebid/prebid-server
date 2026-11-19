@@ -99,6 +99,7 @@
         },
         "uri": "https://prebid/bidder",
         "body": {
+          "cur": ["USD"],
           "id": "1C86242D-9535-47D6-9576-7B1FE87F282C",
           "imp": [
             {
@@ -169,7 +170,7 @@
             "keywords": "power tools"
           },
           "ext": {
-            "client": "prebid_server_1.3"
+            "client": "prebid_server_1.4"
           }
         },
         "impIDs":["1C86242D-9535-47D6-9576-7B1FE87F282C"]
