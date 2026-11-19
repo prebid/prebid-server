@@ -5,6 +5,8 @@ geoscope:
 maintainer:
   email: "prebid@smaato.com"
 gvlVendorID: 82
+openrtb:
+  version: 2.6
 capabilities:
   app:
     mediaTypes:

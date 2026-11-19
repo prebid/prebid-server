@@ -174,18 +174,25 @@ func (a *PubnativeAdapter) MakeBids(internalRequest *openrtb2.BidRequest, extern
 
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(1)
 
+	var errs []error
 	for _, sb := range parsedResponse.SeatBid {
 		for i := 0; i < len(sb.Bid); i++ {
 			bid := sb.Bid[i]
-			if bid.Price != 0 {
-				bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
-					Bid:     &bid,
-					BidType: getMediaTypeForImp(bid.ImpID, internalRequest.Imp),
-				})
+			if bid.Price == 0 {
+				continue
 			}
+			bidType, err := getBidType(bid)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
+				Bid:     &bid,
+				BidType: bidType,
+			})
 		}
 	}
-	return bidResponse, nil
+	return bidResponse, errs
 }
 
 // Builder builds a new instance of the Pubnative adapter for the given bidder with the given config.
@@ -196,17 +203,17 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func getMediaTypeForImp(impId string, imps []openrtb2.Imp) openrtb_ext.BidType {
-	mediaType := openrtb_ext.BidTypeBanner
-	for _, imp := range imps {
-		if imp.ID == impId {
-			if imp.Video != nil {
-				mediaType = openrtb_ext.BidTypeVideo
-			} else if imp.Native != nil {
-				mediaType = openrtb_ext.BidTypeNative
-			}
-			return mediaType
+func getBidType(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+	switch bid.MType {
+	case openrtb2.MarkupBanner:
+		return openrtb_ext.BidTypeBanner, nil
+	case openrtb2.MarkupVideo:
+		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
+	default:
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("Unsupported MType %d for impression %s", bid.MType, bid.ImpID),
 		}
 	}
-	return mediaType
 }
