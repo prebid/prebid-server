@@ -112,24 +112,6 @@
                     "user": {
                         "geo": {},
                         "consent": "AAAA",
-                        "eids": [
-                            {
-                                "source": "source",
-                                "uids": [
-                                    {
-                                        "id": "1",
-                                        "atype": 1,
-                                        "ext": {}
-                                    },
-                                    {
-                                        "id": "1",
-                                        "atype": 1,
-                                        "ext": {}
-                                    }
-                                ],
-                                "ext": {}
-                            }
-                        ],
                         "ext": {}
                     },
                     "imp": [
@@ -193,25 +175,7 @@
                     "user": {
                         "geo": {},
                         "ext": {
-                            "consent": "AAAA",
-                            "eids": [
-                                {
-                                    "source": "source",
-                                    "uids": [
-                                        {
-                                            "id": "1",
-                                            "atype": 1,
-                                            "ext": {}
-                                        },
-                                        {
-                                            "id": "1",
-                                            "atype": 1,
-                                            "ext": {}
-                                        }
-                                    ],
-                                    "ext": {}
-                                }
-                            ]
+                            "consent": "AAAA"
                         }
                     },
                     "imp": [

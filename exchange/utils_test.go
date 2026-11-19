@@ -2562,7 +2562,9 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 	bidReq.User.Geo = &openrtb2.Geo{Lat: ptrutil.ToPtr(123.46)}
 
 	downgradedRegs := *bidReq.Regs
-	downgradedUser := *bidReq.User
+	scrubbedUser := *bidReq.User
+	scrubbedUser.EIDs = nil
+	downgradedUser := scrubbedUser
 	downgradedRegs.GDPR = ptrutil.ToPtr[int8](0)
 	downgradedRegs.USPrivacy = "1NYN"
 	downgradedUser.Consent = "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA"
@@ -2585,7 +2587,7 @@ func TestCleanOpenRTBRequestsWithOpenRTBDowngrade(t *testing.T) {
 			name:        "Supported",
 			req:         AuctionRequest{BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: bidReq}, UserSyncs: &emptyUsersync{}, TCF2Config: emptyTCF2Config},
 			expectRegs:  bidReq.Regs,
-			expectUser:  bidReq.User,
+			expectUser:  &scrubbedUser,
 			bidderInfos: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{GPPSupported: true, Version: "2.6"}}},
 		},
 	}
@@ -6003,4 +6005,97 @@ func TestExtractAndCleanBuyerUIDs(t *testing.T) {
 
 func intPtr(i int) *int {
 	return &i
+}
+
+func TestCleanOpenRTBRequestsPrivacyEIDs(t *testing.T) {
+	policies := []struct {
+		name                                   string
+		gdpr, coppa, lmt, ccpa, enforce, scrub bool
+	}{
+		{name: "permitted"},
+		{name: "gdpr_restricted", gdpr: true, enforce: true, scrub: true},
+		{name: "gdpr_permitted", gdpr: true},
+		{name: "coppa", coppa: true, scrub: true},
+		{name: "lmt_enforced", lmt: true, enforce: true, scrub: true},
+		{name: "lmt_not_enforced", lmt: true},
+		{name: "ccpa_enforced", ccpa: true, enforce: true, scrub: true},
+		{name: "ccpa_not_enforced", ccpa: true},
+	}
+	for _, policy := range policies {
+		for _, input := range []string{"2.5", "2.6"} {
+			for _, output := range []string{"2.5", "2.6"} {
+				t.Run(policy.name+"/input_"+input+"/output_"+output, func(t *testing.T) {
+					req := newBidRequest()
+					eids := []openrtb2.EID{{Source: "identity.example", UIDs: []openrtb2.UID{{ID: "test-id"}}}}
+					req.User.Ext = nil
+					req.User.EIDs = nil
+					if input == "2.5" {
+						ext, err := json.Marshal(map[string]interface{}{"eids": eids})
+						require.NoError(t, err)
+						req.User.Ext = ext
+					} else {
+						req.User.EIDs = eids
+					}
+					req.Regs = &openrtb2.Regs{}
+					cfg := config.Privacy{}
+					account := config.Account{}
+					if policy.coppa {
+						req.Regs.COPPA = 1
+					}
+					if policy.lmt {
+						req.Device.Lmt = ptrutil.ToPtr(int8(1))
+						cfg.LMT.Enforce = policy.enforce
+					}
+					if policy.ccpa {
+						req.Regs.USPrivacy = "1-Y-"
+						cfg.CCPA.Enforce = policy.enforce
+						account.CCPA.Enabled = ptrutil.ToPtr(policy.enforce)
+					}
+					wrapper := &openrtb_ext.RequestWrapper{BidRequest: req}
+					require.NoError(t, openrtb_ext.ConvertUpTo26(wrapper))
+					auction := AuctionRequest{
+						BidRequestWrapper: wrapper, UserSyncs: &emptyUsersync{}, Account: account,
+						TCF2Config: gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+					}
+					if policy.gdpr {
+						auction.GDPRSignal = gdpr.SignalYes
+						auction.GDPREnforced = true
+						req.User.Consent = "COzTVhaOzTVhaGvAAAENAiCIAP_AAH_AAAAAAEEUACCKAAA"
+					}
+					metricsEngine := &metrics.MetricsEngineMock{}
+					metricsEngine.On("RecordAdapterBuyerUIDScrubbed", mock.Anything).Return()
+					splitter := &requestSplitter{
+						bidderToSyncerKey: map[string]string{}, me: metricsEngine, privacyConfig: cfg,
+						gdprPermsBuilder: fakePermissionsBuilder{permissions: &permissionsMock{
+							allowAllBidders: true, passID: !(policy.gdpr && policy.enforce), passGeo: true,
+						}}.Builder,
+						bidderInfo: config.BidderInfos{"appnexus": {OpenRTB: &config.OpenRTBInfo{Version: output}}},
+					}
+					results, _, errs := splitter.cleanOpenRTBRequests(context.Background(), auction, nil, map[string]float64{})
+					require.Empty(t, errs)
+					require.NotEmpty(t, results)
+					for _, result := range results {
+						user := result.BidRequest.User
+						require.NotNil(t, user)
+						var ext struct {
+							EIDs []openrtb2.EID `json:"eids"`
+						}
+						if len(user.Ext) > 0 {
+							require.NoError(t, json.Unmarshal(user.Ext, &ext))
+						}
+						if policy.scrub {
+							assert.Empty(t, user.EIDs)
+							assert.Empty(t, ext.EIDs)
+						} else if output == "2.5" {
+							assert.Empty(t, user.EIDs)
+							assert.Equal(t, eids, ext.EIDs)
+						} else {
+							assert.Equal(t, eids, user.EIDs)
+							assert.Empty(t, ext.EIDs)
+						}
+					}
+				})
+			}
+		}
+	}
 }

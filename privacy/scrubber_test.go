@@ -499,3 +499,48 @@ func TestScrubUserExtIDs(t *testing.T) {
 		assert.Equal(t, test.expected, result, test.description)
 	}
 }
+
+func TestIdentityScrubbersRemoveEIDs(t *testing.T) {
+	scrubbers := map[string]func(*openrtb_ext.RequestWrapper){
+		"gdpr": ScrubGdprID,
+		"general": func(req *openrtb_ext.RequestWrapper) {
+			ScrubDeviceIDsIPsUserDemoExt(req, IPConf{}, "eids", false)
+		},
+	}
+	for name, scrub := range scrubbers {
+		for _, representation := range []string{"2.5", "2.6", "both", "absent", "nil_user"} {
+			t.Run(name+"/"+representation, func(t *testing.T) {
+				user := &openrtb2.User{Ext: json.RawMessage(`{"data":{"preserved":true}}`)}
+				if representation == "2.5" || representation == "both" {
+					user.Ext = json.RawMessage(`{"eids":[{"source":"identity.example","uids":[{"id":"legacy-id"}]}],"data":{"preserved":true}}`)
+				}
+				if representation == "2.6" || representation == "both" {
+					user.EIDs = []openrtb2.EID{{Source: "identity.example", UIDs: []openrtb2.UID{{ID: "native-id"}}}}
+				}
+				if representation == "nil_user" {
+					user = nil
+				}
+				req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{User: user}}
+				scrub(req)
+				assert.NoError(t, req.RebuildRequest())
+				if user == nil {
+					assert.Nil(t, req.User)
+				} else {
+					assert.Empty(t, req.User.EIDs)
+					assert.JSONEq(t, `{"data":{"preserved":true}}`, string(req.User.Ext))
+				}
+			})
+		}
+	}
+}
+
+func TestScrubDeviceIDsIPsUserDemoExtOtherField(t *testing.T) {
+	eids := []openrtb2.EID{{Source: "identity.example", UIDs: []openrtb2.UID{{ID: "native-id"}}}}
+	req := &openrtb_ext.RequestWrapper{BidRequest: &openrtb2.BidRequest{
+		User: &openrtb2.User{EIDs: eids, Ext: json.RawMessage(`{"data":{"remove":true},"other":true}`)},
+	}}
+	ScrubDeviceIDsIPsUserDemoExt(req, IPConf{}, "data", false)
+	assert.NoError(t, req.RebuildRequest())
+	assert.Equal(t, eids, req.User.EIDs)
+	assert.JSONEq(t, `{"other":true}`, string(req.User.Ext))
+}

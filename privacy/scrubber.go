@@ -119,7 +119,13 @@ func ScrubDeviceIDsIPsUserDemoExt(reqWrapper *openrtb_ext.RequestWrapper, ipConf
 	scrubDeviceIDs(reqWrapper)
 	scrubDeviceIP(reqWrapper, ipConf)
 	scrubUserDemographics(reqWrapper)
-	scrubUserExt(reqWrapper, fieldName)
+	// Keep non-EID field scrubbing supported by this exported helper.
+	// EIDs also need to be removed from the native OpenRTB field.
+	if fieldName == "eids" {
+		ScrubEIDs(reqWrapper)
+	} else {
+		scrubUserExt(reqWrapper, fieldName)
+	}
 
 	if scrubFullGeo {
 		scrubGeoFull(reqWrapper)
@@ -138,7 +144,7 @@ func ScrubUserFPD(reqWrapper *openrtb_ext.RequestWrapper) {
 func ScrubGdprID(reqWrapper *openrtb_ext.RequestWrapper) {
 	scrubDeviceIDs(reqWrapper)
 	scrubUserDemographics(reqWrapper)
-	scrubUserExt(reqWrapper, "eids")
+	ScrubEIDs(reqWrapper)
 }
 
 func ScrubGeoAndDeviceIP(reqWrapper *openrtb_ext.RequestWrapper, ipConf IPConf) {
