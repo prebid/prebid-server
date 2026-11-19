@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "app-pub-1"
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "zone1",
+            "queryString": "pub=1#@evil.example.com"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid queryString \"pub=1#@evil.example.com\" for imp test-imp-id: must be a URL query string such as a=1&b=2, without '#', ';' or spaces",
+      "comparison": "literal"
+    }
+  ],
+  "httpCalls": []
+}

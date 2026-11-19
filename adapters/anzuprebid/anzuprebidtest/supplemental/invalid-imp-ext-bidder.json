@@ -1,0 +1,38 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "app-pub-1"
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": 123,
+            "queryString": "pid=0123456789abcdef0123456789abcdef"
+          }
+        }
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext.bidder for imp test-imp-id: .*",
+      "comparison": "regex"
+    }
+  ],
+  "httpCalls": []
+}

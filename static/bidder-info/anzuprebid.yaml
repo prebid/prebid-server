@@ -1,0 +1,23 @@
+# Anzu has two bid endpoints, zone1 and zone2. A publisher's bidder params pick one with "zone" and give
+# its query string in "queryString"; the adapter calls <zone endpoint URL>?<queryString>:
+#   "zone1": the endpoint below, e.g. https://rtb.anzu-rtb.live/?pid=<pid>
+#   "zone2": zone2Endpoint in extra_info, e.g. https://endpoint.anzumarketplace.com/?c=rtb&m=req&key=<key>
+# Both must be https URLs without a query string.
+endpoint: "https://rtb.anzu-rtb.live/"
+extra_info: "{\"zone2Endpoint\":\"https://endpoint.anzumarketplace.com/\"}"
+endpointCompression: gzip
+geoscope:
+  - global
+maintainer:
+  email: "prebid@anzu.io"
+gvlVendorID: 733
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+  multiformat-supported: false
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native

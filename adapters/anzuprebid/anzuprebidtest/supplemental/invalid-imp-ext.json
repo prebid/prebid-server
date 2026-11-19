@@ -1,0 +1,33 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "app-pub-1"
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "not-an-object"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid imp.ext for imp test-imp-id: .*",
+      "comparison": "regex"
+    }
+  ],
+  "httpCalls": []
+}

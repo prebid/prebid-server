@@ -1,0 +1,124 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "app": {
+      "id": "app-1",
+      "bundle": "com.example.game",
+      "publisher": {
+        "id": "app-pub-1"
+      }
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "zone": "zone2",
+            "queryString": "c=rtb&m=req&key=00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://zone2.example.com/?c=rtb&m=req&key=00000000-0000-4000-8000-000000000000",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "test-request-id",
+          "app": {
+            "id": "app-1",
+            "bundle": "com.example.game",
+            "publisher": {
+              "id": "app-pub-1"
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "zone": "zone2",
+                  "queryString": "c=rtb&m=req&key=00000000-0000-4000-8000-000000000000"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "test-imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "seatbid": [
+            {
+              "seat": "anzuprebid",
+              "bid": [
+                {
+                  "id": "1",
+                  "impid": "test-imp-id",
+                  "price": 1.25,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "creative-1",
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "1",
+            "impid": "test-imp-id",
+            "price": 1.25,
+            "adm": "<VAST version=\"4.0\"></VAST>",
+            "crid": "creative-1",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
