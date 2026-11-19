@@ -1,0 +1,3 @@
+endpoint: "https://ppcbuzz-prebid.attekmi.co/pbserver/?seat={{.AccountID}}&token={{.SourceId}}"
+aliasOf: "smarthub"
+gvlVendorID: 1536
