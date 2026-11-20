@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Nexverse Adapter Params",
+  "description": "A schema which validates params accepted by the Nexverse adapter",
+  "type": "object",
+  "properties": {
+    "uid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique User ID assigned by Nexverse for the publisher"
+    },
+    "pubId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher's unique identifier"
+    },
+    "pubEpid": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Publisher's endpoint identifier"
+    },
+    "isDebug": {
+      "type": "boolean",
+      "description": "Enables debug/test mode on the Nexverse endpoint"
+    }
+  },
+  "required": ["uid", "pubId", "pubEpid"]
+}
