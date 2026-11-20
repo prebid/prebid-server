@@ -243,6 +243,43 @@ func TestAMPPageInfo(t *testing.T) {
 	assert.Equal(t, "test.somepage.co.uk", exchange.lastRequest.Site.Domain)
 }
 
+// TestLoadRequestJSONForAmpProcessStoredResponsesError reproduces
+// https://github.com/prebid/prebid-server/issues/4541: loadRequestJSONForAmp checked the
+// wrong (already-nil) `err` variable after calling stored_responses.ProcessStoredResponses,
+// instead of the errs slice ProcessStoredResponses actually returns. That meant a real error
+// from ProcessStoredResponses never caused an early return - execution fell through to the
+// end of the function, where `errs = deps.overrideWithParams(...)` unconditionally overwrote
+// errs, silently discarding the original error entirely.
+func TestLoadRequestJSONForAmpProcessStoredResponsesError(t *testing.T) {
+	// This imp has ext.prebid.storedauctionresponse set without the required "id" field,
+	// which makes stored_responses.ProcessStoredResponses (via extractStoredResponsesIds)
+	// return a non-empty errs slice.
+	const storedRequestID = "1"
+	stored := map[string]json.RawMessage{
+		storedRequestID: json.RawMessage(`{
+			"id": "some-request-id",
+			"imp": [{
+				"id": "imp1",
+				"banner": {"format": [{"w": 300, "h": 250}]},
+				"ext": {"prebid": {"storedauctionresponse": {}}}
+			}]
+		}`),
+	}
+
+	deps := &endpointDeps{
+		storedReqFetcher:  &mockAmpStoredReqFetcher{stored},
+		storedRespFetcher: empty_fetcher.EmptyFetcher{},
+		cfg:               &config.Configuration{StoredRequestsTimeout: 1000},
+	}
+
+	httpRequest := httptest.NewRequest("GET", "/openrtb2/auction/amp?tag_id="+storedRequestID, nil)
+
+	_, _, _, _, errs := deps.loadRequestJSONForAmp(httpRequest, metrics.Labels{})
+
+	require.NotEmpty(t, errs, "the ProcessStoredResponses error must be returned, not silently discarded")
+	assert.Contains(t, errs[0].Error(), "storedauctionresponse")
+}
+
 func TestGDPRConsent(t *testing.T) {
 	consent := "CPdiPIJPdiPIJACABBENAzCv_____3___wAAAQNd_X9cAAAAAAAA"
 	existingConsent := "BONV8oqONXwgmADACHENAO7pqzAAppY"

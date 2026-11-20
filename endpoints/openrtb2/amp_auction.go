@@ -566,8 +566,7 @@ func (deps *endpointDeps) loadRequestJSONForAmp(httpRequest *http.Request, label
 	}
 
 	storedAuctionResponses, storedBidResponses, bidderImpReplaceImp, errs = stored_responses.ProcessStoredResponses(ctx, &openrtb_ext.RequestWrapper{BidRequest: req}, deps.storedRespFetcher)
-	if err != nil {
-		errs = []error{err}
+	if len(errs) > 0 {
 		return
 	}
 
