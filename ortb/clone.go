@@ -109,7 +109,7 @@ func CloneUserAgent(s *openrtb2.UserAgent) *openrtb2.UserAgent {
 		mobileCopy := *s.Mobile
 		c.Mobile = &mobileCopy
 	}
-	s.Ext = slices.Clone(s.Ext)
+	c.Ext = slices.Clone(s.Ext)
 
 	return &c
 }
