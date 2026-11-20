@@ -1,0 +1,113 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123",
+            "floor": 0.5
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123",
+            "floor": 0.5
+          }
+        },
+        "bidfloor": 1.2,
+        "bidfloorcur": "EUR"
+      }
+    ],
+    "site": {
+      "page": "https://publisher.example/article",
+      "domain": "publisher.example",
+      "publisher": {
+        "id": "pbs-account",
+        "name": "Publisher"
+      }
+    },
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD"
+            },
+            {
+              "id": "imp-2",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "bidfloor": 1.2,
+              "bidfloorcur": "EUR"
+            }
+          ],
+          "site": {
+            "page": "https://publisher.example/article",
+            "domain": "publisher.example",
+            "publisher": {
+              "id": "tok123",
+              "name": "Publisher"
+            }
+          },
+          "device": {
+            "ua": "test-ua",
+            "ip": "203.0.113.42"
+          }
+        },
+        "impIDs": [
+          "imp-1",
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

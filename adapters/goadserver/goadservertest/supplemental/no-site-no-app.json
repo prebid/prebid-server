@@ -1,0 +1,34 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "device": {
+      "ua": "test-ua",
+      "ip": "203.0.113.42"
+    }
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "goadserver needs a site or an app object",
+      "comparison": "literal"
+    }
+  ]
+}

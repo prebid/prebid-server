@@ -1,0 +1,135 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "imp": [
+      {
+        "id": "imp-1",
+        "rwdd": 1,
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 1080,
+          "h": 1920,
+          "placement": 5
+        },
+        "ext": {
+          "bidder": {
+            "token": "tok123"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "app-1",
+      "name": "Example Trails",
+      "bundle": "com.example.trails",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.trails",
+      "publisher": {
+        "id": "pbs-account",
+        "name": "Example Apps"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14) Mobile",
+      "ip": "203.0.113.42",
+      "ifa": "6d92078a-8246-4ba4-ae5b-76104861e7dc",
+      "os": "android",
+      "lmt": 0
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://pbs.goadserver.com/openrtb2/auction",
+        "body": {
+          "id": "req-1",
+          "imp": [
+            {
+              "id": "imp-1",
+              "rwdd": 1,
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 1080,
+                "h": 1920,
+                "placement": 5
+              }
+            }
+          ],
+          "app": {
+            "id": "app-1",
+            "name": "Example Trails",
+            "bundle": "com.example.trails",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.trails",
+            "publisher": {
+              "id": "tok123",
+              "name": "Example Apps"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14) Mobile",
+            "ip": "203.0.113.42",
+            "ifa": "6d92078a-8246-4ba4-ae5b-76104861e7dc",
+            "os": "android",
+            "lmt": 0
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "goadserver",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-1",
+                  "price": 2.1,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "crid": "cr-v1",
+                  "adomain": [
+                    "advertiser.example"
+                  ],
+                  "mtype": 2,
+                  "w": 1080,
+                  "h": 1920
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "imp-1",
+            "price": 2.1,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "crid": "cr-v1",
+            "adomain": [
+              "advertiser.example"
+            ],
+            "mtype": 2,
+            "w": 1080,
+            "h": 1920
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
