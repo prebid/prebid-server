@@ -152,7 +152,15 @@ func unwrapNativeAdm(adm string) string {
 
 // getMediaTypeForBid uses bid.mtype, which the exchange sets on every bid. Inferring the type from the
 // impression is only a safety net for a bid without it, and only works for single-format impressions.
+// A bid for an impression the request does not have is refused, with or without mtype.
 func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.BidType, error) {
+	imp := findImp(bid.ImpID, imps)
+	if imp == nil {
+		return "", &errortypes.BadServerResponse{
+			Message: fmt.Sprintf("bid references unknown imp %s", bid.ImpID),
+		}
+	}
+
 	switch bid.MType {
 	case openrtb2.MarkupBanner:
 		return openrtb_ext.BidTypeBanner, nil
@@ -168,27 +176,27 @@ func getMediaTypeForBid(bid *openrtb2.Bid, imps []openrtb2.Imp) (openrtb_ext.Bid
 		}
 	}
 
-	for _, imp := range imps {
-		if imp.ID != bid.ImpID {
-			continue
-		}
-		if imp.Banner != nil && imp.Video == nil && imp.Native == nil {
-			return openrtb_ext.BidTypeBanner, nil
-		}
-		if imp.Video != nil && imp.Banner == nil && imp.Native == nil {
-			return openrtb_ext.BidTypeVideo, nil
-		}
-		if imp.Native != nil && imp.Banner == nil && imp.Video == nil {
-			return openrtb_ext.BidTypeNative, nil
-		}
-		return "", &errortypes.BadServerResponse{
-			Message: fmt.Sprintf("bid.mtype is required to resolve the media type of imp %s", bid.ImpID),
-		}
+	if imp.Banner != nil && imp.Video == nil && imp.Native == nil {
+		return openrtb_ext.BidTypeBanner, nil
 	}
-
+	if imp.Video != nil && imp.Banner == nil && imp.Native == nil {
+		return openrtb_ext.BidTypeVideo, nil
+	}
+	if imp.Native != nil && imp.Banner == nil && imp.Video == nil {
+		return openrtb_ext.BidTypeNative, nil
+	}
 	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("bid references unknown imp %s", bid.ImpID),
+		Message: fmt.Sprintf("bid.mtype is required to resolve the media type of imp %s", bid.ImpID),
 	}
+}
+
+func findImp(impID string, imps []openrtb2.Imp) *openrtb2.Imp {
+	for i := range imps {
+		if imps[i].ID == impID {
+			return &imps[i]
+		}
+	}
+	return nil
 }
 
 // setBannerSize fills banner.w and banner.h from the first format when they are missing,
