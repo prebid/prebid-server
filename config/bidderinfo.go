@@ -97,12 +97,20 @@ type AdapterXAPI struct {
 }
 
 // OpenRTBInfo specifies the versions/aspects of openRTB that a bidder supports
-// Version is not yet actively supported
-// GPPSupported is not yet actively supported
 type OpenRTBInfo struct {
-	Version              string `yaml:"version" mapstructure:"version"`
-	GPPSupported         bool   `yaml:"gpp-supported" mapstructure:"gpp-supported"`
-	MultiformatSupported *bool  `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
+	// Version is the highest OpenRTB version the bidder supports. Requests to bidders which
+	// do not declare "2.6" are down converted to OpenRTB 2.5 before being sent.
+	Version string `yaml:"version" mapstructure:"version"`
+
+	// GPPSupported indicates the bidder can read the GPP privacy signals directly. Requests to
+	// bidders which do not support GPP have the legacy regs.gdpr, user.consent and regs.us_privacy
+	// fields populated from the GPP string.
+	GPPSupported bool `yaml:"gpp-supported" mapstructure:"gpp-supported"`
+
+	// MultiformatSupported indicates the bidder can handle an imp offering multiple media types.
+	// When false, each imp is reduced to the preferred media type before being sent. Unset is
+	// treated as supported.
+	MultiformatSupported *bool `yaml:"multiformat-supported" mapstructure:"multiformat-supported"`
 }
 
 // Syncer specifies the user sync settings for a bidder. This struct is shared by the account config,
