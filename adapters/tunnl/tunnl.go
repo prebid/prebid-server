@@ -177,7 +177,7 @@ func makeHeaders(request *openrtb2.BidRequest) http.Header {
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
 	headers.Add("Accept", "application/json")
-	headers.Add("X-Openrtb-Version", "2.6")
+	headers.Add("X-Openrtb-Version", "2.5")
 
 	if request.Device != nil {
 		if request.Device.UA != "" {
