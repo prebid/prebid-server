@@ -852,6 +852,63 @@ func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
 	}
 }
 
+// TestCleanOpenRTBRequestsRequestAliasOpenRTBVersion is a regression test for a bug where a
+// request-level alias (declared in req.ext.prebid.aliases, as opposed to a YAML-declared
+// static alias) always had its OpenRTB version looked up under its own alias name in
+// rs.bidderInfo. Since rs.bidderInfo is only ever populated with real bidder names (and
+// YAML-declared aliases) at startup, that lookup always missed for a request alias, so its
+// outgoing request was unconditionally downgraded to OpenRTB 2.5 even when the alias pointed
+// at a core bidder explicitly configured for OpenRTB 2.6. The lookup must use the resolved
+// core bidder name instead.
+func TestCleanOpenRTBRequestsRequestAliasOpenRTBVersion(t *testing.T) {
+	buildRequest := func() *openrtb2.BidRequest {
+		return &openrtb2.BidRequest{
+			Site: &openrtb2.Site{Page: "www.some.domain.com"},
+			User: &openrtb2.User{
+				EIDs: []openrtb2.EID{{Source: "eids-source", UIDs: []openrtb2.UID{{ID: "id"}}}},
+			},
+			Imp: []openrtb2.Imp{{
+				ID:     "some-imp-id",
+				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+				Ext:    json.RawMessage(`{"prebid":{"bidder":{"somealias": {"placementId": 1}}}}`),
+			}},
+			Ext: json.RawMessage(`{"prebid":{"aliases":{"somealias":"appnexus"}}}`),
+		}
+	}
+
+	emptyTCF2Config := gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{})
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{allowAllBidders: true},
+	}.Builder
+
+	reqSplitter := &requestSplitter{
+		bidderToSyncerKey: map[string]string{},
+		me:                &metrics.MetricsEngineMock{},
+		gdprPermsBuilder:  gdprPermsBuilder,
+		hostSChainNode:    nil,
+		// Only the core bidder "appnexus" is known to bidderInfo, exactly as it would be
+		// in production -- request aliases never get their own bidderInfo entry.
+		bidderInfo: config.BidderInfos{"appnexus": config.BidderInfo{OpenRTB: &config.OpenRTBInfo{Version: "2.6"}}},
+	}
+
+	auctionReq := AuctionRequest{
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: buildRequest()},
+		UserSyncs:         &emptyUsersync{},
+		TCF2Config:        emptyTCF2Config,
+	}
+
+	bidderRequests, _, errs := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, map[string]float64{})
+	assert.Empty(t, errs)
+	require.Len(t, bidderRequests, 1)
+
+	aliasRequest := bidderRequests[0]
+	assert.Equal(t, openrtb_ext.BidderName("somealias"), aliasRequest.BidderName)
+	assert.True(t, aliasRequest.IsRequestAlias)
+	// If the request were incorrectly downgraded to OpenRTB 2.5, ConvertDownTo25 would move
+	// user.eids into user.ext.eids and clear the top-level EIDs slice.
+	assert.NotNil(t, aliasRequest.BidRequest.User.EIDs, "request alias should inherit the core bidder's OpenRTB 2.6 version and not be downgraded")
+}
+
 func TestExtractAdapterReqBidderParamsMap(t *testing.T) {
 	tests := []struct {
 		name            string
