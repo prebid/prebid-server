@@ -27,3 +27,7 @@ capabilities:
 openrtb:
   version: 2.6
   multiformat-supported: true
+userSync:
+  iframe:
+    url: "https://us1rtb-user-sync.rapidtag.net/api/v1/sync/start?sid=prebid&gdpr={{.GDPR}}&consent={{.GDPRConsent}}&redirect={{.RedirectURL}}"
+    userMacro: "$USER_ID"
