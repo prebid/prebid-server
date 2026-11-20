@@ -150,6 +150,26 @@ func TestMakeBidsRejectsBidForOtherOutboundRequest(t *testing.T) {
 	}
 }
 
+func TestMakeBidsSetsAdvertiserDomains(t *testing.T) {
+	request := &openrtb2.BidRequest{ID: "req-1", Imp: []openrtb2.Imp{bannerImp(`{"bidder":{"seat":"abc"}}`)}}
+	adapter := newAdapter()
+	requests, errs := adapter.MakeRequests(request, &adapters.ExtraRequestInfo{})
+	assert.Empty(t, errs)
+	if !assert.Len(t, requests, 1) {
+		return
+	}
+	response := &adapters.ResponseData{
+		StatusCode: 200,
+		Body:       []byte(`{"seatbid":[{"bid":[{"id":"with","impid":"imp-1","price":1,"mtype":1,"adomain":["advertiser.com"]},{"id":"without","impid":"imp-1","price":1,"mtype":1}]}]}`),
+	}
+	bids, errs := adapter.MakeBids(request, requests[0], response)
+	assert.Empty(t, errs)
+	if assert.NotNil(t, bids) && assert.Len(t, bids.Bids, 2) {
+		assert.Equal(t, &openrtb_ext.ExtBidPrebidMeta{AdvertiserDomains: []string{"advertiser.com"}}, bids.Bids[0].BidMeta)
+		assert.Nil(t, bids.Bids[1].BidMeta)
+	}
+}
+
 func TestGetMediaTypeForBidSingleFormatFallback(t *testing.T) {
 	imps := []openrtb2.Imp{
 		{ID: "b", Banner: &openrtb2.Banner{}},
