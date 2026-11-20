@@ -1,0 +1,89 @@
+{
+  "mockBidRequest": {
+    "id": "fixture-request",
+    "imp": [
+      {
+        "id": "fixture-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "sourceId": "review-source"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.appnerve.net/openrtb2/auction?ssp_id=review-source",
+        "impIDs": [
+          "fixture-imp"
+        ],
+        "body": {
+          "id": "fixture-request",
+          "imp": [
+            {
+              "id": "fixture-imp",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {},
+              "tagid": "review-source"
+            }
+          ],
+          "site": {
+            "domain": "publisher.example"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "wrong-imp",
+                  "impid": "other",
+                  "price": 1,
+                  "adm": "<div></div>"
+                },
+                {
+                  "id": "zero-price",
+                  "impid": "fixture-imp",
+                  "price": 0,
+                  "adm": "<div></div>"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "invalid bid identity, creative or price",
+      "comparison": "literal"
+    },
+    {
+      "value": "invalid bid identity, creative or price",
+      "comparison": "literal"
+    }
+  ]
+}

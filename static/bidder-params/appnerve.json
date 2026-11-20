@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Appnerve Parameters",
+  "type": "object",
+  "properties": {
+    "sourceId": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "placementId": {"type": "string", "minLength": 1, "pattern": "\\S"}
+  },
+  "anyOf": [{"required": ["sourceId"]}, {"required": ["placementId"]}]
+}

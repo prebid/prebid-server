@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "fixture-request",
+    "tmax": 1200,
+    "imp": [
+      {
+        "id": "fixture-imp",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "sourceId": "review-source"
+          },
+          "tid": "publisher-tid"
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.appnerve.net/openrtb2/auction?ssp_id=review-source",
+        "impIDs": [
+          "fixture-imp"
+        ],
+        "body": {
+          "id": "fixture-request",
+          "tmax": 1200,
+          "imp": [
+            {
+              "id": "fixture-imp",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ]
+              },
+              "ext": {
+                "tid": "publisher-tid"
+              },
+              "tagid": "review-source"
+            }
+          ],
+          "site": {
+            "domain": "publisher.example"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "fixture-bid",
+                  "impid": "fixture-imp",
+                  "price": 1,
+                  "adm": "<VAST version=\"3.0\"></VAST>",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "fixture-bid",
+            "impid": "fixture-imp",
+            "price": 1,
+            "adm": "<VAST version=\"3.0\"></VAST>",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
