@@ -1,0 +1,45 @@
+{
+  "mockBidRequest": {
+    "id": "bidwave-currency-conversion-failure-request",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "bidfloor": 1.5,
+        "bidfloorcur": "EUR",
+        "ext": {
+          "bidder": {
+            "publisherId": "11111111-1111-4111-8111-111111111111"
+          }
+        }
+      }
+    ],
+    "ext": {
+      "prebid": {
+        "currency": {
+          "rates": {
+            "GBP": {
+              "USD": 2
+            }
+          },
+          "usepbsrates": false
+        }
+      }
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "expected currency USD for bid floor; unable to convert from EUR for impression imp-1: Currency conversion rate not found: 'EUR' => 'USD'",
+      "comparison": "literal"
+    }
+  ]
+}
