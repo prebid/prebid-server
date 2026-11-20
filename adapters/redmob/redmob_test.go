@@ -15,7 +15,7 @@ import (
 
 func TestJsonSamples(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRedmob, config.Adapter{
-		Endpoint: "https://test.redmob.example/prebid"},
+		Endpoint: "https://test.redmob.example/"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 
 	if buildErr != nil {
@@ -27,7 +27,7 @@ func TestJsonSamples(t *testing.T) {
 
 func TestMakeBidsSetsAdvertiserDomains(t *testing.T) {
 	bidder, buildErr := Builder(openrtb_ext.BidderRedmob, config.Adapter{
-		Endpoint: "https://test.redmob.example/prebid"},
+		Endpoint: "https://test.redmob.example/"},
 		config.Server{ExternalUrl: "http://hosturl.com", GvlID: 1, DataCenter: "2"})
 	require.NoError(t, buildErr)
 

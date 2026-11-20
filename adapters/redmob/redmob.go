@@ -34,11 +34,6 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 	var requests []*adapters.RequestData
 	var errs []error
 	for _, imp := range request.Imp {
-		// supplyPartnerId stays in imp.ext.bidder, where the exchange reads it to attribute the traffic.
-		if err := validateImpExt(imp); err != nil {
-			errs = append(errs, err)
-			continue
-		}
 		if imp.BidFloor > 0 && imp.BidFloorCur != "" && strings.ToUpper(imp.BidFloorCur) != "USD" {
 
 			convertedBidFloor, err := requestInfo.ConvertCurrency(imp.BidFloor, imp.BidFloorCur, "USD")
@@ -63,6 +58,16 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 		headers := http.Header{}
 		headers.Add("Content-Type", "application/json;charset=utf-8")
 		headers.Add("Accept", "application/json")
+		if request.Device != nil {
+			if request.Device.UA != "" {
+				headers.Add("User-Agent", request.Device.UA)
+			}
+			if request.Device.IP != "" {
+				headers.Add("X-Forwarded-For", request.Device.IP)
+			} else if request.Device.IPv6 != "" {
+				headers.Add("X-Forwarded-For", request.Device.IPv6)
+			}
+		}
 
 		requestData := &adapters.RequestData{
 			Method:  "POST",
@@ -77,18 +82,11 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, requestInfo *adapte
 }
 
 func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
-	if responseData.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(responseData) {
 		return nil, nil
 	}
-	if responseData.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{
-			Message: "Unexpected status code: 400. Bad request from publisher. Run with request.debug = 1 for more info.",
-		}}
-	}
-	if responseData.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{
-			Message: fmt.Sprintf("Unexpected status code: %d. Run with request.debug = 1 for more info.", responseData.StatusCode),
-		}}
+	if err := adapters.CheckResponseStatusCodeForErrors(responseData); err != nil {
+		return nil, []error{err}
 	}
 
 	var response openrtb2.BidResponse
@@ -150,19 +148,6 @@ func unwrapNativeAdm(adm string) string {
 		return adm
 	}
 	return string(wrapper.Native)
-}
-
-// validateImpExt checks that the impression carries a readable Redmob bidder extension.
-func validateImpExt(imp openrtb2.Imp) error {
-	var bidderExt adapters.ExtImpBidder
-	if err := jsonutil.Unmarshal(imp.Ext, &bidderExt); err != nil {
-		return &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext for imp %s: %s", imp.ID, err)}
-	}
-	var redmobExt openrtb_ext.ImpExtRedmob
-	if err := jsonutil.Unmarshal(bidderExt.Bidder, &redmobExt); err != nil {
-		return &errortypes.BadInput{Message: fmt.Sprintf("invalid imp.ext.bidder for imp %s: %s", imp.ID, err)}
-	}
-	return nil
 }
 
 // getMediaTypeForBid uses bid.mtype, which the exchange sets on every bid. Inferring the type from the

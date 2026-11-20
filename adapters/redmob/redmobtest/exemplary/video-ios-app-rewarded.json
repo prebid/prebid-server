@@ -75,13 +75,19 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://test.redmob.example/prebid",
+        "uri": "https://test.redmob.example/",
         "headers": {
           "Content-Type": [
             "application/json;charset=utf-8"
           ],
           "Accept": [
             "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+          ],
+          "X-Forwarded-For": [
+            "203.0.113.24"
           ]
         },
         "body": {
@@ -189,7 +195,8 @@
                   ],
                   "w": 360,
                   "h": 640,
-                  "exp": 3600
+                  "exp": 3600,
+                  "mtype": 2
                 }
               ]
             }
@@ -221,7 +228,8 @@
             ],
             "w": 360,
             "h": 640,
-            "exp": 3600
+            "exp": 3600,
+            "mtype": 2
           },
           "type": "video"
         }

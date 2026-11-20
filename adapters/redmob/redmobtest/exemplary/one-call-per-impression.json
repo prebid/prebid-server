@@ -94,13 +94,19 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://test.redmob.example/prebid",
+        "uri": "https://test.redmob.example/",
         "headers": {
           "Content-Type": [
             "application/json;charset=utf-8"
           ],
           "Accept": [
             "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "198.51.100.77"
           ]
         },
         "body": {
@@ -197,7 +203,8 @@
                   ],
                   "w": 320,
                   "h": 50,
-                  "exp": 3600
+                  "exp": 3600,
+                  "mtype": 1
                 }
               ]
             }
@@ -208,13 +215,19 @@
     },
     {
       "expectedRequest": {
-        "uri": "https://test.redmob.example/prebid",
+        "uri": "https://test.redmob.example/",
         "headers": {
           "Content-Type": [
             "application/json;charset=utf-8"
           ],
           "Accept": [
             "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "198.51.100.77"
           ]
         },
         "body": {
@@ -318,7 +331,8 @@
                   ],
                   "w": 360,
                   "h": 640,
-                  "exp": 3600
+                  "exp": 3600,
+                  "mtype": 2
                 }
               ]
             }
@@ -350,7 +364,8 @@
             ],
             "w": 320,
             "h": 50,
-            "exp": 3600
+            "exp": 3600,
+            "mtype": 1
           },
           "type": "banner"
         }
@@ -377,7 +392,8 @@
             ],
             "w": 360,
             "h": 640,
-            "exp": 3600
+            "exp": 3600,
+            "mtype": 2
           },
           "type": "video"
         }
