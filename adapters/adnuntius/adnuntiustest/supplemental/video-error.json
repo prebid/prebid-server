@@ -1,25 +1,54 @@
 {
-	"mockBidRequest": {
-		"id": "unsupported-video-request",
-		"imp": [
-			{
-				"id": "unsupported-video-imp",
-				"video": {
-					"w": 728,
-					"h": 90
-				},
-				"ext": {
-					"bidder": {
-						"auId": "1"
-					}
-				}
-			}
-		]
-	},
-	"expectedMakeRequestsErrors": [
-		{
-			"value": "ignoring imp id=unsupported-video-imp, Adnuntius supports only native and banner",
-			"comparison": "literal"
-		}
-	]
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "site": {
+            "page": "prebid.org"
+        },
+        "imp": [
+            {
+                "id": "test-imp-id",
+                "video": {
+                    "w": 640,
+                    "h": 480,
+                    "mimes": ["video/mp4"]
+                },
+                "ext": {
+                    "bidder": {
+                        "auId": "123"
+                    }
+                }
+            }
+        ]
+    },
+
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://whatever.url?format=prebidServer&tzo=0",
+                "body": {
+                    "adUnits": [
+                        {
+                            "auId": "123",
+                            "targetId": "123-test-imp-id:video",
+                            "adType": "VAST",
+                            "nativeRequest": {}
+                        }
+                    ],
+                    "context": "prebid.org",
+                    "metaData": {}
+                },
+                "impIDs": ["test-imp-id"]
+            },
+            "mockResponse": {
+                "status": 400,
+                "body": {}
+            }
+        }
+    ],
+    "expectedMakeBidsErrors": [
+        {
+            "value": "Status code: 400, Request malformed",
+            "comparison": "literal"
+        }
+    ]
 }
