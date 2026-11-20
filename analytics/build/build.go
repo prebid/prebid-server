@@ -64,32 +64,23 @@ type enabledAnalytics map[string]analytics.Module
 
 func (ea enabledAnalytics) LogAuctionObject(ao *analytics.AuctionObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAuctionObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		request, allowed := requestForAnalytics(ao.RequestWrapper, ac, name)
+		if allowed {
+			event := *ao
+			event.RequestWrapper = request
+			module.LogAuctionObject(&event)
 		}
 	}
 }
 
 func (ea enabledAnalytics) LogVideoObject(vo *analytics.VideoObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(vo.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				vo.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(vo.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogVideoObject(vo)
-			if cloneReq != nil {
-				vo.RequestWrapper = cloneReq
-			}
+		request, allowed := requestForAnalytics(vo.RequestWrapper, ac, name)
+		if allowed {
+			event := *vo
+			event.RequestWrapper = request
+			module.LogVideoObject(&event)
 		}
-
 	}
 }
 
@@ -107,15 +98,11 @@ func (ea enabledAnalytics) LogSetUIDObject(so *analytics.SetUIDObject) {
 
 func (ea enabledAnalytics) LogAmpObject(ao *analytics.AmpObject, ac privacy.ActivityControl) {
 	for name, module := range ea {
-		if isAllowed, cloneBidderReq := evaluateActivities(ao.RequestWrapper, ac, name); isAllowed {
-			if cloneBidderReq != nil {
-				ao.RequestWrapper = cloneBidderReq
-			}
-			cloneReq := updateReqWrapperForAnalytics(ao.RequestWrapper, name, cloneBidderReq != nil)
-			module.LogAmpObject(ao)
-			if cloneReq != nil {
-				ao.RequestWrapper = cloneReq
-			}
+		request, allowed := requestForAnalytics(ao.RequestWrapper, ac, name)
+		if allowed {
+			event := *ao
+			event.RequestWrapper = request
+			module.LogAmpObject(&event)
 		}
 	}
 }
@@ -136,77 +123,42 @@ func (ea enabledAnalytics) Shutdown() {
 	}
 }
 
-func evaluateActivities(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, componentName string) (bool, *openrtb_ext.RequestWrapper) {
-	// returned nil request wrapper means that request wrapper was not modified by activities and doesn't have to be changed in analytics object
-	// it is needed in order to use one function for all analytics objects with RequestWrapper
-	component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: componentName}
+// requestForAnalytics derives one module's view from the incoming request. Clone only
+// when activity controls or adapter-specific configuration require a different view.
+func requestForAnalytics(rw *openrtb_ext.RequestWrapper, ac privacy.ActivityControl, name string) (*openrtb_ext.RequestWrapper, bool) {
+	component := privacy.Component{Type: privacy.ComponentTypeAnalytics, Name: name}
 	if !ac.Allow(privacy.ActivityReportAnalytics, component, privacy.ActivityRequest{}) {
-		return false, nil
+		return nil, false
 	}
+	if rw == nil || rw.BidRequest == nil {
+		return rw, true
+	}
+
 	blockUserFPD := !ac.Allow(privacy.ActivityTransmitUserFPD, component, privacy.ActivityRequest{})
 	blockPreciseGeo := !ac.Allow(privacy.ActivityTransmitPreciseGeo, component, privacy.ActivityRequest{})
-
-	if !blockUserFPD && !blockPreciseGeo {
-		return true, nil
+	ext, _ := rw.GetRequestExt()
+	prebid := ext.GetPrebid()
+	filterAnalytics := prebid != nil && len(prebid.Analytics) > 0
+	if !blockUserFPD && !blockPreciseGeo && !filterAnalytics {
+		return rw, true
 	}
 
-	cloneReq := &openrtb_ext.RequestWrapper{
-		BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest),
-	}
-
+	request := &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
 	if blockUserFPD {
-		privacy.ScrubUserFPD(cloneReq)
+		privacy.ScrubUserFPD(request)
 	}
 	if blockPreciseGeo {
-		ipConf := privacy.IPConf{IPV6: ac.IPv6Config, IPV4: ac.IPv4Config}
-		privacy.ScrubGeoAndDeviceIP(cloneReq, ipConf)
+		privacy.ScrubGeoAndDeviceIP(request, privacy.IPConf{IPV6: ac.IPv6Config, IPV4: ac.IPv4Config})
 	}
-
-	cloneReq.RebuildRequest()
-	return true, cloneReq
-}
-
-func updateReqWrapperForAnalytics(rw *openrtb_ext.RequestWrapper, adapterName string, isCloned bool) *openrtb_ext.RequestWrapper {
-	if rw == nil {
-		return nil
+	if filterAnalytics {
+		if config, ok := prebid.Analytics[name]; ok {
+			prebid.Analytics = map[string]json.RawMessage{name: config}
+		} else {
+			prebid.Analytics = nil
+		}
+		requestExt, _ := request.GetRequestExt()
+		requestExt.SetPrebid(prebid)
 	}
-	reqExt, _ := rw.GetRequestExt()
-	reqExtPrebid := reqExt.GetPrebid()
-	if reqExtPrebid == nil {
-		return nil
-	}
-
-	var cloneReq *openrtb_ext.RequestWrapper
-	if !isCloned {
-		cloneReq = &openrtb_ext.RequestWrapper{BidRequest: ortb.CloneBidRequestPartial(rw.BidRequest)}
-	} else {
-		cloneReq = nil
-	}
-
-	if len(reqExtPrebid.Analytics) == 0 {
-		return cloneReq
-	}
-
-	// Remove the entire analytics object if the adapter module is not present
-	if _, ok := reqExtPrebid.Analytics[adapterName]; !ok {
-		reqExtPrebid.Analytics = nil
-	} else {
-		reqExtPrebid.Analytics = updatePrebidAnalyticsMap(reqExtPrebid.Analytics, adapterName)
-	}
-	reqExt.SetPrebid(reqExtPrebid)
-	rw.RebuildRequest()
-
-	if cloneReq != nil {
-		cloneReq.RebuildRequest()
-	}
-
-	return cloneReq
-}
-
-func updatePrebidAnalyticsMap(extPrebidAnalytics map[string]json.RawMessage, adapterName string) map[string]json.RawMessage {
-	newMap := make(map[string]json.RawMessage)
-	if val, ok := extPrebidAnalytics[adapterName]; ok {
-		newMap[adapterName] = val
-	}
-	return newMap
+	request.RebuildRequest()
+	return request, true
 }

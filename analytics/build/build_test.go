@@ -14,6 +14,7 @@ import (
 	"github.com/prebid/prebid-server/v4/privacy"
 	"github.com/prebid/prebid-server/v4/util/ptrutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const TEST_DIR string = "testFiles"
@@ -293,7 +294,7 @@ func TestSampleModuleActivitiesDenied(t *testing.T) {
 	}
 }
 
-func TestEvaluateActivities(t *testing.T) {
+func TestRequestForAnalyticsActivities(t *testing.T) {
 	testCases := []struct {
 		description             string
 		givenActivityControl    privacy.ActivityControl
@@ -334,12 +335,14 @@ func TestEvaluateActivities(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.description, func(t *testing.T) {
 			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
-			resActivityAllowed, resRequest := evaluateActivities(rw, test.givenActivityControl, "sampleModule")
+			resRequest, resActivityAllowed := requestForAnalytics(rw, test.givenActivityControl, "sampleModule")
 			assert.Equal(t, test.expectedAllowActivities, resActivityAllowed)
 			if test.expectedRequest != nil {
 				assert.Equal(t, test.expectedRequest.User.ID, resRequest.User.ID)
 				assert.Equal(t, test.expectedRequest.Device.IFA, resRequest.Device.IFA)
 				assert.Equal(t, test.expectedRequest.Device.IP, resRequest.Device.IP)
+			} else if resActivityAllowed {
+				assert.Same(t, rw, resRequest)
 			} else {
 				assert.Nil(t, resRequest)
 			}
@@ -556,75 +559,58 @@ func TestLogObject(t *testing.T) {
 	}
 }
 
-func TestUpdateReqWrapperForAnalytics(t *testing.T) {
-	tests := []struct {
-		description               string
-		givenReqWrapper           *openrtb_ext.RequestWrapper
-		givenAdapterName          string
-		givenIsCloned             bool
-		expectedUpdatedBidRequest *openrtb2.BidRequest
-		expectedCloneRequest      *openrtb_ext.RequestWrapper
-	}{
-		{
-			description: "Adapter1 so Adapter2 info should be removed from ext.prebid.analytics",
-			givenReqWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapter1",
-			givenIsCloned:    false,
-			expectedUpdatedBidRequest: &openrtb2.BidRequest{
-				Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true}}}}`),
-			},
-			expectedCloneRequest: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-		},
-		{
-			description: "Adapter2 so Adapter1 info should be removed from ext.prebid.analytics",
-			givenReqWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName: "adapter2",
-			givenIsCloned:    true,
-			expectedUpdatedBidRequest: &openrtb2.BidRequest{
-				Ext: []byte(`{"prebid":{"analytics":{"adapter2":{"client-analytics":false}}}}`),
-			},
-			expectedCloneRequest: nil,
-		},
-		{
-			description: "Given adapter not found in ext.prebid.analytics so remove entire object",
-			givenReqWrapper: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-			givenAdapterName:          "adapterNotFound",
-			givenIsCloned:             false,
-			expectedUpdatedBidRequest: &openrtb2.BidRequest{},
-			expectedCloneRequest: &openrtb_ext.RequestWrapper{
-				BidRequest: &openrtb2.BidRequest{
-					Ext: []byte(`{"prebid":{"analytics":{"adapter1":{"client-analytics":true},"adapter2":{"client-analytics":false}}}}`)},
-			},
-		},
-		{
-			description:               "Given request is nil, check there are no exceptions",
-			givenReqWrapper:           nil,
-			givenAdapterName:          "adapter1",
-			givenIsCloned:             false,
-			expectedUpdatedBidRequest: nil,
-			expectedCloneRequest:      nil,
-		},
+func TestRequestForAnalyticsWithoutBidRequest(t *testing.T) {
+	ac := privacy.NewActivityControl(getActivityConfig("restricted", true, false, false))
+	for _, rw := range []*openrtb_ext.RequestWrapper{nil, {}} {
+		request, allowed := requestForAnalytics(rw, ac, "restricted")
+		assert.True(t, allowed)
+		assert.Same(t, rw, request)
 	}
+}
 
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			cloneReq := updateReqWrapperForAnalytics(test.givenReqWrapper, test.givenAdapterName, test.givenIsCloned)
-			if test.givenReqWrapper != nil {
-				assert.Equal(t, test.expectedUpdatedBidRequest, test.givenReqWrapper.BidRequest)
+func TestAnalyticsModuleRequestIsolation(t *testing.T) {
+	const originalExt = `{"prebid":{"analytics":{"restricted":{"a":1},"permitted":{"b":2}}}}`
+	ac := privacy.NewActivityControl(getActivityConfig("restricted", true, false, false))
+
+	for _, endpoint := range []string{"auction", "amp", "video"} {
+		t.Run(endpoint, func(t *testing.T) {
+			rw := &openrtb_ext.RequestWrapper{BidRequest: getDefaultBidRequest()}
+			rw.Ext = []byte(originalExt)
+			restricted, permitted := &mockAnalytics{}, &mockAnalytics{}
+			modules := enabledAnalytics{"restricted": restricted, "permitted": permitted}
+			var scrubbed, full *openrtb2.BidRequest
+
+			switch endpoint {
+			case "auction":
+				event := &analytics.AuctionObject{RequestWrapper: rw}
+				modules.LogAuctionObject(event, ac)
+				assert.Same(t, rw, event.RequestWrapper)
+				scrubbed, full = restricted.lastLoggedAuctionBidRequest, permitted.lastLoggedAuctionBidRequest
+			case "amp":
+				event := &analytics.AmpObject{RequestWrapper: rw}
+				modules.LogAmpObject(event, ac)
+				assert.Same(t, rw, event.RequestWrapper)
+				scrubbed, full = restricted.lastLoggedAmpBidRequest, permitted.lastLoggedAmpBidRequest
+			case "video":
+				event := &analytics.VideoObject{RequestWrapper: rw}
+				modules.LogVideoObject(event, ac)
+				assert.Same(t, rw, event.RequestWrapper)
+				scrubbed, full = restricted.lastLoggedVideoBidRequest, permitted.lastLoggedVideoBidRequest
 			}
-			assert.Equal(t, test.expectedCloneRequest, cloneReq)
+
+			require.NotNil(t, scrubbed)
+			require.NotNil(t, full)
+			assert.Empty(t, scrubbed.User.ID)
+			assert.Equal(t, "127.0.0.0", scrubbed.Device.IP)
+			assert.JSONEq(t, `{"prebid":{"analytics":{"restricted":{"a":1}}}}`, string(scrubbed.Ext))
+			assert.Equal(t, "user-id", full.User.ID)
+			assert.Equal(t, "127.0.0.1", full.Device.IP)
+			assert.JSONEq(t, `{"prebid":{"analytics":{"permitted":{"b":2}}}}`, string(full.Ext))
+
+			// Check the caller's data too, so either map iteration order detects a mutation.
+			assert.Equal(t, "user-id", rw.User.ID)
+			assert.Equal(t, "127.0.0.1", rw.Device.IP)
+			assert.JSONEq(t, originalExt, string(rw.Ext))
 		})
 	}
 }
