@@ -3,6 +3,7 @@ maintainer:
   email: "connect@screencore.io"
 gvlVendorID: 1473
 endpointCompression: gzip
+openrtb: version: "2.6"
 capabilities:
   app:
     mediaTypes:
