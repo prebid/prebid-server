@@ -1,0 +1,9 @@
+endpoint: "https://exchange.appnerve.net/openrtb2/auction"
+maintainer:
+  email: prebid@appnerve.com
+modifyingVastXmlAllowed: false
+capabilities:
+  app:
+    mediaTypes: [banner, video, native, audio]
+  site:
+    mediaTypes: [banner, video, native, audio]

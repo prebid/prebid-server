@@ -1,0 +1,28 @@
+{
+  "mockBidRequest": {
+    "id": "fixture-request",
+    "imp": [
+      {
+        "id": "fixture-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": "oops"
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example"
+    }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "invalid Appnerve parameters",
+      "comparison": "literal"
+    }
+  ]
+}

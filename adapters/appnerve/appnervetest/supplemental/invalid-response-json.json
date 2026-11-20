@@ -1,0 +1,60 @@
+{
+  "mockBidRequest": {
+    "id": "fixture-request",
+    "imp": [
+      {
+        "id": "fixture-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "sourceId": "review-source"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.appnerve.net/openrtb2/auction?ssp_id=review-source",
+        "impIDs": [
+          "fixture-imp"
+        ],
+        "body": {
+          "id": "fixture-request",
+          "imp": [
+            {
+              "id": "fixture-imp",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {},
+              "tagid": "review-source"
+            }
+          ],
+          "site": {
+            "domain": "publisher.example"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "not json"
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "invalid auction response JSON",
+      "comparison": "literal"
+    }
+  ]
+}

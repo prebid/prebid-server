@@ -1,0 +1,121 @@
+{
+  "mockBidRequest": {
+    "id": "fixture-request",
+    "imp": [
+      {
+        "id": "fixture-imp",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "sourceId": "review-source"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 360
+        }
+      }
+    ],
+    "site": {
+      "domain": "publisher.example"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://exchange.appnerve.net/openrtb2/auction?ssp_id=review-source",
+        "impIDs": [
+          "fixture-imp"
+        ],
+        "body": {
+          "id": "fixture-request",
+          "imp": [
+            {
+              "id": "fixture-imp",
+              "banner": {
+                "w": 300,
+                "h": 250
+              },
+              "ext": {},
+              "tagid": "review-source",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 360
+              }
+            }
+          ],
+          "site": {
+            "domain": "publisher.example"
+          }
+        }
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "untyped",
+                  "impid": "fixture-imp",
+                  "price": 1,
+                  "adm": "<div/>"
+                },
+                {
+                  "id": "typed",
+                  "impid": "fixture-imp",
+                  "price": 2,
+                  "adm": "<VAST/>",
+                  "crid": "c",
+                  "ext": {
+                    "prebid": {
+                      "type": "video"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "typed",
+            "impid": "fixture-imp",
+            "price": 2,
+            "adm": "<VAST/>",
+            "crid": "c",
+            "ext": {
+              "prebid": {
+                "type": "video"
+              }
+            }
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "multi-format bid requires ext.prebid.type",
+      "comparison": "literal"
+    }
+  ]
+}
