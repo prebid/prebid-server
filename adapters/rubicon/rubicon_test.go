@@ -1020,6 +1020,64 @@ func TestUpdateBidExtWithMeta_OnlySeatSet(t *testing.T) {
 	assert.Zero(t, extPrebidWrapper.Prebid.Meta.NetworkID, "NetworkID should be omitted or zero")
 }
 
+func TestUpdateBidExtWithMeta_AdvertiserIdFromRpAdvid(t *testing.T) {
+	testCases := []struct {
+		description string
+		rawExt      json.RawMessage
+	}{
+		{
+			description: "numeric advid",
+			rawExt:      json.RawMessage(`{"rp":{"advid":1}}`),
+		},
+		{
+			description: "string advid",
+			rawExt:      json.RawMessage(`{"rp":{"advid":"1"}}`),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			bid := rubiconBid{Bid: openrtb2.Bid{Ext: tc.rawExt}}
+
+			ext := updateBidExtWithMeta(bid, 0, "")
+			assert.NotNil(t, ext, "Expected non-nil ext when rp.advid is set")
+
+			var extPrebidWrapper struct {
+				Prebid struct {
+					Meta struct {
+						AdvertiserID int `json:"advertiserId"`
+					} `json:"meta"`
+				} `json:"prebid"`
+			}
+			err := json.Unmarshal(ext, &extPrebidWrapper)
+			assert.NoError(t, err, "Unmarshal should succeed")
+			assert.Equal(t, 1, extPrebidWrapper.Prebid.Meta.AdvertiserID)
+		})
+	}
+}
+
+func TestUpdateBidExtWithMeta_AdvertiserDomainsFromAdomain(t *testing.T) {
+	bid := rubiconBid{
+		Bid: openrtb2.Bid{
+			ADomain: []string{"advertiser.com"},
+		},
+	}
+
+	ext := updateBidExtWithMeta(bid, 0, "")
+	assert.NotNil(t, ext, "Expected non-nil ext when adomain is set")
+
+	var extPrebidWrapper struct {
+		Prebid struct {
+			Meta struct {
+				AdvertiserDomains []string `json:"advertiserDomains"`
+			} `json:"meta"`
+		} `json:"prebid"`
+	}
+	err := json.Unmarshal(ext, &extPrebidWrapper)
+	assert.NoError(t, err, "Unmarshal should succeed")
+	assert.Equal(t, []string{"advertiser.com"}, extPrebidWrapper.Prebid.Meta.AdvertiserDomains)
+}
+
 func TestOpenRTBResponseBidExtPrebidMetaPassthrough(t *testing.T) {
 	request := &openrtb2.BidRequest{
 		Imp: []openrtb2.Imp{{
