@@ -287,10 +287,7 @@
             "dealid": "test_dealid",
             "ext": {
               "prebid": {
-                "type": "video",
-                "meta": {
-                  "seat": "rubicon"
-                }
+                "type": "video"
               }
             }
           },

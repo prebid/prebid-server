@@ -43,6 +43,157 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestPreserveOriginalSeats(t *testing.T) {
+	tests := []struct {
+		name         string
+		responseBody string
+		bids         []*adapters.TypedBid
+		expected     []*adapters.TypedBid
+	}{
+		{
+			name:         "seat is copied by bid id",
+			responseBody: `{"seatbid":[{"seat":"original-seat-a","bid":[{"id":"bid-a"}]},{"seat":"original-seat-b","bid":[{"id":"bid-b"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid-b"}},
+				{Bid: &openrtb2.Bid{ID: "bid-a"}},
+			},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid-b"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "original-seat-b"}},
+				{Bid: &openrtb2.Bid{ID: "bid-a"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "original-seat-a"}},
+			},
+		},
+		{
+			name:         "adapter metadata takes precedence",
+			responseBody: `{"seatbid":[{"seat":"original-seat","bid":[{"id":"bid"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "adapter-seat"}},
+			},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "adapter-seat"}},
+			},
+		},
+		{
+			name:         "unchanged seat is omitted",
+			responseBody: `{"seatbid":[{"seat":"adapter","bid":[{"id":"bid"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+		{
+			name:         "ambiguous bid id is ignored",
+			responseBody: `{"seatbid":[{"seat":"seat-a","bid":[{"id":"bid"}]},{"seat":"seat-b","bid":[{"id":"bid"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+		{
+			name:         "single seat survives a bid id rewritten by the adapter",
+			responseBody: `{"seatbid":[{"seat":"original-seat","bid":[{"id":"0","impid":"imp"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "response-bidid", ImpID: "imp"}}},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "response-bidid", ImpID: "imp"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "original-seat"}},
+			},
+		},
+		{
+			name:         "rewritten bid id falls back to a single-seat impression",
+			responseBody: `{"seatbid":[{"seat":"seat-a","bid":[{"id":"0","impid":"imp-a"}]},{"seat":"seat-b","bid":[{"id":"1","impid":"imp-b"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "rewritten", ImpID: "imp-b"}}},
+			expected: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "rewritten", ImpID: "imp-b"}, BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "seat-b"}},
+			},
+		},
+		{
+			name:         "impression bid on by several seats is ignored",
+			responseBody: `{"seatbid":[{"seat":"seat-a","bid":[{"id":"0","impid":"imp"}]},{"seat":"seat-b","bid":[{"id":"1","impid":"imp"}]}]}`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "rewritten", ImpID: "imp"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "rewritten", ImpID: "imp"}}},
+		},
+		{
+			name:         "metadata in bid.ext.prebid.meta is kept",
+			responseBody: `{"seatbid":[{"seat":"original-seat","bid":[{"id":"bid"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid", Ext: json.RawMessage(`{"prebid":{"meta":{"networkId":123}}}`)}},
+			},
+			expected: []*adapters.TypedBid{
+				{
+					Bid:     &openrtb2.Bid{ID: "bid", Ext: json.RawMessage(`{"prebid":{"meta":{"networkId":123}}}`)},
+					BidMeta: &openrtb_ext.ExtBidPrebidMeta{NetworkID: 123, Seat: "original-seat"},
+				},
+			},
+		},
+		{
+			name:         "seat in bid.ext.prebid.meta takes precedence",
+			responseBody: `{"seatbid":[{"seat":"original-seat","bid":[{"id":"bid"}]}]}`,
+			bids: []*adapters.TypedBid{
+				{Bid: &openrtb2.Bid{ID: "bid", Ext: json.RawMessage(`{"prebid":{"meta":{"seat":"adapter-seat"}}}`)}},
+			},
+			expected: []*adapters.TypedBid{
+				{
+					Bid:     &openrtb2.Bid{ID: "bid", Ext: json.RawMessage(`{"prebid":{"meta":{"seat":"adapter-seat"}}}`)},
+					BidMeta: &openrtb_ext.ExtBidPrebidMeta{Seat: "adapter-seat"},
+				},
+			},
+		},
+		{
+			name:         "malformed response is ignored",
+			responseBody: `not-json`,
+			bids:         []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+			expected:     []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid"}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bidderResponse := &adapters.BidderResponse{Bids: tt.bids}
+			preserveOriginalSeats([]byte(tt.responseBody), bidderResponse, "adapter")
+			assert.Equal(t, tt.expected, bidderResponse.Bids)
+		})
+	}
+}
+
+// replacingRawResponseHook replaces the adapter's bids, as a raw bidder response hook may.
+type replacingRawResponseHook struct {
+	hookexecution.EmptyHookExecutor
+	bids []*adapters.TypedBid
+}
+
+func (h *replacingRawResponseHook) ExecuteRawBidderResponseStage(response *adapters.BidderResponse, _ string) *hookexecution.RejectError {
+	response.Bids = h.bids
+	return nil
+}
+
+// TestPreserveOriginalSeatsAfterRawResponseHooks makes sure that bids a raw bidder response hook adds get
+// their original seat too.
+func TestPreserveOriginalSeatsAfterRawResponseHooks(t *testing.T) {
+	respBody := `{"seatbid":[{"seat":"original-seat","bid":[{"id":"bid","impid":"impId"}]}]}`
+	server := httptest.NewServer(mockHandler(200, "getBody", respBody))
+	defer server.Close()
+
+	bidderImpl := &goodSingleBidder{
+		httpRequest: &adapters.RequestData{Method: "POST", Uri: server.URL, Body: []byte("{}"), Headers: http.Header{}},
+		bidResponse: &adapters.BidderResponse{
+			Bids: []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid", ImpID: "impId", Price: 1}, BidType: openrtb_ext.BidTypeBanner}},
+		},
+	}
+	hook := &replacingRawResponseHook{
+		bids: []*adapters.TypedBid{{Bid: &openrtb2.Bid{ID: "bid", ImpID: "impId", Price: 2}, BidType: openrtb_ext.BidTypeBanner}},
+	}
+	bidder := AdaptBidder(bidderImpl, server.Client(), &config.Configuration{}, &metricsConfig.NilMetricsEngine{}, openrtb_ext.BidderAppnexus, nil, "")
+	currencyConverter := currency.NewRateConverter(&http.Client{}, time.Duration(1), "", time.Duration(0))
+	bidderReq := BidderRequest{
+		BidRequest: &openrtb2.BidRequest{Imp: []openrtb2.Imp{{ID: "impId"}}},
+		BidderName: "test",
+	}
+	bidReqOptions := bidRequestOptions{bidAdjustments: map[string]float64{"test": 1.0}}
+	seatBids, _, errs := bidder.requestBid(context.Background(), bidderReq, currencyConverter.Rates(), &adapters.ExtraRequestInfo{}, &adscert.NilSigner{}, bidReqOptions, openrtb_ext.ExtAlternateBidderCodes{}, hook, nil)
+
+	assert.Empty(t, errs)
+	if assert.Len(t, seatBids, 1) && assert.Len(t, seatBids[0].Bids, 1) {
+		assert.Equal(t, 2.0, seatBids[0].Bids[0].Bid.Price)
+		if assert.NotNil(t, seatBids[0].Bids[0].BidMeta) {
+			assert.Equal(t, "original-seat", seatBids[0].Bids[0].BidMeta.Seat)
+		}
+	}
+}
+
 // TestSingleBidder makes sure that the following things work if the Bidder needs only one request.
 //
 // 1. The Bidder implementation is called with the arguments we expect.
