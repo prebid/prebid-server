@@ -1,0 +1,72 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "page": "https://good.site/url"
+    },
+    "imp": [
+      {
+        "id": "imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 111,
+              "h": 111
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "pubname": "PUB123"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+     {
+      "expectedRequest": {
+        "uri":  "prebid-use.atomex.net/ag=PUB123",
+
+        "body": {
+          "id": "test-request-id",
+          "site": {
+            "page": "https://good.site/url"
+          },
+          "imp": [
+            {
+              "id": "imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 111,
+                    "h": 111
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "pubname": "PUB123"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-id"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "incorrect response body"
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "expect { or n, but found \"",
+      "comparison": "literal" 
+    }
+  ]
+}
