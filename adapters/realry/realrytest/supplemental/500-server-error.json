@@ -1,0 +1,40 @@
+{
+  "mockBidRequest": {
+    "id": "test-server-err",
+    "imp": [
+      {
+        "id": "test-imp-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "placementId": "slot-x" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.realry.com/bid/openrtb",
+        "body": {
+          "id": "test-server-err",
+          "imp": [
+            {
+              "id": "test-imp-1",
+              "banner": { "format": [{ "w": 300, "h": 250 }] },
+              "ext": { "bidder": { "placementId": "slot-x" } }
+            }
+          ]
+        },
+        "impIDs": ["test-imp-1"]
+      },
+      "mockResponse": {
+        "status": 500,
+        "body": "internal"
+      }
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Realry: unexpected status from bid.realry.com.",
+      "comparison": "literal"
+    }
+  ]
+}
