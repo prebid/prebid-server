@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "app": {
+      "bundle": "com.example.app",
+      "publisher": {
+        "id": "pub-1"
+      }
+    },
+    "device": {
+      "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "ip": "1.2.3.4",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-b",
+        "banner": {
+          "format": [
+            {
+              "w": 320,
+              "h": 50
+            }
+          ]
+        },
+        "ext": "x"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "^imp imp-b: invalid ext: ",
+      "comparison": "regex"
+    }
+  ]
+}

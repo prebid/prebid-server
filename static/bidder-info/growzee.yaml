@@ -1,0 +1,9 @@
+endpoint: "https://bid.growzee.io/openrtb?id={{.PublisherID}}"
+endpointCompression: GZIP
+maintainer:
+  email: "prebid-server@growzee.io"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
