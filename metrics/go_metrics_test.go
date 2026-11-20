@@ -954,6 +954,47 @@ func TestRecordSyncerSet(t *testing.T) {
 	assert.Equal(t, m.SyncerSetsMeter["foo"][SyncerSetUidCleared].Count(), int64(1))
 }
 
+func TestRecordAccountGotBids(t *testing.T) {
+	testCases := []struct {
+		description   string
+		givenPubID    string
+		expectedCount int64
+	}{
+		{
+			description:   "known publisher increments account gotbids meter",
+			givenPubID:    "pub-1",
+			expectedCount: 1,
+		},
+		{
+			description:   "unknown publisher does not increment account meter",
+			givenPubID:    PublisherUnknown,
+			expectedCount: 0,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.description, func(t *testing.T) {
+			registry := metrics.NewRegistry()
+			m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName("AnyName")}, config.DisabledMetrics{}, nil, nil)
+
+			assert.NotPanics(t, func() { m.RecordAccountGotBids(test.givenPubID) })
+
+			am := m.getAccountMetrics(test.givenPubID)
+			assert.Equal(t, test.expectedCount, am.gotBidsRequestMeter.Count())
+		})
+	}
+}
+
+func TestRecordAccountGotBidsIncrementsMultipleTimes(t *testing.T) {
+	registry := metrics.NewRegistry()
+	m := NewMetrics(registry, []openrtb_ext.BidderName{openrtb_ext.BidderName("AnyName")}, config.DisabledMetrics{}, nil, nil)
+
+	m.RecordAccountGotBids("pub-1")
+	m.RecordAccountGotBids("pub-1")
+
+	am := m.getAccountMetrics("pub-1")
+	assert.Equal(t, int64(2), am.gotBidsRequestMeter.Count())
+}
+
 func TestStoredResponses(t *testing.T) {
 	testCases := []struct {
 		description                           string
