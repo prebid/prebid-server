@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
+	"sync"
 	"testing"
 
 	gpplib "github.com/prebid/go-gpp"
@@ -777,6 +779,86 @@ func TestCleanOpenRTBRequests(t *testing.T) {
 			test.bidReqAssertions(t, bidderRequests, test.applyCOPPA, test.consentedVendors)
 		}
 	}
+}
+
+// TestCleanOpenRTBRequestsCurDoesNotAliasAcrossBidders reproduces
+// https://github.com/prebid/prebid-server/issues/4637: cleanOpenRTBRequests builds
+// each bidder's BidRequest via a shallow copy (`bidRequestCopy := *req.BidRequest`),
+// which for a slice field like Cur only copies the slice header, not the backing
+// array. When Cur has spare capacity — exactly what happens after
+// endpoints/openrtb2/auction.go trims a multi-currency request down to one currency
+// via `req.Cur = req.Cur[0:1]` — every bidder's copy points at the same backing
+// array. A bidder adapter that appends to Cur (e.g. kobler, seedingAlliance) then
+// races with, and can silently corrupt, every other concurrently-running bidder's
+// view of Cur.
+func TestCleanOpenRTBRequestsCurDoesNotAliasAcrossBidders(t *testing.T) {
+	// Simulate a request that arrived with two currencies and was trimmed to one,
+	// leaving spare backing-array capacity (len=1, cap=2) — same shape auction.go
+	// produces via req.Cur = req.Cur[0:1].
+	cur := make([]string, 2, 2)
+	cur[0] = "USD"
+	cur[1] = "EUR"
+	cur = cur[:1]
+	require.Len(t, cur, 1)
+	require.Equal(t, 2, cap(cur))
+
+	req := &openrtb2.BidRequest{
+		ID:  "test-req-id",
+		Cur: cur,
+		Imp: []openrtb2.Imp{
+			{
+				ID:     "imp-1",
+				Banner: &openrtb2.Banner{Format: []openrtb2.Format{{W: 300, H: 250}}},
+				Ext:    json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placementId":1},"rubicon":{"accountId":1,"siteId":1,"zoneId":1}}}}`),
+			},
+		},
+	}
+
+	auctionReq := AuctionRequest{
+		BidRequestWrapper: &openrtb_ext.RequestWrapper{BidRequest: req},
+		UserSyncs:         &emptyUsersync{},
+		TCF2Config:        gdpr.NewTCF2Config(config.TCF2{}, config.AccountGDPR{}),
+	}
+
+	gdprPermsBuilder := fakePermissionsBuilder{
+		permissions: &permissionsMock{allowAllBidders: true},
+	}.Builder
+
+	reqSplitter := &requestSplitter{
+		bidderToSyncerKey: map[string]string{},
+		me:                &metrics.MetricsEngineMock{},
+		privacyConfig:     config.Privacy{},
+		gdprPermsBuilder:  gdprPermsBuilder,
+		hostSChainNode:    nil,
+		bidderInfo:        config.BidderInfos{},
+	}
+
+	bidderRequests, _, err := reqSplitter.cleanOpenRTBRequests(context.Background(), auctionReq, nil, map[string]float64{})
+	assert.Nil(t, err)
+	require.Len(t, bidderRequests, 2)
+
+	// Emulate two bidder adapters (like kobler and seedingAlliance) each appending
+	// their own currency to their copy of Cur, concurrently. With independent
+	// backing arrays this is race-free and each bidder only ever sees its own value.
+	var wg sync.WaitGroup
+	for i, br := range bidderRequests {
+		wg.Add(1)
+		go func(i int, br BidderRequest) {
+			defer wg.Done()
+			br.BidRequest.Cur = append(br.BidRequest.Cur, fmt.Sprintf("XX%d", i))
+		}(i, br)
+	}
+	wg.Wait()
+
+	seen := map[string]bool{}
+	for _, br := range bidderRequests {
+		require.Len(t, br.BidRequest.Cur, 2, "bidder %s should only see its own appended currency", br.BidderName)
+		assert.Equal(t, "USD", br.BidRequest.Cur[0])
+		seen[br.BidRequest.Cur[1]] = true
+	}
+	// If the two bidders shared a backing array, the second (or both) writer would
+	// have won the race and both slices would show the same trailing value.
+	assert.Len(t, seen, 2, "each bidder's append must be independent, not overwrite the other's")
 }
 
 func TestCleanOpenRTBRequestsWithFPD(t *testing.T) {
