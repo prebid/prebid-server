@@ -239,7 +239,7 @@ func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.Im
 		ID:    fmt.Sprint(decision.AdID),
 		ImpID: impId,
 	}
-	if len(decision.Contents) > 0 || decision.Contents[0] != nil || decision.Contents[0].Data != nil {
+	if len(decision.Contents) > 0 && decision.Contents[0] != nil && decision.Contents[0].Data != nil {
 		if decision.Contents[0].Data.Width != 0 {
 			bid.W = decision.Contents[0].Data.Width
 		}
@@ -260,6 +260,17 @@ func buildBid(decision *InlineModel, impId string, flippExtParams openrtb_ext.Im
 				if value, exists := customDataMap[customDataKey]; exists {
 					if floatVal, ok := value.(float64); ok {
 						bid.H = int64(floatVal)
+					}
+				}
+
+				// Prefer exact dimensions when provided
+				if v, ok := customDataMap["maxWidth"].(float64); ok && v != 0 {
+					bid.W = int64(v)
+				}
+				// maxHeight aliases standardHeight only
+				if !flippExtParams.Options.StartCompact {
+					if v, ok := customDataMap["maxHeight"].(float64); ok && v != 0 {
+						bid.H = int64(v)
 					}
 				}
 			}
