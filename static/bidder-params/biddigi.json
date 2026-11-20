@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "BidDigi Adapter Params",
+  "description": "A schema which validates params accepted by the BidDigi adapter",
+  "type": "object",
+  "properties": {
+    "seatKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Seat API key issued by BidDigi for this integration. Sent as an Authorization header, never in the bid request body."
+    },
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional BidDigi placement identifier for this ad unit"
+    }
+  },
+  "required": [
+    "seatKey"
+  ]
+}
