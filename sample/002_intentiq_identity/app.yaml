@@ -1,0 +1,50 @@
+port: 8000
+admin_port: 6061
+external_url: http://localhost:8000
+status_response: "ok"
+
+gdpr:
+  default_value: "0"
+
+metrics:
+  prometheus:
+    port: 9190
+
+stored_responses:
+  filesystem:
+    enabled: true
+    directorypath: ./sample/002_intentiq_identity/stored_responses/data/by_id
+
+hooks:
+  enabled: true
+  modules:
+    intentiq:
+      identity:
+        enabled: true
+        partner_id: "123456789"
+        api_endpoint: http://127.0.0.1:9999/profiles_engine/ProfilesEngineServlet
+        reports_endpoint: http://127.0.0.1:9999/profiles_engine/ProfilesEngineServlet
+        timeout: 1000
+        trace_enabled: true
+        cache:
+          enabled: true
+          provider: redis
+        redis:
+          host: 127.0.0.1
+          port: 6379
+  host_execution_plan:
+    endpoints:
+      "/openrtb2/auction":
+        stages:
+          processed_auction_request:
+            groups:
+              - timeout: 1500
+                hook_sequence:
+                  - module_code: intentiq.identity
+                    hook_impl_code: intentiq-identity-processed-auction-request-hook
+          auction_response:
+            groups:
+              - timeout: 10
+                hook_sequence:
+                  - module_code: intentiq.identity
+                    hook_impl_code: intentiq-identity-auction-response-hook

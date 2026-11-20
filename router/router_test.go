@@ -317,3 +317,13 @@ func TestGetNormalizedGeoscopes(t *testing.T) {
 		})
 	}
 }
+
+func TestNewModuleMetricsRegistry(t *testing.T) {
+	_, _, enabled := newModuleMetricsRegistry(config.PrometheusMetrics{})
+	assert.False(t, enabled)
+
+	registerer, gatherer, enabled := newModuleMetricsRegistry(config.PrometheusMetrics{Port: 8080})
+	assert.True(t, enabled)
+	assert.NotNil(t, registerer)
+	assert.Same(t, registerer, gatherer)
+}
