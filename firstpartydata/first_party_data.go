@@ -9,6 +9,7 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 
+	"github.com/prebid/prebid-server/v4/config"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
 	"github.com/prebid/prebid-server/v4/util/jsonutil"
@@ -112,7 +113,7 @@ func ExtractOpenRtbGlobalFPD(bidRequest *openrtb2.BidRequest) map[string][]openr
 }
 
 // ResolveFPD consolidates First Party Data from different sources and returns valid FPD that will be applied to bidders later or returns errors
-func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
+func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb_ext.BidderName]*openrtb_ext.ORTB2, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, biddersWithGlobalFPD []string, arrayMergeMode config.ArrayMergeMode) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 	var errL []error
 
 	resolvedFpd := make(map[openrtb_ext.BidderName]*ResolvedFirstPartyData)
@@ -142,19 +143,19 @@ func ResolveFPD(bidRequest *openrtb2.BidRequest, fpdBidderConfigData map[openrtb
 
 		resolvedFpdConfig := &ResolvedFirstPartyData{}
 
-		newUser, err := resolveUser(fpdConfig, bidRequest.User, globalFPD, openRtbGlobalFPD, bidderName)
+		newUser, err := resolveUser(fpdConfig, bidRequest.User, globalFPD, openRtbGlobalFPD, bidderName, arrayMergeMode)
 		if err != nil {
 			errL = append(errL, err)
 		}
 		resolvedFpdConfig.User = newUser
 
-		newApp, err := resolveApp(fpdConfig, bidRequest.App, globalFPD, openRtbGlobalFPD, bidderName)
+		newApp, err := resolveApp(fpdConfig, bidRequest.App, globalFPD, openRtbGlobalFPD, bidderName, arrayMergeMode)
 		if err != nil {
 			errL = append(errL, err)
 		}
 		resolvedFpdConfig.App = newApp
 
-		newSite, err := resolveSite(fpdConfig, bidRequest.Site, globalFPD, openRtbGlobalFPD, bidderName)
+		newSite, err := resolveSite(fpdConfig, bidRequest.Site, globalFPD, openRtbGlobalFPD, bidderName, arrayMergeMode)
 		if err != nil {
 			errL = append(errL, err)
 		}
@@ -229,7 +230,7 @@ func validateDevice(device *openrtb2.Device) error {
 	return nil
 }
 
-func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.User, error) {
+func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string, arrayMergeMode config.ArrayMergeMode) (*openrtb2.User, error) {
 	var fpdConfigUser json.RawMessage
 
 	if fpdConfig != nil && fpdConfig.User != nil {
@@ -264,15 +265,29 @@ func resolveUser(fpdConfig *openrtb_ext.ORTB2, bidRequestUser *openrtb2.User, gl
 		newUser.Data = openRtbGlobalFPD[userDataKey]
 	}
 	if fpdConfigUser != nil {
-		if err := jsonutil.MergeClone(newUser, fpdConfigUser); err != nil {
-			return nil, formatMergeCloneError(err)
+		if arrayMergeMode == config.ArrayMergeModeConcat {
+			// Nil out arrays before merge so MergeClone doesn't overwrite them,
+			// then manually concat base + bidderconfig additions
+			baseData := newUser.Data
+			baseEIDs := newUser.EIDs
+			newUser.Data = nil
+			newUser.EIDs = nil
+			if err := jsonutil.MergeClone(newUser, fpdConfigUser); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
+			newUser.Data = append(baseData, newUser.Data...)
+			newUser.EIDs = append(baseEIDs, newUser.EIDs...)
+		} else {
+			if err := jsonutil.MergeClone(newUser, fpdConfigUser); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
 		}
 	}
 
 	return newUser, nil
 }
 
-func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.Site, error) {
+func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string, arrayMergeMode config.ArrayMergeMode) (*openrtb2.Site, error) {
 	var fpdConfigSite json.RawMessage
 
 	if fpdConfig != nil && fpdConfig.Site != nil {
@@ -319,8 +334,25 @@ func resolveSite(fpdConfig *openrtb_ext.ORTB2, bidRequestSite *openrtb2.Site, gl
 		newSite.Content.Data = openRtbGlobalFPD[siteContentDataKey]
 	}
 	if fpdConfigSite != nil {
-		if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
-			return nil, formatMergeCloneError(err)
+		if arrayMergeMode == config.ArrayMergeModeConcat {
+			var baseContentData []openrtb2.Data
+			if newSite.Content != nil {
+				// Copy Content before modifying to avoid mutating the original request's Content.
+				contentCopy := *newSite.Content
+				newSite.Content = &contentCopy
+				baseContentData = newSite.Content.Data
+				newSite.Content.Data = nil
+			}
+			if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
+			if newSite.Content != nil {
+				newSite.Content.Data = append(baseContentData, newSite.Content.Data...)
+			}
+		} else {
+			if err := jsonutil.MergeClone(newSite, fpdConfigSite); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
 		}
 
 		// Re-Validate Site
@@ -352,7 +384,7 @@ func formatMergeCloneError(err error) error {
 	return ErrBadFPD
 }
 
-func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string) (*openrtb2.App, error) {
+func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globalFPD map[string][]byte, openRtbGlobalFPD map[string][]openrtb2.Data, bidderName string, arrayMergeMode config.ArrayMergeMode) (*openrtb2.App, error) {
 	var fpdConfigApp json.RawMessage
 
 	if fpdConfig != nil {
@@ -402,8 +434,25 @@ func resolveApp(fpdConfig *openrtb_ext.ORTB2, bidRequestApp *openrtb2.App, globa
 	}
 
 	if fpdConfigApp != nil {
-		if err := jsonutil.MergeClone(newApp, fpdConfigApp); err != nil {
-			return nil, formatMergeCloneError(err)
+		if arrayMergeMode == config.ArrayMergeModeConcat {
+			var baseContentData []openrtb2.Data
+			if newApp.Content != nil {
+				// Copy Content before modifying to avoid mutating the original request's Content.
+				contentCopy := *newApp.Content
+				newApp.Content = &contentCopy
+				baseContentData = newApp.Content.Data
+				newApp.Content.Data = nil
+			}
+			if err := jsonutil.MergeClone(newApp, fpdConfigApp); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
+			if newApp.Content != nil {
+				newApp.Content.Data = append(baseContentData, newApp.Content.Data...)
+			}
+		} else {
+			if err := jsonutil.MergeClone(newApp, fpdConfigApp); err != nil {
+				return nil, formatMergeCloneError(err)
+			}
 		}
 	}
 
@@ -453,7 +502,7 @@ func ExtractBidderConfigFPD(reqExt *openrtb_ext.RequestExt) (map[openrtb_ext.Bid
 }
 
 // ExtractFPDForBidders extracts FPD data from request if specified
-func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
+func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper, arrayMergeMode config.ArrayMergeMode) (map[openrtb_ext.BidderName]*ResolvedFirstPartyData, []error) {
 	reqExt, err := req.GetRequestExt()
 	if err != nil {
 		return nil, []error{err}
@@ -488,5 +537,5 @@ func ExtractFPDForBidders(req *openrtb_ext.RequestWrapper) (map[openrtb_ext.Bidd
 		openRtbGlobalFPD = ExtractOpenRtbGlobalFPD(req.BidRequest)
 	}
 
-	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD)
+	return ResolveFPD(req.BidRequest, fbdBidderConfigData, globalFpd, openRtbGlobalFPD, biddersWithGlobalFPD, arrayMergeMode)
 }
