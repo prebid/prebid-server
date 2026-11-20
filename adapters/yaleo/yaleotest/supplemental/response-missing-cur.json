@@ -1,0 +1,100 @@
+{
+  "mockBidRequest": {
+    "id": "test-missing-cur",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-missing-cur",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-missing-cur"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-missing-cur",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-missing-cur",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-missing-cur"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-missing-cur"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-missing-cur",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-missing-cur",
+                  "impid": "imp-missing-cur",
+                  "price": 0.05,
+                  "adm": "<div>ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-missing-cur",
+            "impid": "imp-missing-cur",
+            "price": 0.05,
+            "adm": "<div>ad</div>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

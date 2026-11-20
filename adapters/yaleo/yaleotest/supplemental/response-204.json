@@ -1,0 +1,64 @@
+{
+  "mockBidRequest": {
+    "id": "test-204-request",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-204",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "placement-204"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-204-request",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-204",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "placement-204"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-204"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

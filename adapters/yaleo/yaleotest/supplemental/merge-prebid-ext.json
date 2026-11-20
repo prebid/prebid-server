@@ -1,0 +1,74 @@
+{
+  "mockBidRequest": {
+    "id": "test-merge-prebid",
+    "site": {
+      "page": "https://example.com/article"
+    },
+    "imp": [
+      {
+        "id": "imp-merge",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "gpid": "/1234/slot",
+          "prebid": {
+            "is_rewarded_inventory": 1
+          },
+          "bidder": {
+            "placementId": "placement-merge",
+            "forceDarkTheme": true
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "body": {
+          "id": "test-merge-prebid",
+          "site": {
+            "page": "https://example.com/article"
+          },
+          "imp": [
+            {
+              "id": "imp-merge",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "gpid": "/1234/slot",
+                "prebid": {
+                  "is_rewarded_inventory": 1
+                },
+                "bidder": {
+                  "placementId": "placement-merge",
+                  "forceDarkTheme": true
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-merge"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}
