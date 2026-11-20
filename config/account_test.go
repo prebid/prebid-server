@@ -966,6 +966,31 @@ func TestAccountPriceFloorsValidate(t *testing.T) {
 	}
 }
 
+func TestAccountStoredRequestValidate(t *testing.T) {
+	tests := []struct {
+		description string
+		mode        ArrayMergeMode
+		wantErr     bool
+	}{
+		{description: "empty defaults to replace", mode: "", wantErr: false},
+		{description: "replace is valid", mode: ArrayMergeReplace, wantErr: false},
+		{description: "concat is valid", mode: ArrayMergeConcat, wantErr: false},
+		{description: "typo is rejected", mode: "concatt", wantErr: true},
+		{description: "wrong case is rejected", mode: "Concat", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			a := &AccountStoredRequest{ArrayMerge: tt.mode}
+			errs := a.validate(nil)
+			if tt.wantErr {
+				assert.Len(t, errs, 1)
+			} else {
+				assert.Empty(t, errs)
+			}
+		})
+	}
+}
+
 func TestIPMaskingValidate(t *testing.T) {
 	tests := []struct {
 		name    string
