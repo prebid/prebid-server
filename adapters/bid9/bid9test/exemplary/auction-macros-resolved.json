@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "chan-a",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "crid": "crid-1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1,
+                  "adid": "ad-1",
+                  "adm": "<img src='http://t.test/i?a=${AUCTION_ID}&b=${AUCTION_BID_ID}&i=${AUCTION_IMP_ID}&s=${AUCTION_SEAT_ID}&ad=${AUCTION_AD_ID}&p=${AUCTION_PRICE}&c=${AUCTION_CURRENCY}'>",
+                  "nurl": "http://t.test/win?a=${AUCTION_ID}&b=${AUCTION_BID_ID}&i=${AUCTION_IMP_ID}&s=${AUCTION_SEAT_ID}&ad=${AUCTION_AD_ID}&p=${AUCTION_PRICE}&c=${AUCTION_CURRENCY}"
+                }
+              ]
+            }
+          ],
+          "bidid": "resp-bid-1",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "crid": "crid-1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "adid": "ad-1",
+            "adm": "<img src='http://t.test/i?a=req-1&b=resp-bid-1&i=imp-1&s=bid9&ad=ad-1&p=1.5&c=USD'>",
+            "burl": "http://t.test/win?a=req-1&b=resp-bid-1&i=imp-1&s=bid9&ad=ad-1&p=1.5&c=USD"
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

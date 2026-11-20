@@ -1,0 +1,117 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3
+                ]
+              },
+              "tagid": "chan-a",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 2.5,
+                  "crid": "crid-v",
+                  "mtype": 2,
+                  "nurl": "http://t.test/vast.xml?p=${AUCTION_PRICE}"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 2.5,
+            "crid": "crid-v",
+            "mtype": 2,
+            "nurl": "http://t.test/vast.xml?p=2.5"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}

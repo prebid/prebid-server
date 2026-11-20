@@ -1,0 +1,145 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "app": {
+      "bundle": "com.publisher.app"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          }
+        },
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 360,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "plcmt": 1
+        }
+      }
+    ],
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36",
+      "ip": "203.0.113.10",
+      "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "os": "Android"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36"
+          ],
+          "X-Forwarded-For": [
+            "203.0.113.10"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "app": {
+            "bundle": "com.publisher.app"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "tagid": "chan-a",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              },
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 360,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "plcmt": 1
+              }
+            }
+          ],
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36",
+            "ip": "203.0.113.10",
+            "ifa": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "os": "Android"
+          }
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 2.5,
+                  "crid": "crid-v",
+                  "adm": "<VAST version=\"4.0\"><Ad id=\"1\"><InLine><Impression><![CDATA[https://t.test/imp?p=${AUCTION_PRICE}]]></Impression></InLine></Ad></VAST>",
+                  "mtype": 2,
+                  "nurl": "https://t.test/win?p=${AUCTION_PRICE}&imp=${AUCTION_IMP_ID}"
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 2.5,
+            "crid": "crid-v",
+            "adm": "<VAST version=\"4.0\"><Ad id=\"1\"><InLine><Impression><![CDATA[https://t.test/imp?p=2.5]]></Impression></InLine></Ad></VAST>",
+            "mtype": 2,
+            "burl": "https://t.test/win?p=2.5&imp=imp-1"
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
