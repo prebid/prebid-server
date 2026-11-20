@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "multi-format-request",
+    "imp": [
+      {
+        "id": "imp-mf",
+        "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+        "video": {"mimes": ["video/mp4"], "w": 640, "h": 480},
+        "ext": {"bidder": {"feedId": "feed-abc"}}
+      }
+    ],
+    "site": {"domain": "example.com"},
+    "tmax": 1000,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-abc",
+        "body": {
+          "id": "multi-format-request",
+          "imp": [
+            {
+              "id": "imp-mf",
+              "banner": {"w": 300, "h": 250, "format": [{"w": 300, "h": 250}]},
+              "video": {"mimes": ["video/mp4"], "w": 640, "h": 480},
+              "ext": {"feedId": "feed-abc", "bidder": {}}
+            }
+          ],
+          "site": {"domain": "example.com"},
+          "tmax": 1000,
+          "cur": ["USD"]
+        },
+        "impIDs": ["imp-mf"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-format-request",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "dsp",
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "imp-mf",
+                  "price": 1.0,
+                  "adm": "<div>ambiguous</div>",
+                  "crid": "c1",
+                  "w": 300,
+                  "h": 250
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "could not determine media type for bid b1 on imp imp-mf: response missing bid.mtype and bid.ext.mediaType",
+      "comparison": "literal"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-video",
+    "imp": [
+      {
+        "id": "video-imp-1",
+        "tagid": "video-unit",
+        "video": {
+          "mimes": ["video/mp4", "video/webm"],
+          "w": 640,
+          "h": 480,
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [2, 3, 5, 6],
+          "api": [1, 2],
+          "placement": 1,
+          "linearity": 1
+        },
+        "ext": {
+          "bidder": {
+            "feedId": "feed-video"
+          }
+        }
+      }
+    ],
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/watch"
+    },
+    "tmax": 1500,
+    "cur": ["USD"]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.revantage.io/bid?feed=feed-video",
+        "body": {
+          "id": "test-request-video",
+          "imp": [
+            {
+              "id": "video-imp-1",
+              "tagid": "video-unit",
+              "video": {
+                "mimes": ["video/mp4", "video/webm"],
+                "w": 640,
+                "h": 480,
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [2, 3, 5, 6],
+                "api": [1, 2],
+                "placement": 1,
+                "linearity": 1
+              },
+              "ext": {
+                "feedId": "feed-video",
+                "bidder": {}
+              }
+            }
+          ],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/watch"
+          },
+          "tmax": 1500,
+          "cur": ["USD"]
+        },
+        "impIDs": ["video-imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-video",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "video-dsp",
+              "bid": [
+                {
+                  "id": "video-bid-1",
+                  "impid": "video-imp-1",
+                  "price": 4.50,
+                  "adm": "<VAST version=\"3.0\"><Ad><InLine></InLine></Ad></VAST>",
+                  "crid": "video-creative-1",
+                  "w": 640,
+                  "h": 480,
+                  "adomain": ["video-advertiser.com"],
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "video-bid-1",
+            "impid": "video-imp-1",
+            "price": 4.50,
+            "adm": "<VAST version=\"3.0\"><Ad><InLine></InLine></Ad></VAST>",
+            "crid": "video-creative-1",
+            "w": 640,
+            "h": 480,
+            "adomain": ["video-advertiser.com"],
+            "mtype": 2
+          },
+          "type": "video",
+          "seat": "video-dsp"
+        }
+      ]
+    }
+  ]
+}
