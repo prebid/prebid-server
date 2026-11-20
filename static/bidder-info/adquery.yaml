@@ -8,6 +8,9 @@ capabilities:
       - banner
 userSync:
   iframe:
-    url: https://api.adquery.io/storage?gdpr={{.GDPR}}&consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
+    url: https://bidder2.adquery.io/storage?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
+    userMacro: $UID
+  redirect:
+    url: https://bidder2.adquery.io/prebid/userSync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&ccpa_consent={{.USPrivacy}}&redirect={{.RedirectURL}}
     userMacro: $UID
     

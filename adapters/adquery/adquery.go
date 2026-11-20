@@ -20,6 +20,7 @@ const (
 	defaultCurrency string = "PLN"
 	bidderName      string = "adquery"
 	prebidVersion   string = "server"
+	eidSource       string = "adquery.io"
 )
 
 type adapter struct {
@@ -126,10 +127,7 @@ func buildHeaders(bidReq *openrtb2.BidRequest) http.Header {
 }
 
 func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_ext.ImpExtAdQuery) *BidderRequest {
-	userId := ""
-	if bidReq.User != nil {
-		userId = bidReq.User.ID
-	}
+	userId := getUserId(bidReq.User)
 
 	bidderRequest := &BidderRequest{
 		V:                   prebidVersion,
@@ -157,6 +155,46 @@ func buildRequest(bidReq *openrtb2.BidRequest, imp *openrtb2.Imp, ext *openrtb_e
 	}
 
 	return bidderRequest
+}
+
+// getUserId returns the adquery.io EID, then BuyerUID, then User.ID.
+func getUserId(user *openrtb2.User) string {
+	if user == nil {
+		return ""
+	}
+
+	if id := getAdqueryEidId(user.EIDs); id != "" {
+		return id
+	}
+
+	if len(user.Ext) > 0 {
+		var userExt openrtb_ext.ExtUser
+		if err := jsonutil.Unmarshal(user.Ext, &userExt); err == nil {
+			if id := getAdqueryEidId(userExt.Eids); id != "" {
+				return id
+			}
+		}
+	}
+
+	if user.BuyerUID != "" {
+		return user.BuyerUID
+	}
+
+	return user.ID
+}
+
+func getAdqueryEidId(eids []openrtb2.EID) string {
+	for _, eid := range eids {
+		if eid.Source != eidSource {
+			continue
+		}
+		for _, uid := range eid.UIDs {
+			if uid.ID != "" {
+				return uid.ID
+			}
+		}
+	}
+	return ""
 }
 
 func parseExt(ext json.RawMessage) (*openrtb_ext.ImpExtAdQuery, error) {
