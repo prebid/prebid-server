@@ -1,0 +1,19 @@
+endpoint: "https://ortb.publink.io/api/ortb/prebid"
+maintainer:
+  email: hello@publink.io
+capabilities:
+  app:
+    mediaTypes:
+      - video
+      - banner
+      - audio
+  site:
+    mediaTypes:
+      - video
+      - banner
+      - audio
+  dooh:
+    mediaTypes:
+      - video
+# No user sync: Publink is CTV/app-first and runs no cookie-match endpoint.
+# Declaring one here would make PBS expect a usersync URL that does not exist.

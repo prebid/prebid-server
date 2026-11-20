@@ -1,0 +1,27 @@
+{
+  "mockBidRequest": {
+    "id": "invalid",
+    "imp": [
+      {
+        "id": "i",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "tag",
+            "bidFloor": -1
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp[0]: bidFloor must be nonnegative and currency must be USD",
+      "comparison": "literal"
+    }
+  ]
+}
