@@ -1,0 +1,66 @@
+{
+  "mockBidRequest": {
+    "id": "s2s_audio_1",
+    "imp": [{
+      "id": "audio-1",
+      "audio": { "mimes": ["audio/mp4"] },
+      "ext": { "bidder": { "placementId": "111c7fb088" } }
+    }],
+    "app": { "bundle": "com.example.radio" },
+    "device": { "ua": "Mozilla/5.0", "ip": "203.0.113.10" }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://rtb.adferry.co/api/ortb/prebid",
+      "headers": {
+        "Content-Type": ["application/json;charset=utf-8"],
+        "Accept": ["application/json"],
+        "X-Openrtb-Version": ["2.6"]
+      },
+      "body": {
+        "id": "s2s_audio_1",
+        "imp": [{
+          "id": "audio-1",
+          "tagid": "111c7fb088",
+          "audio": { "mimes": ["audio/mp4"] },
+          "ext": { "bidder": { "placementId": "111c7fb088" } }
+        }],
+        "app": { "bundle": "com.example.radio" },
+        "device": { "ua": "Mozilla/5.0", "ip": "203.0.113.10" }
+      },
+      "impIDs": ["audio-1"]
+    },
+    "mockResponse": {
+      "status": 200,
+      "body": {
+        "id": "s2s_audio_1",
+        "cur": "USD",
+        "seatbid": [{
+          "seat": "adferry",
+          "bid": [{
+            "id": "b_audio",
+            "impid": "audio-1",
+            "price": 3.1,
+            "adm": "<VAST version=\"4.2\"><Ad><InLine/></Ad></VAST>",
+            "crid": "src-audio",
+            "mtype": 3
+          }]
+        }]
+      }
+    }
+  }],
+  "expectedBidResponses": [{
+    "currency": "USD",
+    "bids": [{
+      "bid": {
+        "id": "b_audio",
+        "impid": "audio-1",
+        "price": 3.1,
+        "adm": "<VAST version=\"4.2\"><Ad><InLine/></Ad></VAST>",
+        "crid": "src-audio",
+        "mtype": 3
+      },
+      "type": "audio"
+    }]
+  }]
+}

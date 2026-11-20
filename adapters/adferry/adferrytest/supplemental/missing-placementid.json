@@ -1,0 +1,9 @@
+{
+  "expectedMakeRequestsErrors": [
+    { "value": "imp[0]: placementId is required", "comparison": "literal" }
+  ],
+  "mockBidRequest": {
+    "id": "r", "imp": [{ "id": "i", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 }, "ext": { "bidder": {} } }]
+  },
+  "httpCalls": []
+}

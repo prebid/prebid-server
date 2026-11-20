@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "s2s_banner", "imp": [{ "id": "banner-1", "banner": { "format": [{ "w": 300, "h": 250 }] }, "ext": { "bidder": { "placementId": "111c7fb088", "bidFloor": 1.5, "currency": "USD" } } }],
+    "site": { "page": "https://publisher.example/a" }
+  },
+  "httpCalls": [{
+    "expectedRequest": {
+      "uri": "https://rtb.adferry.co/api/ortb/prebid",
+      "body": { "id": "s2s_banner", "imp": [{ "id": "banner-1", "tagid": "111c7fb088", "bidfloor": 1.5, "bidfloorcur": "USD", "banner": { "format": [{ "w": 300, "h": 250 }] }, "ext": { "bidder": { "placementId": "111c7fb088", "bidFloor": 1.5, "currency": "USD" } } }], "site": { "page": "https://publisher.example/a" } },
+      "impIDs": ["banner-1"]
+    },
+    "mockResponse": { "status": 200, "body": { "id": "s2s_banner", "cur": "USD", "seatbid": [{ "seat": "adferry", "bid": [{ "id": "bb", "impid": "banner-1", "price": 1.9, "adm": "<div>ad</div>", "crid": "c", "w": 300, "h": 250, "mtype": 1 }] }] } }
+  }],
+  "expectedBidResponses": [{ "currency": "USD", "bids": [{ "bid": { "id": "bb", "impid": "banner-1", "price": 1.9, "adm": "<div>ad</div>", "crid": "c", "w": 300, "h": 250, "mtype": 1 }, "type": "banner" }] }]
+}
