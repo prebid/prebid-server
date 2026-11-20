@@ -71,6 +71,8 @@ func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
 		return openrtb_ext.BidTypeBanner, nil
 	case openrtb2.MarkupVideo:
 		return openrtb_ext.BidTypeVideo, nil
+	case openrtb2.MarkupNative:
+		return openrtb_ext.BidTypeNative, nil
 	}
 	return "", &errortypes.BadInput{
 		Message: fmt.Sprintf("Could not define bid type for imp: %s", bid.ImpID),
