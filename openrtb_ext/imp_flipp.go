@@ -13,4 +13,5 @@ type ImpExtFlippOptions struct {
 	StartCompact bool   `json:"startCompact,omitempty"`
 	DwellExpand  bool   `json:"dwellExpand,omitempty"`
 	ContentCode  string `json:"contentCode,omitempty"`
+	MobileSwipe  bool   `json:"mobileSwipe,omitempty"`
 }

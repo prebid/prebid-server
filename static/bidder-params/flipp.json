@@ -40,6 +40,9 @@
         },
         "contentCode": {
           "type": "string"
+        },
+        "mobileSwipe": {
+          "type": "boolean"
         }
       }
     }
