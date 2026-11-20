@@ -1,0 +1,158 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/news"
+    },
+    "imp": [
+      {
+        "id": "imp-banner",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "11111"
+          }
+        }
+      },
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": ["video/mp4"],
+          "protocols": [2, 3],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "22222"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/news"
+          },
+          "imp": [
+            {
+              "id": "imp-banner",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "placementId": "11111"
+              }
+            },
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": ["video/mp4"],
+                "protocols": [2, 3],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "placementId": "22222"
+              }
+            }
+          ],
+          "ext": {
+            "session": {
+              "id": "test-request-id"
+            }
+          }
+        },
+        "impIDs": ["imp-banner", "imp-video"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "camino",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-banner",
+                  "price": 0.75,
+                  "adm": "<div>banner</div>",
+                  "crid": "crid-1",
+                  "mtype": 1
+                },
+                {
+                  "id": "bid-2",
+                  "impid": "imp-video",
+                  "price": 3.5,
+                  "adm": "<VAST version=\"4.0\"></VAST>",
+                  "crid": "crid-2"
+                },
+                {
+                  "id": "bid-3",
+                  "impid": "imp-banner",
+                  "price": 1,
+                  "adm": "{\"native\":{}}",
+                  "crid": "crid-3",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-banner",
+            "price": 0.75,
+            "adm": "<div>banner</div>",
+            "crid": "crid-1",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unsupported mtype 0 for bid bid-2 on impression imp-video",
+      "comparison": "literal"
+    },
+    {
+      "value": "Unsupported mtype 4 for bid bid-3 on impression imp-banner",
+      "comparison": "literal"
+    }
+  ]
+}

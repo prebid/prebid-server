@@ -1,0 +1,71 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/news"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "12345"
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "cur": ["USD"],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/news"
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "placementId": "12345"
+              }
+            }
+          ],
+          "ext": {
+            "session": {
+              "id": "test-request-id"
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+
+  "expectedBidResponses": []
+}

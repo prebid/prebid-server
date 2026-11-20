@@ -1,0 +1,36 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/news"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": 12345
+          }
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [],
+
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp test-imp-id: invalid imp.ext.bidder: ",
+      "comparison": "regex"
+    }
+  ]
+}

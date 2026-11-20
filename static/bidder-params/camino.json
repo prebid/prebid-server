@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Camino Adapter Params",
+  "description": "A schema which validates params accepted by the Camino adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Camino placement identifier"
+    },
+    "publisherId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Camino publisher identifier"
+    }
+  },
+
+  "required": ["publisherId"]
+}

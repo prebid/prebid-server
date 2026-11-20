@@ -76,6 +76,7 @@ import (
 	"github.com/prebid/prebid-server/v4/adapters/brave"
 	"github.com/prebid/prebid-server/v4/adapters/bwx"
 	cadentaperturemx "github.com/prebid/prebid-server/v4/adapters/cadent_aperture_mx"
+	"github.com/prebid/prebid-server/v4/adapters/camino"
 	"github.com/prebid/prebid-server/v4/adapters/ccx"
 	"github.com/prebid/prebid-server/v4/adapters/clickio"
 	"github.com/prebid/prebid-server/v4/adapters/clydo"
@@ -367,6 +368,7 @@ func newAdapterBuilders() map[openrtb_ext.BidderName]adapters.Builder {
 		openrtb_ext.BidderBrave:             brave.Builder,
 		openrtb_ext.BidderBWX:               bwx.Builder,
 		openrtb_ext.BidderCadentApertureMX:  cadentaperturemx.Builder,
+		openrtb_ext.BidderCamino:            camino.Builder,
 		openrtb_ext.BidderCcx:               ccx.Builder,
 		openrtb_ext.BidderClickio:           clickio.Builder,
 		openrtb_ext.BidderClydo:             clydo.Builder,

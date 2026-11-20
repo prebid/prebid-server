@@ -1,0 +1,120 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "tmax": 1000,
+    "site": {
+      "domain": "example.com",
+      "page": "https://example.com/news"
+    },
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "987"
+          },
+          "gpid": "/1111/homepage#div-1",
+          "tid": "test-imp-tid"
+        }
+      }
+    ]
+  },
+
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://any.url",
+        "body": {
+          "id": "test-request-id",
+          "tmax": 1000,
+          "cur": ["USD"],
+          "site": {
+            "domain": "example.com",
+            "page": "https://example.com/news",
+            "publisher": {
+              "id": "987"
+            }
+          },
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "gpid": "/1111/homepage#div-1",
+                "tid": "test-imp-tid"
+              }
+            }
+          ],
+          "ext": {
+            "session": {
+              "id": "test-request-id"
+            }
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "camino",
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 1.23,
+                  "adm": "<div>ad</div><img src=\"https://rt.camino.example/auction/close?price=${AUCTION_PRICE}\">",
+                  "crid": "test-crid",
+                  "adomain": ["camino.example"],
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 1.23,
+            "adm": "<div>ad</div><img src=\"https://rt.camino.example/auction/close?price=1.23\">",
+            "crid": "test-crid",
+            "adomain": ["camino.example"],
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

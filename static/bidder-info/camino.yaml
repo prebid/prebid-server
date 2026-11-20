@@ -1,0 +1,19 @@
+endpoint: "https://rtb.cmngrp.com/auction/s2s"
+endpointCompression: gzip
+gvlVendorID: 1670
+geoscope:
+  - global
+maintainer:
+  email: tech@camino-labs.com
+modifyingVastXmlAllowed: true
+openrtb:
+  version: 2.6
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+userSync:
+  iframe:
+    url: https://rtb.cmngrp.com/sync/pbs?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redirect={{.RedirectURL}}
+    userMacro: $UID
