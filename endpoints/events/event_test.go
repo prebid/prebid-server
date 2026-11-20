@@ -724,6 +724,18 @@ func TestEventRequestToUrl(t *testing.T) {
 			},
 			want: "http://localhost:8000/event?t=win&b=bidid&a=accountId&bidder=bidder&f=i&int=integration&ts=1234567&x=0",
 		},
+		"encodes reserved characters in bid and account ids": {
+			er: &analytics.EventRequest{
+				Type:      analytics.Imp,
+				BidID:     "bid&extra=1",
+				AccountID: "acct=prod",
+				Bidder:    "bidder",
+				Timestamp: 1234567,
+				Format:    analytics.Blank,
+				Analytics: analytics.Enabled,
+			},
+			want: "http://localhost:8000/event?t=imp&b=bid%26extra%3D1&a=acct%3Dprod&bidder=bidder&f=b&ts=1234567&x=1",
+		},
 	}
 
 	for name, test := range tests {
