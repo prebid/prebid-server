@@ -35,6 +35,7 @@ var coreBidderNames []BidderName = []BidderName{
 	BidderAdmixer,
 	BidderAdnuntius,
 	BidderAdot,
+	BidderAdplayx,
 	BidderAdpone,
 	BidderAdprime,
 	BidderAdquery,
@@ -433,6 +434,7 @@ const (
 	BidderAdmixer           BidderName = "admixer"
 	BidderAdnuntius         BidderName = "adnuntius"
 	BidderAdot              BidderName = "adot"
+	BidderAdplayx           BidderName = "adplayx"
 	BidderAdpone            BidderName = "adpone"
 	BidderAdprime           BidderName = "adprime"
 	BidderAdquery           BidderName = "adquery"
