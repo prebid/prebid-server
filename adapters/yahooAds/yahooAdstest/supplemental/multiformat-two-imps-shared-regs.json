@@ -7,6 +7,7 @@
         "banner": {
           "format": [{"w": 300, "h": 250}]
         },
+        "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -19,6 +20,7 @@
         "banner": {
           "format": [{"w": 728, "h": 90}]
         },
+        "video": {"mimes": ["video/mp4"], "w": 728, "h": 90},
         "ext": {
           "bidder": {
             "dcn": "dcn1",
@@ -76,6 +78,7 @@
                 "w": 300,
                 "h": 250
               },
+              "video": {"mimes": ["video/mp4"], "w": 300, "h": 250},
               "ext": {
                 "bidder": {
                   "dcn": "dcn1",
@@ -107,9 +110,30 @@
               "bid": [{
                 "id": "bid-1",
                 "impid": "test-imp-1",
+                "mtype": 2,
                 "price": 0.500000,
-                "adm": "some-test-ad",
+                "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
                 "crid": "crid_10",
+                "h": 250,
+                "w": 300
+              },
+              {
+                "id": "bid-3",
+                "impid": "test-imp-1",
+                "mtype": 3,
+                "price": 0.1,
+                "adm": "<VAST version=\"4.0\"></VAST>",
+                "crid": "crid_12",
+                "h": 250,
+                "w": 300
+              },
+              {
+                "id": "bid-5",
+                "impid": "test-imp-1",
+                "mtype": 1,
+                "price": 0.300000,
+                "adm": "<div>some-test-ad</div>",
+                "crid": "crid_14",
                 "h": 250,
                 "w": 300
               }]
@@ -151,6 +175,7 @@
                 "w": 728,
                 "h": 90
               },
+              "video": {"mimes": ["video/mp4"], "w": 728, "h": 90},
               "ext": {
                 "bidder": {
                   "dcn": "dcn1",
@@ -183,8 +208,17 @@
                 "id": "bid-2",
                 "impid": "test-imp-2",
                 "price": 0.750000,
-                "adm": "some-test-ad-2",
+                "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
                 "crid": "crid_11",
+                "h": 90,
+                "w": 728
+              },
+              {
+                "id": "bid-4",
+                "impid": "test-imp-2",
+                "price": 0.250000,
+                "adm": "<div>some-test-ad-2</div>",
+                "crid": "crid_13",
                 "h": 90,
                 "w": 728
               }]
@@ -196,6 +230,13 @@
     }
   ],
 
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unsupported mtype 3 for bid 'bid-3'",
+      "comparison": "literal"
+    }
+  ],
+
   "expectedBidResponses": [
     {
       "currency": "USD",
@@ -204,9 +245,23 @@
           "bid": {
             "id": "bid-1",
             "impid": "test-imp-1",
+            "mtype": 2,
             "price": 0.5,
-            "adm": "some-test-ad",
+            "adm": "<VAST version=\"4.0\"><Ad><InLine></InLine></Ad></VAST>",
             "crid": "crid_10",
+            "w": 300,
+            "h": 250
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-5",
+            "impid": "test-imp-1",
+            "mtype": 1,
+            "price": 0.3,
+            "adm": "<div>some-test-ad</div>",
+            "crid": "crid_14",
             "w": 300,
             "h": 250
           },
@@ -222,8 +277,20 @@
             "id": "bid-2",
             "impid": "test-imp-2",
             "price": 0.75,
-            "adm": "some-test-ad-2",
+            "adm": "<VAST version=\"4.0\"><Ad></Ad></VAST>",
             "crid": "crid_11",
+            "w": 728,
+            "h": 90
+          },
+          "type": "video"
+        },
+        {
+          "bid": {
+            "id": "bid-4",
+            "impid": "test-imp-2",
+            "price": 0.25,
+            "adm": "<div>some-test-ad-2</div>",
+            "crid": "crid_13",
             "w": 728,
             "h": 90
           },
