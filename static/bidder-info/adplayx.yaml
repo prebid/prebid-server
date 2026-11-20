@@ -1,0 +1,15 @@
+endpoint: "https://api.adplayx.net/v1.0/ortb"
+maintainer:
+  email: "support@adplayx.com"
+modifyingVastXmlAllowed: true
+openrtb:
+  version: "2.6"
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+  site:
+    mediaTypes:
+      - banner
+      - video

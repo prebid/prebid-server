@@ -1,0 +1,91 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "test-imp-id",
+        "banner": {
+          "format": [{ "w": 728, "h": 90 }]
+        },
+        "ext": {
+          "bidder": {
+            "apptoken": "test-app-token",
+            "placementid": "placement-123"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.adplayx.net/v1.0/ortb?apptoken=test-app-token&placementid=placement-123",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "test-imp-id",
+              "banner": {
+                "format": [{ "w": 728, "h": 90 }]
+              },
+              "ext": {
+                "bidder": {
+                  "apptoken": "test-app-token",
+                  "placementid": "placement-123"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          }
+        },
+        "impIDs": ["test-imp-id"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "test-bid-id",
+                  "impid": "test-imp-id",
+                  "price": 2.0,
+                  "adm": "test-ad-markup",
+                  "crid": "test-crid",
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "test-bid-id",
+            "impid": "test-imp-id",
+            "price": 2.0,
+            "adm": "test-ad-markup",
+            "crid": "test-crid",
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

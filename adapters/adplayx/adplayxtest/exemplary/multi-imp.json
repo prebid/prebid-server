@@ -1,0 +1,164 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-id",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [{ "w": 300, "h": 250 }]
+        },
+        "ext": {
+          "bidder": {
+            "apptoken": "token-1"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "w": 640,
+          "h": 480,
+          "mimes": ["video/mp4"],
+          "protocols": [1, 2, 3]
+        },
+        "ext": {
+          "bidder": {
+            "apptoken": "token-2",
+            "placementid": "placement-2"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.com"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://api.adplayx.net/v1.0/ortb?apptoken=token-1",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [{ "w": 300, "h": 250 }]
+              },
+              "ext": {
+                "bidder": {
+                  "apptoken": "token-1"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          }
+        },
+        "impIDs": ["imp-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "adm": "banner-ad-markup",
+                  "mtype": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://api.adplayx.net/v1.0/ortb?apptoken=token-2&placementid=placement-2",
+        "body": {
+          "id": "test-request-id",
+          "imp": [
+            {
+              "id": "imp-2",
+              "video": {
+                "w": 640,
+                "h": 480,
+                "mimes": ["video/mp4"],
+                "protocols": [1, 2, 3]
+              },
+              "ext": {
+                "bidder": {
+                  "apptoken": "token-2",
+                  "placementid": "placement-2"
+                }
+              }
+            }
+          ],
+          "site": {
+            "page": "https://example.com"
+          }
+        },
+        "impIDs": ["imp-2"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-request-id",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-2",
+                  "impid": "imp-2",
+                  "price": 2.5,
+                  "adm": "video-ad-markup",
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "adm": "banner-ad-markup",
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-2",
+            "impid": "imp-2",
+            "price": 2.5,
+            "adm": "video-ad-markup",
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
