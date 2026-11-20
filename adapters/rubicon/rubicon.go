@@ -405,7 +405,7 @@ func (a *RubiconAdapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *ada
 			siteExtRP := rubiconSiteExt{RP: rubiconSiteExtRP{SiteID: int(siteId)}}
 			if siteCopy.Content != nil {
 				siteTarget := make(map[string]interface{})
-				updateExtWithIabAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
+				updateExtWithIabAndSegtaxAttribute(siteTarget, siteCopy.Content.Data, []int{1, 2, 5, 6})
 				if len(siteTarget) > 0 {
 					updatedSiteTarget, err := json.Marshal(siteTarget)
 					if err != nil {
@@ -751,7 +751,7 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	if err != nil {
 		return nil, err
 	}
-	updateExtWithIabAttribute(target, user.Data, []int{4})
+	updateExtWithIabAndSegtaxAttribute(target, user.Data, []int{4})
 
 	updatedTarget, err := json.Marshal(target)
 	if err != nil {
@@ -760,13 +760,56 @@ func updateUserRpTargetWithFpdAttributes(visitor json.RawMessage, user openrtb2.
 	return updatedTarget, nil
 }
 
-func updateExtWithIabAttribute(target map[string]interface{}, data []openrtb2.Data, segTaxes []int) {
-	var segmentIdsToCopy = getSegmentIdsToCopy(data, segTaxes)
-	if len(segmentIdsToCopy) == 0 {
-		return
+func updateExtWithIabAndSegtaxAttribute(target map[string]interface{}, data []openrtb2.Data, iabTaxes []int) {
+	consumedSegmentsCount := 0
+	for _, dataRecord := range data {
+		if dataRecord.Ext == nil {
+			continue
+		}
+
+		var dataRecordExt rubiconDataExt
+		err := json.Unmarshal(dataRecord.Ext, &dataRecordExt)
+		if err != nil {
+			continue
+		}
+
+		originalSegments := dataRecord.Segment
+		if len(originalSegments) == 0 {
+			continue
+		}
+
+		taxName := resolveTaxName(dataRecordExt.SegTax, iabTaxes)
+		segmentsIds := make([]string, len(originalSegments))
+		for i, segment := range originalSegments {
+			segmentsIds[i] = segment.ID
+		}
+
+		consumedSegmentsCount += len(originalSegments)
+		sliceSize := len(originalSegments)
+		if consumedSegmentsCount > 100 {
+			sliceSize -= consumedSegmentsCount - 100
+		}
+		truncatedSegmentsIds := segmentsIds[:sliceSize]
+
+		ids, exists := target[taxName]
+		if !exists {
+			target[taxName] = truncatedSegmentsIds
+		} else {
+			target[taxName] = append(ids.([]string), truncatedSegmentsIds...)
+		}
+
+		if consumedSegmentsCount >= 100 {
+			break
+		}
+	}
+}
+
+func resolveTaxName(taxonomyId int, iabTaxes []int) string {
+	if !contains(iabTaxes, taxonomyId) {
+		return "tax" + strconv.Itoa(taxonomyId)
 	}
 
-	target["iab"] = segmentIdsToCopy
+	return "iab"
 }
 
 func populateFirstPartyDataAttributes(source json.RawMessage, target map[string]interface{}) error {
@@ -843,26 +886,6 @@ func mapFromRawJSON(message json.RawMessage) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return targetAsMap, nil
-}
-
-func getSegmentIdsToCopy(data []openrtb2.Data, segTaxValues []int) []string {
-	var segmentIdsToCopy = make([]string, 0, len(data))
-
-	for _, dataRecord := range data {
-		if dataRecord.Ext != nil {
-			var dataExtObject rubiconDataExt
-			err := jsonutil.Unmarshal(dataRecord.Ext, &dataExtObject)
-			if err != nil {
-				continue
-			}
-			if contains(segTaxValues, dataExtObject.SegTax) {
-				for _, segment := range dataRecord.Segment {
-					segmentIdsToCopy = append(segmentIdsToCopy, segment.ID)
-				}
-			}
-		}
-	}
-	return segmentIdsToCopy
 }
 
 func contains(s []int, e int) bool {
