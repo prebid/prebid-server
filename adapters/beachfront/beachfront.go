@@ -704,7 +704,7 @@ func postprocessVideo(bids []openrtb2.Bid, xtrnal openrtb2.BidRequest, uri strin
 
 func extractNurlVideoCrid(nurl string) string {
 	chunky := strings.SplitAfter(nurl, ":")
-	if len(chunky) > 1 {
+	if len(chunky) > 2 {
 		return strings.TrimSuffix(chunky[2], ":")
 	}
 
