@@ -1,0 +1,66 @@
+{
+    "mockBidRequest": {
+        "id": "test-request-id",
+        "imp": [
+            {
+                "id": "1",
+                "banner": {
+                    "format": [
+                        {
+                            "w": 300,
+                            "h": 250
+                        }
+                    ]
+                },
+                "ext": {
+                    "gpid": "/1234/home#div-banner",
+                    "data": {
+                        "pbadslot": "/1234/home"
+                    },
+                    "bidder": {
+                        "placement_id": 999999
+                    }
+                }
+            }
+        ]
+    },
+    "httpCalls": [
+        {
+            "expectedRequest": {
+                "uri": "http://mfx.mobilefuse.com/openrtb",
+                "body": {
+                    "id": "test-request-id",
+                    "imp": [
+                        {
+                            "id": "1",
+                            "banner": {
+                                "format": [
+                                    {
+                                        "w": 300,
+                                        "h": 250
+                                    }
+                                ]
+                            },
+                            "tagid": "999999",
+                            "ext": {
+                                "gpid": "/1234/home#div-banner",
+                                "data": {
+                                    "pbadslot": "/1234/home"
+                                },
+                                "bidder": {
+                                    "placement_id": 999999
+                                }
+                            }
+                        }
+                    ]
+                },
+                "impIDs":["1"]
+            },
+            "mockResponse": {
+                "status": 204,
+                "body": {}
+            }
+        }
+    ],
+    "expectedBidResponses": []
+}

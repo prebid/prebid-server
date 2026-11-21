@@ -60,6 +60,9 @@
                                         "424m5254lk.skadnetwork",
                                         "4fzdc2evr5.skadnetwork"
                                     ]
+                                },
+                                "bidder": {
+                                    "placement_id": 999999
                                 }
                             }
                         }

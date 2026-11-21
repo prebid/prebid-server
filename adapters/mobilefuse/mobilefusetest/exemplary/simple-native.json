@@ -29,7 +29,12 @@
                                 "ver": "1.2",
                                 "request": "{\"native\":{\"assets\":[{\"id\":0,\"required\":1,\"img\":{\"url\":\"...\"}},{\"id\":1,\"required\":1,\"title\":{\"text\":\"custom title\"}}]}}"
                             },
-                            "tagid": "123456"
+                            "tagid": "123456",
+                            "ext": {
+                                "bidder": {
+                                    "placement_id": 123456
+                                }
+                            }
                         }
                     ]
                 },

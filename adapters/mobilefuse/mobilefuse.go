@@ -18,10 +18,6 @@ type MobileFuseAdapter struct {
 	Endpoint string
 }
 
-type ExtSkadn struct {
-	Skadn json.RawMessage `json:"skadn"`
-}
-
 // Builder builds a new instance of the MobileFuse adapter for the given bidder with the given config.
 func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server config.Server) (adapters.Bidder, error) {
 	bidder := &MobileFuseAdapter{
@@ -170,22 +166,6 @@ func getValidImps(bidRequest *openrtb2.BidRequest, ext *openrtb_ext.ExtImpMobile
 			}
 
 			imp.TagID = strconv.Itoa(ext.PlacementId)
-
-			var extSkadn ExtSkadn
-			err = jsonutil.Unmarshal(imp.Ext, &extSkadn)
-			if err != nil {
-				return nil, err
-			}
-
-			if extSkadn.Skadn != nil {
-				imp.Ext, err = json.Marshal(map[string]json.RawMessage{"skadn": extSkadn.Skadn})
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				imp.Ext = nil
-			}
-
 			validImps = append(validImps, imp)
 		}
 	}
