@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "test-request-no-imps",
+    "imp": [],
+    "site": {
+      "domain": "example.com"
+    }
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "no impressions in request",
+      "comparison": "literal"
+    }
+  ]
+}
