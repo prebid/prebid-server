@@ -1,0 +1,31 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": "not-an-object"
+      }
+    ]
+  },
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-1: invalid imp.ext: .*",
+      "comparison": "regex"
+    }
+  ],
+  "httpCalls": [],
+  "expectedBidResponses": []
+}

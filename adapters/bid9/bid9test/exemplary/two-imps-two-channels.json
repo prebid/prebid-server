@@ -1,0 +1,221 @@
+{
+  "mockBidRequest": {
+    "id": "req-1",
+    "site": {
+      "page": "https://publisher.test/page",
+      "domain": "publisher.test"
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-a"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "w": 640,
+          "h": 480,
+          "protocols": [
+            2,
+            3
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "channelId": "chan-b"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-a",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test"
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "tagid": "chan-a",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-a"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-1",
+                  "impid": "imp-1",
+                  "price": 1.5,
+                  "crid": "crid-1",
+                  "adm": "<div>ad</div>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    },
+    {
+      "expectedRequest": {
+        "uri": "http://test.endpoint/sspRTB2?tagid=chan-b",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "body": {
+          "id": "req-1",
+          "site": {
+            "page": "https://publisher.test/page",
+            "domain": "publisher.test"
+          },
+          "imp": [
+            {
+              "id": "imp-2",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "w": 640,
+                "h": 480,
+                "protocols": [
+                  2,
+                  3
+                ]
+              },
+              "tagid": "chan-b",
+              "ext": {
+                "bid9": {
+                  "channelId": "chan-b"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-2"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-1",
+          "seatbid": [
+            {
+              "seat": "bid9",
+              "bid": [
+                {
+                  "id": "bid-imp-2",
+                  "impid": "imp-2",
+                  "price": 1.5,
+                  "crid": "crid-1",
+                  "adm": "<?xml version=\"1.0\"?><VAST version=\"4.0\"></VAST>",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 2
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-1",
+            "impid": "imp-1",
+            "price": 1.5,
+            "crid": "crid-1",
+            "adm": "<div>ad</div>",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    },
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-imp-2",
+            "impid": "imp-2",
+            "price": 1.5,
+            "crid": "crid-1",
+            "adm": "<?xml version=\"1.0\"?><VAST version=\"4.0\"></VAST>",
+            "w": 300,
+            "h": 250,
+            "mtype": 2
+          },
+          "type": "video"
+        }
+      ]
+    }
+  ]
+}
