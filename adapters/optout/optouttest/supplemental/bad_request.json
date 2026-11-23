@@ -26,7 +26,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bid.example.test/bid",
+        "uri": "https://bid.example.test/prebid/display",
         "body": {
           "publisher": "152",
           "slots": [
@@ -68,7 +68,7 @@
   "expectedBidResponses": [],
   "expectedMakeBidsErrors": [
     {
-      "value": "optout: unexpected HTTP status 400",
+      "value": "Unexpected status code: 400. Run with request.debug = 1 for more info",
       "comparison": "literal"
     }
   ]

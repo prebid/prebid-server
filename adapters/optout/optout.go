@@ -78,9 +78,6 @@ type optoutBid struct {
 
 // Builder requires the single Opt Out DSP endpoint from the server configuration.
 func Builder(_ openrtb_ext.BidderName, cfg config.Adapter, _ config.Server) (adapters.Bidder, error) {
-	if cfg.Endpoint == "" {
-		return nil, fmt.Errorf("optout: missing endpoint")
-	}
 	return &adapter{endpoint: cfg.Endpoint}, nil
 }
 
@@ -90,19 +87,13 @@ func decodeParams(imp openrtb2.Imp) (openrtb_ext.ImpExtOptout, error) {
 		return openrtb_ext.ImpExtOptout{}, fmt.Errorf("invalid impression extension: %w", err)
 	}
 	var p openrtb_ext.ImpExtOptout
-	if len(ext.Bidder) == 0 {
-		return p, fmt.Errorf("missing bidder parameters")
-	}
 	if err := jsonutil.Unmarshal(ext.Bidder, &p); err != nil {
 		return p, fmt.Errorf("invalid bidder parameters: %w", err)
-	}
-	if p.Publisher == "" || p.AdSlot == "" {
-		return p, fmt.Errorf("publisher and adSlot are required")
 	}
 	return p, nil
 }
 
-func normalizeCustoms(customs map[string]interface{}) map[string]string {
+func normalizeCustoms(customs map[string]interface{}) (map[string]string, error) {
 	result := map[string]string{}
 	for k, v := range customs {
 		if v == nil {
@@ -118,22 +109,18 @@ func normalizeCustoms(customs map[string]interface{}) map[string]string {
 			}
 			result[k] = strings.Join(vals, ",")
 		case map[string]interface{}:
-			if b, err := jsonutil.Marshal(value); err == nil {
-				result[k] = string(b)
+			b, err := jsonutil.Marshal(value)
+			if err != nil {
+				return nil, fmt.Errorf("cannot encode customs key %q: %w", k, err)
 			}
+			result[k] = string(b)
 		case string:
 			result[k] = value
 		default:
 			result[k] = fmt.Sprint(value)
 		}
 	}
-	return result
-}
-
-func mergeCustoms(dst map[string]string, data map[string]interface{}) {
-	for k, v := range normalizeCustoms(data) {
-		dst[k] = v
-	}
+	return result, nil
 }
 
 func mergeExtData(dst map[string]string, ext json.RawMessage, source string) error {
@@ -146,7 +133,13 @@ func mergeExtData(dst map[string]string, ext json.RawMessage, source string) err
 	if err := jsonutil.Unmarshal(ext, &wrapped); err != nil {
 		return &errortypes.BadInput{Message: fmt.Sprintf("optout: invalid %s.ext: %v", source, err)}
 	}
-	mergeCustoms(dst, wrapped.Data)
+	customs, err := normalizeCustoms(wrapped.Data)
+	if err != nil {
+		return fmt.Errorf("optout: %s.ext.data: %w", source, err)
+	}
+	for k, v := range customs {
+		dst[k] = v
+	}
 	return nil
 }
 
@@ -194,42 +187,25 @@ func mayForwardPersonalData(req *openrtb2.BidRequest, tcString string) bool {
 		consent.VendorConsent(optoutVendorID)
 }
 
-// makeForwardableORTB2 creates a separate OpenRTB request for forwarding.
-// Never mutate the request shared by Prebid Server and other adapters.
-// When the privacy check fails, replace the complete user object with a
-// marker-only object and redact any IP addresses in device.
-func makeForwardableORTB2(req *openrtb2.BidRequest, allowPersonalData bool) (*openrtb2.BidRequest, error) {
-	raw, err := jsonutil.Marshal(req)
-	if err != nil {
-		return nil, err
+// makeForwardableORTB2 copies only the parts it needs to redact.
+func makeForwardableORTB2(req *openrtb2.BidRequest, allowPersonalData bool) *openrtb2.BidRequest {
+	if allowPersonalData {
+		return req
 	}
-	var copied openrtb2.BidRequest
-	if err := jsonutil.Unmarshal(raw, &copied); err != nil {
-		return nil, err
+	copied := *req
+	copied.User = &openrtb2.User{
+		Ext: json.RawMessage(`{"optout":{"redacted":true}}`),
 	}
-	if !allowPersonalData {
-		copied.User = &openrtb2.User{
-			Ext: json.RawMessage(`{"optout":{"redacted":true}}`),
-		}
-		if copied.Device != nil {
-			if copied.Device.IP != "" {
-				copied.Device.IP = ""
-			}
-			if copied.Device.IPv6 != "" {
-				copied.Device.IPv6 = ""
-			}
-		}
+	if req.Device != nil {
+		device := *req.Device
+		device.IP = ""
+		device.IPv6 = ""
+		copied.Device = &device
 	}
-	return &copied, nil
+	return &copied
 }
 
 func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraRequestInfo) ([]*adapters.RequestData, []error) {
-	if req == nil {
-		return nil, []error{
-			&errortypes.BadInput{Message: "optout: nil request"},
-		}
-	}
-
 	var errors []error
 	var publisher string
 	var slots []optoutSlot
@@ -248,20 +224,24 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 			continue
 		}
 
-		if publisher == "" {
-			publisher = p.Publisher
-		} else if p.Publisher != publisher {
+		if len(slots) > 0 && p.Publisher != publisher {
 			errors = append(errors, &errortypes.BadInput{
 				Message: fmt.Sprintf("optout: imp %s has publisher %s, expected %s", imp.ID, p.Publisher, publisher),
 			})
 			continue
 		}
 
+		customs, err := normalizeCustoms(p.Customs)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("optout: imp %s: %w", imp.ID, err))
+			continue
+		}
+		publisher = p.Publisher
 		slots = append(slots, optoutSlot{
 			AdSlot:  p.AdSlot,
 			ID:      imp.ID,
 			Sizes:   getAllowedSizes(imp),
-			Customs: normalizeCustoms(p.Customs),
+			Customs: customs,
 		})
 		impIDs = append(impIDs, imp.ID)
 		includeOrtb2 = includeOrtb2 || p.IncludeOrtb2
@@ -278,11 +258,6 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 	consent := readConsent(req)
 	// Apply preliminary consent-based personal data filtering.
 	forwardPersonalData := mayForwardPersonalData(req, consent)
-	// Build a privacy-filtered clone for ortb2 and the top-level device field.
-	forwardable, err := makeForwardableORTB2(req, forwardPersonalData)
-	if err != nil {
-		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("optout: cannot clone OpenRTB request: %v", err)}}
-	}
 
 	currency := defaultCurrency
 	if len(req.Cur) > 0 {
@@ -321,19 +296,19 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 		GDPR:       gdpr,
 		Customs:    requestCustoms,
 	}
-	if forwardable.Device != nil {
-		data.OS = forwardable.Device.OS
+	if req.Device != nil {
+		data.OS = req.Device.OS
 	}
-	if forwardPersonalData && forwardable.User != nil && forwardable.User.BuyerUID != "" {
+	if forwardPersonalData && req.User != nil && req.User.BuyerUID != "" {
 		data.Viewer = &viewer{
-			Id:      forwardable.User.BuyerUID,
+			Id:      req.User.BuyerUID,
 			Matcher: matcherName,
 		}
 	}
 	if includeOrtb2 {
-		ortbJSON, err := jsonutil.Marshal(forwardable)
+		ortbJSON, err := jsonutil.Marshal(makeForwardableORTB2(req, forwardPersonalData))
 		if err != nil {
-			errors = append(errors, err)
+			errors = append(errors, fmt.Errorf("optout: cannot encode ortb2: %w", err))
 		} else {
 			data.ORTB2 = string(ortbJSON)
 		}
@@ -396,14 +371,11 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 	if response == nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: "optout: nil response"}}
 	}
-	if response.StatusCode == http.StatusNoContent {
+	if adapters.IsResponseStatusCodeNoContent(response) {
 		return nil, nil
 	}
-	if response.StatusCode == http.StatusBadRequest {
-		return nil, []error{&errortypes.BadInput{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("optout: unexpected HTTP status %d", response.StatusCode)}}
+	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		return nil, []error{err}
 	}
 	if outgoing == nil {
 		return nil, []error{&errortypes.BadServerResponse{Message: "optout: missing outgoing request"}}
@@ -482,18 +454,33 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 			ttl = defaultTTL
 		}
 
+		var advertiserDomains []string
+		if len(b.Meta) > 0 {
+			var meta struct {
+				AdvertiserDomains []string `json:"advertiserDomains"`
+			}
+			if err := jsonutil.Unmarshal(b.Meta, &meta); err != nil {
+				errors = append(errors, &errortypes.BadServerResponse{
+					Message: fmt.Sprintf("optout: invalid bid metadata for impression %q: %v", b.RequestID, err),
+				})
+			} else {
+				advertiserDomains = meta.AdvertiserDomains
+			}
+		}
+
 		// The Opt Out endpoint has no separate bid ID, so the impression ID is reused.
 		// This is unique because the endpoint returns at most one bid per slot
 		bid := &openrtb2.Bid{
-			ID:    b.RequestID,
-			ImpID: b.RequestID,
-			Price: b.CPM,
-			AdM:   b.Ad,
-			W:     b.Width,
-			H:     b.Height,
-			CrID:  b.CreativeID,
-			Exp:   ttl,
-			Ext:   bidExt,
+			ID:      b.RequestID,
+			ImpID:   b.RequestID,
+			Price:   b.CPM,
+			AdM:     b.Ad,
+			W:       b.Width,
+			H:       b.Height,
+			CrID:    b.CreativeID,
+			Exp:     ttl,
+			ADomain: advertiserDomains,
+			Ext:     bidExt,
 		}
 		currency = b.Currency
 		result.Bids = append(result.Bids, &adapters.TypedBid{

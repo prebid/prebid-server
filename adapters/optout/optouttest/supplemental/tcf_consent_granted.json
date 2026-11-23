@@ -1,0 +1,108 @@
+{
+  "mockBidRequest": {
+    "id": "tcf_consent_granted",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {"bidder":{"publisher":"152","adSlot":"home","includeOrtb2":true}}
+      }
+    ],
+    "site": {
+      "page": "https://example.test/story"
+    },
+    "device": {
+      "ua": "Test agent",
+      "ipv6": "2001:db8::7",
+      "os": "Android"
+    },
+    "user": {
+      "id": "fixture-user",
+      "buyeruid": "fixture-viewer",
+      "consent": "CAAAAAAAAAAAAAAAAAAAABEAAEAAAAAAAAAABxgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA",
+      "ext": {"data":{"segment":"fixture-segment"}}
+    },
+    "source": {
+      "schain": {
+        "complete": 1,
+        "nodes": [
+          {
+            "asi": "example.test",
+            "sid": "152",
+            "hp": 1
+          }
+        ],
+        "ver": "1.0"
+      }
+    },
+    "regs": {
+      "gdpr": 1,
+      "us_privacy": "1---",
+      "gpp": "DBABLA",
+      "gpp_sid": [
+        7
+      ]
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/prebid/display",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "https://example.test/story",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "CAAAAAAAAAAAAAAAAAAAABEAAEAAAAAAAAAABxgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA",
+          "gdpr": 1,
+          "os": "Android",
+          "ortb2": "{\"id\":\"tcf_consent_granted\",\"imp\":[{\"id\":\"imp-1\",\"banner\":{\"w\":300,\"h\":250},\"ext\":{\"bidder\":{\"publisher\":\"152\",\"adSlot\":\"home\",\"includeOrtb2\":true}}}],\"site\":{\"page\":\"https://example.test/story\"},\"device\":{\"ua\":\"Test agent\",\"ipv6\":\"2001:db8::7\",\"os\":\"Android\"},\"user\":{\"id\":\"fixture-user\",\"buyeruid\":\"fixture-viewer\",\"consent\":\"CAAAAAAAAAAAAAAAAAAAABEAAEAAAAAAAAAABxgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA\",\"ext\":{\"data\":{\"segment\":\"fixture-segment\"}}},\"source\":{\"schain\":{\"complete\":1,\"nodes\":[{\"asi\":\"example.test\",\"sid\":\"152\",\"hp\":1}],\"ver\":\"1.0\"}},\"regs\":{\"gdpr\":1,\"us_privacy\":\"1---\",\"gpp\":\"DBABLA\",\"gpp_sid\":[7]}}",
+          "viewer": {
+            "id": "fixture-viewer",
+            "matcher": "PREBID"
+          },
+          "customs": {
+            "segment": "fixture-segment"
+          }
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "X-Device-User-Agent": [
+            "Test agent"
+          ],
+          "X-Forwarded-For": [
+            "2001:db8::7"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

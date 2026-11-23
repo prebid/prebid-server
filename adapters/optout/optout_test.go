@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
-const endpoint = "https://bid.example.test/bid"
+const endpoint = "https://bid.example.test/prebid/display"
 
 func parseRequest(t *testing.T, raw string) *openrtb2.BidRequest {
 	t.Helper()
@@ -66,27 +66,14 @@ func TestJSONSamples(t *testing.T) {
 	adapterstest.RunJSONBidderTest(t, "optouttest", bidder)
 }
 
-func TestBuilder(t *testing.T) {
-	if _, err := Builder("optout", config.Adapter{}, config.Server{}); err == nil {
-		t.Fatal("missing endpoint accepted")
-	}
-	b, err := Builder("optout", config.Adapter{Endpoint: endpoint}, config.Server{})
-	if err != nil || b == nil {
-		t.Fatalf("valid endpoint: bidder=%v err=%v", b, err)
-	}
-}
-
 func TestDecodeParams(t *testing.T) {
 	for _, tc := range []struct {
 		name, ext string
 		valid     bool
 	}{
 		{"valid", `{"bidder":{"publisher":"152","adSlot":"home","customs":{"section":"sports"}}}`, true},
-		{"missing bidder", `{}`, false},
 		{"invalid JSON", `{`, false},
 		{"invalid bidder", `{"bidder":{"publisher":3,"adSlot":"home"}}`, false},
-		{"missing publisher", `{"bidder":{"adSlot":"home"}}`, false},
-		{"missing adSlot", `{"bidder":{"publisher":"152"}}`, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := decodeParams(openrtb2.Imp{Ext: json.RawMessage(tc.ext)})
@@ -99,7 +86,10 @@ func TestDecodeParams(t *testing.T) {
 
 func TestCustomsNormalizationAndMerge(t *testing.T) {
 	input := map[string]interface{}{"s": "hello", "n": float64(42), "bool": true, "arr": []interface{}{"sports", "news"}, "nested": map[string]interface{}{"x": "y"}, "nil": nil}
-	got := normalizeCustoms(input)
+	got, err := normalizeCustoms(input)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for key, expected := range map[string]string{"s": "hello", "n": "42", "bool": "true", "arr": "sports,news", "nested": `{"x":"y"}`} {
 		if got[key] != expected {
 			t.Errorf("%s: got %q want %q", key, got[key], expected)
@@ -109,7 +99,9 @@ func TestCustomsNormalizationAndMerge(t *testing.T) {
 		t.Error("nil must be omitted")
 	}
 	dst := map[string]string{"section": "old", "untouched": "yes"}
-	mergeCustoms(dst, map[string]interface{}{"section": "new", "ignore": nil})
+	if err := mergeExtData(dst, json.RawMessage(`{"data":{"section":"new","ignore":null}}`), "site"); err != nil {
+		t.Fatal(err)
+	}
 	if dst["section"] != "new" || dst["untouched"] != "yes" {
 		t.Fatalf("bad merge: %v", dst)
 	}
@@ -181,10 +173,7 @@ func TestForwardableORTB2RedactionAndNoMutation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	redacted, err := makeForwardableORTB2(req, false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	redacted := makeForwardableORTB2(req, false)
 	if redacted.Device == nil || redacted.Device.IP != "" || redacted.Device.IPv6 != "" {
 		t.Fatalf("IP not cleared: %+v", redacted.Device)
 	}
@@ -198,10 +187,7 @@ func TestForwardableORTB2RedactionAndNoMutation(t *testing.T) {
 	if string(before) != string(after) {
 		t.Fatal("modified shared request")
 	}
-	allowed, err := makeForwardableORTB2(req, true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	allowed := makeForwardableORTB2(req, true)
 	if allowed.Device.IP != "203.0.113.10" || allowed.User.ID != "secret" {
 		t.Fatal("data unexpectedly removed with explicit permission")
 	}
@@ -233,9 +219,9 @@ func TestMakeRequestsOnePublisherSeparateSlotCustoms(t *testing.T) {
 }
 
 func TestMakeRequestsRejectsMixedPublisherAndInvalidImpressions(t *testing.T) {
-	req := parseRequest(t, `{"id":"auction","imp":[{"id":"one","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"152","adSlot":"top"}}},{"id":"other","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"999","adSlot":"top"}}},{"id":"video","video":{},"ext":{"bidder":{"publisher":"152","adSlot":"video"}}},{"id":"bad","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"152"}}}]}`)
+	req := parseRequest(t, `{"id":"auction","imp":[{"id":"one","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"152","adSlot":"top"}}},{"id":"other","banner":{"w":300,"h":250},"ext":{"bidder":{"publisher":"999","adSlot":"top"}}},{"id":"video","video":{},"ext":{"bidder":{"publisher":"152","adSlot":"video"}}}]}`)
 	requests, errs := (&adapter{endpoint: endpoint}).MakeRequests(req, nil)
-	if len(requests) != 1 || len(errs) != 3 {
+	if len(requests) != 1 || len(errs) != 2 {
 		t.Fatalf("requests=%d errs=%v", len(requests), errs)
 	}
 	out := decodeOutgoing(t, requests[0])
@@ -246,9 +232,6 @@ func TestMakeRequestsRejectsMixedPublisherAndInvalidImpressions(t *testing.T) {
 
 func TestMakeRequestsEmptyAndDefaultGDPR(t *testing.T) {
 	a := &adapter{endpoint: endpoint}
-	if requests, errs := a.MakeRequests(nil, nil); len(requests) != 0 || len(errs) != 1 {
-		t.Fatalf("nil request requests=%d errs=%v", len(requests), errs)
-	}
 	req := parseRequest(t, `{"id":"a","imp":[{"id":"bad","video":{}}]}`)
 	if requests, _ := a.MakeRequests(req, nil); len(requests) != 0 {
 		t.Fatal("made HTTP call with zero valid slots")

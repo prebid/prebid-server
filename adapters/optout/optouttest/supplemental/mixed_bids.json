@@ -1,0 +1,268 @@
+{
+  "mockBidRequest": {
+    "id": "mixed-bids",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      },
+      {
+        "id": "imp-2",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "sidebar"
+          }
+        }
+      },
+      {
+        "id": "imp-3",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "footer"
+          }
+        }
+      },
+      {
+        "id": "video",
+        "video": {},
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.test/story"
+    },
+    "user": {
+      "consent": "invalid"
+    },
+    "regs": {
+      "gdpr": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/prebid/display",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            },
+            {
+              "adSlot": "sidebar",
+              "id": "imp-2",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            },
+            {
+              "adSlot": "footer",
+              "id": "imp-3",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "https://example.test/story",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "invalid",
+          "gdpr": 1
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "impIDs": [
+          "imp-1",
+          "imp-2",
+          "imp-3"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "bids": [
+            {
+              "requestId": "video",
+              "cpm": 1.2,
+              "currency": "EUR",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1"
+            },
+            {
+              "requestId": "imp-1",
+              "cpm": 0,
+              "currency": "EUR",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 0,
+              "creativeId": "creative-1",
+              "optOutExt": {
+                "optout": {
+                  "version": 1
+                }
+              }
+            },
+            {
+              "requestId": "imp-2",
+              "cpm": 1.2,
+              "currency": "USD",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1"
+            },
+            {
+              "requestId": "imp-2",
+              "cpm": 1.2,
+              "currency": "EUR",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1",
+              "optOutExt": []
+            },
+            {
+              "requestId": "imp-2",
+              "cpm": 1.2,
+              "currency": "",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1"
+            },
+            {
+              "requestId": "imp-3",
+              "cpm": 1.2,
+              "currency": "EUR",
+              "width": 300,
+              "height": 250,
+              "ad": "<div>Sample creative</div>",
+              "ttl": 60,
+              "creativeId": "creative-1",
+              "optOutExt": null,
+              "meta": {
+                "advertiserDomains": "invalid"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "type": "banner",
+          "bid": {
+            "id": "imp-1",
+            "impid": "imp-1",
+            "price": 0,
+            "adm": "<div>Sample creative</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "creative-1",
+            "exp": 300,
+            "ext": {
+              "optout": {
+                "version": 1
+              }
+            }
+          }
+        },
+        {
+          "type": "banner",
+          "bid": {
+            "id": "imp-3",
+            "impid": "imp-3",
+            "price": 1.2,
+            "adm": "<div>Sample creative</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "creative-1",
+            "exp": 60
+          }
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optout: imp video is not banner",
+      "comparison": "literal"
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "optout: unknown impression ID \"video\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: mixed response currencies (EUR and USD)",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: invalid bid extension for impression \"imp-2\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: invalid bid for impression \"imp-2\"",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: invalid bid metadata for impression \"imp-3\":",
+      "comparison": "startswith"
+    }
+  ]
+}

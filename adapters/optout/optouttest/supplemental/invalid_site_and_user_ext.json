@@ -1,0 +1,89 @@
+{
+  "mockBidRequest": {
+    "id": "invalid-site-user",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      }
+    ],
+    "site": {
+      "page": "https://example.test/story",
+      "ext": []
+    },
+    "user": {
+      "ext": "invalid"
+    },
+    "regs": {
+      "gdpr": 0
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/prebid/display",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "https://example.test/story",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "",
+          "gdpr": 0
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {}
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optout: invalid site.ext:",
+      "comparison": "startswith"
+    },
+    {
+      "value": "optout: invalid user.ext:",
+      "comparison": "startswith"
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "optout: DSP response is missing bids array",
+      "comparison": "literal"
+    }
+  ]
+}

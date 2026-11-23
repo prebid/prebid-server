@@ -1,0 +1,23 @@
+{
+  "mockBidRequest": {
+    "id": "no-valid-impressions",
+    "imp": [
+      {
+        "id": "bad-imp-ext",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": []
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optout: imp bad-imp-ext: invalid impression extension:",
+      "comparison": "startswith"
+    }
+  ]
+}

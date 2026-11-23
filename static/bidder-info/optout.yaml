@@ -4,7 +4,7 @@ maintainer:
 gvlVendorID: 227
 openrtb:
   version: 2.6
-modifyingVastXmlAllowed: true
+modifyingVastXmlAllowed: false
 capabilities:
   app:
     mediaTypes:
