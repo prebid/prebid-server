@@ -1,0 +1,89 @@
+{
+  "mockBidRequest": {
+    "id": "req-native",
+    "site": {
+      "page": "https://news.example.com/a",
+      "domain": "news.example.com"
+    },
+    "imp": [
+      {
+        "id": "imp-n",
+        "native": {
+          "request": "{\"ver\":\"1.2\",\"assets\":[]}",
+          "ver": "1.2"
+        },
+        "ext": {
+          "bidder": {
+            "seatKey": "bds_testseatkey"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction",
+        "body": {
+          "id": "req-native",
+          "site": {
+            "page": "https://news.example.com/a",
+            "domain": "news.example.com"
+          },
+          "imp": [
+            {
+              "id": "imp-n",
+              "native": {
+                "request": "{\"ver\":\"1.2\",\"assets\":[]}",
+                "ver": "1.2"
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "imp-n"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "req-native",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "biddigi",
+              "bid": [
+                {
+                  "id": "bid-n",
+                  "impid": "imp-n",
+                  "price": 0.63,
+                  "adm": "{\"native\":{\"assets\":[]}}",
+                  "crid": "cr-n",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-n",
+            "impid": "imp-n",
+            "price": 0.63,
+            "adm": "{\"native\":{\"assets\":[]}}",
+            "crid": "cr-n",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+endpoint: "https://biddigi-auction-service.biddigi25.workers.dev/inbound/openrtb2/auction"
+# BidDigi has not yet registered an IAB Europe GVL vendor ID, so it must not be enabled for EEA
+# traffic. This will be relaxed to global once that registration is complete.
+geoscope:
+  - "!EEA"
+maintainer:
+  email: info@biddigi.com
+capabilities:
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - native
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - native
