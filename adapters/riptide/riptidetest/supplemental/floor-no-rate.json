@@ -1,0 +1,15 @@
+{
+  "mockBidRequest": {
+    "id": "request-jpy",
+    "site": { "page": "https://publisher.example/" },
+    "imp": [
+      { "id": "i1", "banner": { "format": [{ "w": 300, "h": 250 }] }, "bidfloor": 200, "bidfloorcur": "JPY", "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-1" } } }
+    ],
+    "ext": { "prebid": { "currency": { "rates": { "EUR": { "USD": 1.1 } }, "usepbsrates": false } } }
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    { "value": "^imp i1: floor JPY: ", "comparison": "regex" }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Riptide Adapter Params",
+  "description": "A schema which validates params accepted by the Riptide adapter",
+  "type": "object",
+  "properties": {
+    "publisherId": { "type": "string", "minLength": 1, "description": "The publisher's public id in Riptide" },
+    "placementId": { "type": "string", "minLength": 1, "description": "The placement's public id in Riptide (OpenRTB imp.tagid)" },
+    "bidfloor": { "type": "number", "minimum": 0, "description": "Optional floor, US dollars CPM" }
+  },
+  "required": ["publisherId", "placementId"]
+}

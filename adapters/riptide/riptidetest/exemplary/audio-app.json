@@ -1,0 +1,75 @@
+{
+  "mockBidRequest": {
+    "id": "request-6",
+    "app": { "bundle": "com.example.podcasts", "publisher": { "name": "Example Audio" } },
+    "device": { "ifa": "00000000-0000-0000-0000-000000000000", "os": "android" },
+    "imp": [
+      {
+        "id": "bid-audio-1",
+        "audio": { "mimes": ["audio/mpeg"], "minduration": 15, "maxduration": 30, "protocols": [2, 3] },
+        "ext": { "bidder": { "publisherId": "pub-audio", "placementId": "tag-audio" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-6",
+          "app": { "bundle": "com.example.podcasts", "publisher": { "id": "pub-audio", "name": "Example Audio" } },
+          "device": { "ifa": "00000000-0000-0000-0000-000000000000", "os": "android" },
+          "imp": [
+            {
+              "id": "bid-audio-1",
+              "tagid": "tag-audio",
+              "audio": { "mimes": ["audio/mpeg"], "minduration": 15, "maxduration": 30, "protocols": [2, 3] }
+            }
+          ]
+        },
+        "impIDs": ["bid-audio-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-6",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "bid-audio-1",
+                  "price": 3.0,
+                  "adm": "<VAST version=\"4.2\"></VAST>",
+                  "crid": "audio-1",
+                  "mtype": 3,
+                  "dur": 30
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "bid-audio-1",
+            "price": 3.0,
+            "adm": "<VAST version=\"4.2\"></VAST>",
+            "crid": "audio-1",
+            "mtype": 3,
+            "dur": 30
+          },
+          "type": "audio"
+        }
+      ]
+    }
+  ]
+}

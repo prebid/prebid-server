@@ -1,0 +1,48 @@
+{
+  "mockBidRequest": {
+    "id": "request-dooh",
+    "dooh": { "id": "screen-network-1", "venuetype": ["transit"], "publisher": { "id": "ignored", "name": "Screens Inc" } },
+    "imp": [
+      {
+        "id": "dooh-1",
+        "banner": { "format": [{ "w": 1920, "h": 1080 }] },
+        "qty": { "multiplier": 12.5, "sourcetype": 1, "vendor": "measure.example" },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "screen-1" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-dooh",
+          "dooh": { "id": "screen-network-1", "venuetype": ["transit"], "publisher": { "id": "pub1", "name": "Screens Inc" } },
+          "imp": [
+            {
+              "id": "dooh-1",
+              "tagid": "screen-1",
+              "banner": { "format": [{ "w": 1920, "h": 1080 }] },
+              "qty": { "multiplier": 12.5, "sourcetype": 1, "vendor": "measure.example" }
+            }
+          ]
+        },
+        "impIDs": ["dooh-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-dooh",
+          "cur": "USD",
+          "seatbid": [{ "seat": "riptide", "bid": [{ "id": "b1", "impid": "dooh-1", "price": 4.0, "adm": "<div>screen</div>", "crid": "c1", "mtype": 1, "w": 1920, "h": 1080 }] }]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [{ "bid": { "id": "b1", "impid": "dooh-1", "price": 4.0, "adm": "<div>screen</div>", "crid": "c1", "mtype": 1, "w": 1920, "h": 1080 }, "type": "banner" }]
+    }
+  ]
+}

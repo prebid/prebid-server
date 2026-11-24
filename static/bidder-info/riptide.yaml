@@ -1,0 +1,32 @@
+# The parent Riptide bidder. A white-label partner is an alias: its own bidder-info file with
+# `aliasOf: riptide`, its own endpoint and userSync. No gvlVendorID until the parent code has a
+# registered IAB TCF Global Vendor List id.
+endpoint: "https://serve.riptideads.com/ortb"
+# The Riptide endpoint accepts gzip request bodies.
+endpointCompression: gzip
+maintainer:
+  email: "prebid@riptideads.com"
+capabilities:
+  site:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  app:
+    mediaTypes:
+      - banner
+      - video
+      - audio
+      - native
+  dooh:
+    mediaTypes:
+      - banner
+      - video
+      - native
+openrtb:
+  version: 2.6
+userSync:
+  redirect:
+    url: "https://sync.riptideads.com/usersync?gdpr={{.GDPR}}&gdpr_consent={{.GDPRConsent}}&us_privacy={{.USPrivacy}}&gpp={{.GPP}}&gpp_sid={{.GPPSID}}&redir={{.RedirectURL}}"
+    userMacro: "$UID"

@@ -1,0 +1,45 @@
+{
+  "mockBidRequest": {
+    "id": "request-11",
+    "site": { "page": "https://publisher.example/" },
+    "imp": [
+      {
+        "id": "bid-b",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "pub-b", "placementId": "tag-b" } }
+      },
+      {
+        "id": "bid-a",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "pub-a", "placementId": "tag-a" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-11",
+          "site": { "page": "https://publisher.example/", "publisher": { "id": "pub-a" } },
+          "imp": [{ "id": "bid-a", "tagid": "tag-a", "banner": { "format": [{ "w": 300, "h": 250 }] } }]
+        },
+        "impIDs": ["bid-a"]
+      },
+      "mockResponse": { "status": 204 }
+    },
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-11",
+          "site": { "page": "https://publisher.example/", "publisher": { "id": "pub-b" } },
+          "imp": [{ "id": "bid-b", "tagid": "tag-b", "banner": { "format": [{ "w": 300, "h": 250 }] } }]
+        },
+        "impIDs": ["bid-b"]
+      },
+      "mockResponse": { "status": 204 }
+    }
+  ],
+  "expectedBidResponses": []
+}
