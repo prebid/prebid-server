@@ -28,7 +28,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/prebid/go-gdpr v1.12.0
 	github.com/prebid/go-gpp v0.2.0
-	github.com/prebid/openrtb/v20 v20.3.0
+	github.com/prebid/openrtb/v20 v20.4.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
