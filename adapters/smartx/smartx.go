@@ -32,7 +32,7 @@ func (a *adapter) MakeRequests(openRTBRequest *openrtb2.BidRequest, requestInfo 
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/json;charset=utf-8")
-	headers.Add("x-openrtb-version", "2.5")
+	headers.Add("x-openrtb-version", "2.6")
 
 	if openRTBRequest.Device != nil {
 		if openRTBRequest.Device.UA != "" {
