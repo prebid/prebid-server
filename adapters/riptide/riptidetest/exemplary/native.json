@@ -1,0 +1,70 @@
+{
+  "mockBidRequest": {
+    "id": "request-5",
+    "site": { "page": "https://publisher.example/feed" },
+    "imp": [
+      {
+        "id": "bid-native-1",
+        "native": { "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}", "ver": "1.2" },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-native" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-5",
+          "site": { "page": "https://publisher.example/feed", "publisher": { "id": "pub1" } },
+          "imp": [
+            {
+              "id": "bid-native-1",
+              "tagid": "tag-native",
+              "native": { "request": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"required\":1,\"title\":{\"len\":90}}]}", "ver": "1.2" }
+            }
+          ]
+        },
+        "impIDs": ["bid-native-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-5",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "bid-native-1",
+                  "price": 2.0,
+                  "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hello\"}}],\"link\":{\"url\":\"https://click.example\"}}",
+                  "crid": "native-1",
+                  "mtype": 4
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "bid-native-1",
+            "price": 2.0,
+            "adm": "{\"ver\":\"1.2\",\"assets\":[{\"id\":1,\"title\":{\"text\":\"Hello\"}}],\"link\":{\"url\":\"https://click.example\"}}",
+            "crid": "native-1",
+            "mtype": 4
+          },
+          "type": "native"
+        }
+      ]
+    }
+  ]
+}

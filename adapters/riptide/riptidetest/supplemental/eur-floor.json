@@ -1,0 +1,26 @@
+{
+  "mockBidRequest": {
+    "id": "request-eur",
+    "site": { "page": "https://publisher.example/" },
+    "imp": [
+      { "id": "i1", "banner": { "format": [{ "w": 300, "h": 250 }] }, "bidfloor": 2.0, "bidfloorcur": "EUR", "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-1", "bidfloor": 9.0 } } }
+    ],
+    "ext": { "prebid": { "currency": { "rates": { "EUR": { "USD": 1.1 } }, "usepbsrates": false } } }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-eur",
+          "site": { "page": "https://publisher.example/", "publisher": { "id": "pub1" } },
+          "imp": [ { "id": "i1", "tagid": "tag-1", "banner": { "format": [{ "w": 300, "h": 250 }] }, "bidfloor": 2.2, "bidfloorcur": "USD" } ],
+          "ext": { "prebid": { "currency": { "rates": { "EUR": { "USD": 1.1 } }, "usepbsrates": false } } }
+        },
+        "impIDs": ["i1"]
+      },
+      "mockResponse": { "status": 204, "body": {} }
+    }
+  ],
+  "expectedBidResponses": []
+}

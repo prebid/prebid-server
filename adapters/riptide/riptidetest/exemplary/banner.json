@@ -1,0 +1,104 @@
+{
+  "mockBidRequest": {
+    "id": "request-4",
+    "site": { "page": "https://publisher.example/article", "publisher": { "name": "Example Publisher" } },
+    "user": { "buyeruid": "rt-uid-1", "consent": "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" },
+    "regs": { "gdpr": 1, "us_privacy": "1YNN", "gpp": "DBABMA~1YNN", "gpp_sid": [7] },
+    "source": { "schain": { "complete": 1, "ver": "1.0", "nodes": [{ "asi": "publisher.example", "sid": "pub1", "hp": 1 }] } },
+    "imp": [
+      {
+        "id": "bid-banner-1",
+        "banner": { "format": [{ "w": 728, "h": 90 }, { "w": 970, "h": 250 }] },
+        "bidfloor": 0.5,
+        "bidfloorcur": "USD",
+        "ext": {
+          "gpid": "/1234/home/leaderboard",
+          "prebid": { "bidder": { "riptide": { "publisherId": "pub1", "placementId": "tag-direct" } } },
+          "bidder": { "publisherId": "pub1", "placementId": "tag-direct", "bidfloor": 0.25 }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "headers": {
+          "Content-Type": ["application/json;charset=utf-8"],
+          "Accept": ["application/json"],
+          "X-Openrtb-Version": ["2.6"]
+        },
+        "body": {
+          "id": "request-4",
+          "site": { "page": "https://publisher.example/article", "publisher": { "id": "pub1", "name": "Example Publisher" } },
+          "user": { "buyeruid": "rt-uid-1", "consent": "CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA" },
+          "regs": { "gdpr": 1, "us_privacy": "1YNN", "gpp": "DBABMA~1YNN", "gpp_sid": [7] },
+          "source": { "schain": { "complete": 1, "ver": "1.0", "nodes": [{ "asi": "publisher.example", "sid": "pub1", "hp": 1 }] } },
+          "imp": [
+            {
+              "id": "bid-banner-1",
+              "tagid": "tag-direct",
+              "bidfloor": 0.5,
+              "bidfloorcur": "USD",
+              "banner": { "format": [{ "w": 728, "h": 90 }, { "w": 970, "h": 250 }] },
+              "ext": { "gpid": "/1234/home/leaderboard" }
+            }
+          ]
+        },
+        "impIDs": ["bid-banner-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-4",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "riptide",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "bid-banner-1",
+                  "price": 1.5,
+                  "adm": "<div>ad</div>",
+                  "adomain": ["advertiser.example"],
+                  "crid": "creative-1",
+                  "dealid": "deal-1",
+                  "nurl": "https://beacon.example/win?e=sealed",
+                  "burl": "https://beacon.example/bill?e=sealed",
+                  "mtype": 1,
+                  "w": 728,
+                  "h": 90
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "bid-banner-1",
+            "price": 1.5,
+            "adm": "<div>ad</div>",
+            "adomain": ["advertiser.example"],
+            "crid": "creative-1",
+            "dealid": "deal-1",
+            "nurl": "https://beacon.example/win?e=sealed",
+            "burl": "https://beacon.example/bill?e=sealed",
+            "mtype": 1,
+            "w": 728,
+            "h": 90
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}

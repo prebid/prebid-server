@@ -1,0 +1,50 @@
+{
+  "mockBidRequest": {
+    "id": "request-pod",
+    "site": { "page": "https://publisher.example/show" },
+    "imp": [
+      { "id": "s1", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "slotinpod": 1, "rqddurs": [15, 30], "plcmt": 1 }, "ext": { "bidder": { "publisherId": "pub1", "placementId": "pod-tag" } } },
+      { "id": "s2", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "rqddurs": [15, 30], "plcmt": 1 }, "ext": { "bidder": { "publisherId": "pub1", "placementId": "pod-tag" } } },
+      { "id": "s3", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "slotinpod": -1, "rqddurs": [15, 30], "plcmt": 1 }, "ext": { "bidder": { "publisherId": "pub1", "placementId": "pod-tag" } } }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-pod",
+          "site": { "page": "https://publisher.example/show", "publisher": { "id": "pub1" } },
+          "imp": [
+            { "id": "s1", "tagid": "pod-tag", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "slotinpod": 1, "rqddurs": [15, 30], "plcmt": 1 } },
+            { "id": "s2", "tagid": "pod-tag", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "rqddurs": [15, 30], "plcmt": 1 } },
+            { "id": "s3", "tagid": "pod-tag", "video": { "mimes": ["video/mp4"], "podid": "pod-1", "slotinpod": -1, "rqddurs": [15, 30], "plcmt": 1 } }
+          ]
+        },
+        "impIDs": ["s1", "s2", "s3"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-pod",
+          "cur": "USD",
+          "seatbid": [{ "seat": "riptide", "bid": [
+            { "id": "b1", "impid": "s1", "price": 9.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c1", "cat": ["IAB2-1", "IAB2"], "mtype": 2, "dur": 30 },
+            { "id": "b2", "impid": "s2", "price": 7.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c2", "cat": ["IAB19"], "mtype": 2, "dur": 15 },
+            { "id": "b3", "impid": "s3", "price": 6.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c3", "mtype": 2, "dur": 15 }
+          ] }]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        { "bid": { "id": "b1", "impid": "s1", "price": 9.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c1", "cat": ["IAB2-1", "IAB2"], "mtype": 2, "dur": 30 }, "type": "video", "video": { "duration": 30, "primary_category": "IAB2-1" } },
+        { "bid": { "id": "b2", "impid": "s2", "price": 7.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c2", "cat": ["IAB19"], "mtype": 2, "dur": 15 }, "type": "video", "video": { "duration": 15, "primary_category": "IAB19" } },
+        { "bid": { "id": "b3", "impid": "s3", "price": 6.0, "adm": "<VAST version=\"4.2\"/>", "crid": "c3", "mtype": 2, "dur": 15 }, "type": "video", "video": { "duration": 15, "primary_category": "" } }
+      ]
+    }
+  ]
+}

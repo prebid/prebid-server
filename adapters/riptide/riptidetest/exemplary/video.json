@@ -1,0 +1,85 @@
+{
+  "mockBidRequest": {
+    "id": "request-1",
+    "site": { "page": "https://publisher.example/article" },
+    "imp": [
+      {
+        "id": "bid-video-1",
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480, "minduration": 5, "maxduration": 30, "protocols": [2, 3, 7, 8], "plcmt": 1 },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-direct" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-1",
+          "site": { "page": "https://publisher.example/article", "publisher": { "id": "pub1" } },
+          "imp": [
+            {
+              "id": "bid-video-1",
+              "tagid": "tag-direct",
+              "video": { "mimes": ["video/mp4"], "w": 640, "h": 480, "minduration": 5, "maxduration": 30, "protocols": [2, 3, 7, 8], "plcmt": 1 }
+            }
+          ]
+        },
+        "impIDs": ["bid-video-1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-1",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "riptide",
+              "bid": [
+                {
+                  "id": "bid-1",
+                  "impid": "bid-video-1",
+                  "price": 5.0,
+                  "adm": "<VAST version=\"4.2\"><Ad id=\"sample\"><InLine><AdSystem>Riptide</AdSystem><AdTitle>Sample</AdTitle><Impression><![CDATA[https://beacon.example/impression?e=sealed]]></Impression><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile type=\"video/mp4\" width=\"1280\" height=\"720\"><![CDATA[https://cdn.example/spot.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+                  "adomain": ["local-dev.example"],
+                  "crid": "dev-vast-15",
+                  "nurl": "https://beacon.example/win?e=sealed",
+                  "burl": "https://beacon.example/bill?e=sealed",
+                  "mtype": 2,
+                  "w": 640,
+                  "h": 480,
+                  "dur": 15
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-1",
+            "impid": "bid-video-1",
+            "price": 5.0,
+            "adm": "<VAST version=\"4.2\"><Ad id=\"sample\"><InLine><AdSystem>Riptide</AdSystem><AdTitle>Sample</AdTitle><Impression><![CDATA[https://beacon.example/impression?e=sealed]]></Impression><Creatives><Creative><Linear><Duration>00:00:15</Duration><MediaFiles><MediaFile type=\"video/mp4\" width=\"1280\" height=\"720\"><![CDATA[https://cdn.example/spot.mp4]]></MediaFile></MediaFiles></Linear></Creative></Creatives></InLine></Ad></VAST>",
+            "adomain": ["local-dev.example"],
+            "crid": "dev-vast-15",
+            "nurl": "https://beacon.example/win?e=sealed",
+            "burl": "https://beacon.example/bill?e=sealed",
+            "mtype": 2,
+            "w": 640,
+            "h": 480,
+            "dur": 15
+          },
+          "type": "video",
+          "video": { "duration": 15, "primary_category": "" }
+        }
+      ]
+    }
+  ]
+}

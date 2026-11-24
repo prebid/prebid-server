@@ -1,0 +1,42 @@
+{
+  "mockBidRequest": {
+    "id": "request-7",
+    "site": { "page": "https://publisher.example/" },
+    "imp": [
+      {
+        "id": "bid-1",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "pub1" } }
+      },
+      {
+        "id": "bid-2",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "prebid": {} }
+      },
+      {
+        "id": "bid-3",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-direct" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-7",
+          "site": { "page": "https://publisher.example/", "publisher": { "id": "pub1" } },
+          "imp": [{ "id": "bid-3", "tagid": "tag-direct", "banner": { "format": [{ "w": 300, "h": 250 }] } }]
+        },
+        "impIDs": ["bid-3"]
+      },
+      "mockResponse": { "status": 204 }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    { "value": "imp bid-1: publisherId and placementId are required", "comparison": "literal" },
+    { "value": "imp bid-2: bidder params: .*", "comparison": "regex" }
+  ]
+}

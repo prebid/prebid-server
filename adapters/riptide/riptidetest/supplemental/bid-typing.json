@@ -1,0 +1,73 @@
+{
+  "mockBidRequest": {
+    "id": "request-10",
+    "site": { "page": "https://publisher.example/" },
+    "imp": [
+      {
+        "id": "single",
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-video" } }
+      },
+      {
+        "id": "multi",
+        "banner": { "format": [{ "w": 300, "h": 250 }] },
+        "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 },
+        "ext": { "bidder": { "publisherId": "pub1", "placementId": "tag-multi" } }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://serve.riptideads.com/ortb",
+        "body": {
+          "id": "request-10",
+          "site": { "page": "https://publisher.example/", "publisher": { "id": "pub1" } },
+          "imp": [
+            { "id": "single", "tagid": "tag-video", "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 } },
+            { "id": "multi", "tagid": "tag-multi", "banner": { "format": [{ "w": 300, "h": 250 }] }, "video": { "mimes": ["video/mp4"], "w": 640, "h": 480 } }
+          ]
+        },
+        "impIDs": ["single", "multi"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-10",
+          "seatbid": [
+            {
+              "bid": [
+                { "id": "untyped-single", "impid": "single", "price": 1, "adm": "<VAST/>", "crid": "c1" },
+                { "id": "untyped-multi", "impid": "multi", "price": 1, "adm": "<div/>", "crid": "c2" },
+                { "id": "typed-multi", "impid": "multi", "price": 2, "adm": "<div/>", "crid": "c3", "mtype": 1 },
+                { "id": "bad-mtype", "impid": "multi", "price": 1, "adm": "<div/>", "crid": "c4", "mtype": 9 },
+                { "id": "stray", "impid": "other", "price": 1, "adm": "<div/>", "crid": "c5", "mtype": 1 }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": { "id": "untyped-single", "impid": "single", "price": 1, "adm": "<VAST/>", "crid": "c1" },
+          "type": "video",
+          "video": { "duration": 0, "primary_category": "" }
+        },
+        {
+          "bid": { "id": "typed-multi", "impid": "multi", "price": 2, "adm": "<div/>", "crid": "c3", "mtype": 1 },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    { "value": "bid untyped-multi has no mtype and imp multi is not single-format", "comparison": "literal" },
+    { "value": "bid bad-mtype has unknown mtype 9", "comparison": "literal" },
+    { "value": "bid stray answers unknown imp other", "comparison": "literal" }
+  ]
+}
