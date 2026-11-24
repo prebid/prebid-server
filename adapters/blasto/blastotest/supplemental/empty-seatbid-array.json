@@ -38,7 +38,7 @@
         },
         "ext": {
           "bidder": {
-            "accountId": "accountId",
+            "accountId": "test",
             "sourceId": "sourceId"
           }
         }
@@ -65,7 +65,7 @@
             "123.123.123.123"
           ]
         },
-        "uri": "http://t-us.blasto.ai/bid?rtb_seat_id=sourceId&secret_key=accountId",
+        "uri": "http://t-us.blasto.ai/bid?rtb_seat_id=sourceId&secret_key=test",
         "body": {
           "id": "some-request-id",
           "device": {
