@@ -1,0 +1,84 @@
+{
+  "mockBidRequest": {
+    "id": "multi-imp-one-invalid",
+    "imp": [
+      {
+        "id": "1",
+        "banner": { "w": 300, "h": 250 },
+        "ext": { "bidder": {} }
+      },
+      {
+        "id": "2",
+        "banner": { "w": 300, "h": 250 },
+        "ext": "not-json"
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://ads.theagenticx.ai/ads/rtb/prebid/server?site_id=49964415&ssp_id=630141",
+        "body": {
+          "id": "multi-imp-one-invalid",
+          "imp": [
+            {
+              "id": "1",
+              "banner": { "w": 300, "h": 250 },
+              "ext": { "bidder": {} }
+            }
+          ]
+        },
+        "impIDs": ["1"]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "multi-imp-one-invalid",
+          "seatbid": [
+            {
+              "bid": [
+                {
+                  "id": "b1",
+                  "impid": "1",
+                  "price": 1.0,
+                  "adm": "<div>ad</div>",
+                  "crid": "cr1",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1
+                }
+              ]
+            }
+          ],
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "b1",
+            "impid": "1",
+            "price": 1.0,
+            "adm": "<div>ad</div>",
+            "crid": "cr1",
+            "w": 300,
+            "h": 250,
+            "mtype": 1
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "impID 2:",
+      "comparison": "regex"
+    }
+  ]
+}
