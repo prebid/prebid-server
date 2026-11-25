@@ -121,6 +121,7 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 	}
 
 	errL := []error{}
+	invalidParamsByBidder := make(map[string]error)
 
 	for bidder, val := range prebid.Bidder {
 		coreBidder, _ := openrtb_ext.NormalizeBidderName(bidder)
@@ -131,7 +132,9 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 		if coreBidderNormalized, isValid := srv.bidderMap[coreBidder.String()]; isValid {
 			if !cfg.SkipBidderParams {
 				if err := srv.paramsValidator.Validate(coreBidderNormalized, val); err != nil {
-					return []error{fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err)}
+					invalidParamsByBidder[bidder] = err
+					delete(prebid.Bidder, bidder)
+					prebidModified = true
 				}
 			}
 		} else {
@@ -151,8 +154,22 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 	}
 
 	if len(prebid.Bidder) == 0 {
-		errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder must contain at least one bidder", impIndex))
+		if len(invalidParamsByBidder) == 0 {
+			errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder must contain at least one bidder", impIndex))
+		}
+		// No bidder is left to run this imp, so invalid params are errors.
+		for bidder, err := range invalidParamsByBidder {
+			errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err))
+		}
 		return errL
+	}
+
+	// Other bidders can still run this imp, so a bidder with invalid params is dropped with a warning.
+	for bidder, err := range invalidParamsByBidder {
+		errL = append(errL, &errortypes.Warning{
+			Message:     fmt.Sprintf("request.imp[%d].ext.prebid.bidder.%s failed validation and was dropped.\n%v", impIndex, bidder, err),
+			WarningCode: errortypes.InvalidBidderParamsWarningCode,
+		})
 	}
 
 	if prebidModified {

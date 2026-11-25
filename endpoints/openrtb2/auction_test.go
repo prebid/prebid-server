@@ -110,6 +110,10 @@ func TestJsonSampleRequests(t *testing.T) {
 			"disabled/good",
 		},
 		{
+			"Bidders with invalid params are dropped when a valid bidder is left, we expect a 200",
+			"invalid-bidder-params",
+		},
+		{
 			"Assert we correctly use the server conversion rates when needed",
 			"currency-conversion/server-rates/valid",
 		},
