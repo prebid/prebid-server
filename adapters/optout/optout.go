@@ -3,6 +3,7 @@ package optout
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -251,6 +252,8 @@ func (a *adapter) MakeRequests(req *openrtb2.BidRequest, _ *adapters.ExtraReques
 		return nil, errors
 	}
 
+	// Opt Out serves opt-out traffic. When applicability is unknown, ask the DSP
+	// to apply GDPR restrictions so we do not assume consent.
 	gdpr := 1
 	if req.Regs != nil && req.Regs.GDPR != nil && *req.Regs.GDPR == 0 {
 		gdpr = 0
@@ -375,6 +378,9 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 		return nil, nil
 	}
 	if err := adapters.CheckResponseStatusCodeForErrors(response); err != nil {
+		if response.StatusCode == http.StatusBadRequest {
+			return nil, []error{&errortypes.BadServerResponse{Message: err.Error()}}
+		}
 		return nil, []error{err}
 	}
 	if outgoing == nil {
@@ -385,10 +391,10 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 		Slots []optoutSlot `json:"slots"`
 	}
 	if err := jsonutil.Unmarshal(outgoing.Body, &sent); err != nil {
-		return nil, []error{&errortypes.BadServerResponse{Message: fmt.Sprintf("optout: invalid outgoing request: %v", err)}}
+		return nil, []error{fmt.Errorf("optout: invalid outgoing request: %w", err)}
 	}
 	if len(sent.Slots) == 0 {
-		return nil, []error{&errortypes.BadServerResponse{Message: "optout: outgoing request has no slots"}}
+		return nil, []error{errors.New("optout: outgoing request has no slots")}
 	}
 
 	validImpIDs := make(map[string]bool, len(sent.Slots))

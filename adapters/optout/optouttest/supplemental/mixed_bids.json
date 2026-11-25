@@ -65,7 +65,7 @@
   "httpCalls": [
     {
       "expectedRequest": {
-        "uri": "https://bid.example.test/prebid/display",
+        "uri": "https://bid.example.test/bid",
         "body": {
           "publisher": "152",
           "slots": [

@@ -15,7 +15,7 @@ import (
 	"github.com/prebid/prebid-server/v4/errortypes"
 )
 
-const endpoint = "https://bid.example.test/prebid/display"
+const endpoint = "https://bid.example.test/bid"
 
 func parseRequest(t *testing.T, raw string) *openrtb2.BidRequest {
 	t.Helper()
@@ -321,7 +321,6 @@ func TestMakeBidsResponseFailures(t *testing.T) {
 		{"server error", response(503, "failure"), outgoing, 1, true},
 		{"missing outgoing", response(200, `[]`), nil, 1, true},
 		{"bad outgoing", response(200, `[]`), &adapters.RequestData{Body: []byte("{")}, 1, true},
-		{"no slots", response(200, `[]`), &adapters.RequestData{Body: []byte(`{"slots":[]}`)}, 1, true},
 		{"invalid response", response(200, `garbage`), outgoing, 1, true},
 		{"missing bids", response(200, `{"hello":"world"}`), outgoing, 1, true},
 	} {
@@ -334,12 +333,24 @@ func TestMakeBidsResponseFailures(t *testing.T) {
 	}
 }
 
+func TestMakeBidsOutgoingRequestWithoutSlots(t *testing.T) {
+	req, outgoing := makeOutgoing(t)
+	outgoing.Body = []byte(`{"slots":[]}`)
+	res, errs := (&adapter{}).MakeBids(req, outgoing, response(200, `[]`))
+	if res != nil || len(errs) != 1 {
+		t.Fatalf("res=%+v errs=%v", res, errs)
+	}
+	if code := errortypes.ReadCode(errs[0]); code != errortypes.UnknownErrorCode {
+		t.Fatalf("expected generic PBS error code, got %d (%T)", code, errs[0])
+	}
+}
+
 func TestMakeBidsStatusErrorTypes(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
 	if _, errs := (&adapter{}).MakeBids(req, outgoing, response(400, "")); len(errs) != 1 {
 		t.Fatalf("400: errs=%v", errs)
-	} else if _, ok := errs[0].(*errortypes.BadInput); !ok {
-		t.Fatalf("400: expected BadInput, got %T", errs[0])
+	} else if _, ok := errs[0].(*errortypes.BadServerResponse); !ok {
+		t.Fatalf("400: expected BadServerResponse, got %T", errs[0])
 	}
 	if _, errs := (&adapter{}).MakeBids(req, outgoing, response(500, "")); len(errs) != 1 {
 		t.Fatalf("500: errs=%v", errs)
