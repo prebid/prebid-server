@@ -25,6 +25,10 @@
         "id": "2"
       }
     },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36",
+      "ip": "203.0.113.24"
+    },
     "user": {
       "buyeruid": "wx-user-58c1e9"
     }
@@ -33,6 +37,20 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=102",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36"
+          ],
+          "X-Forwarded-For": [
+            "203.0.113.24"
+          ]
+        },
         "body": {
           "id": "auction-7731-slot-player-video",
           "imp": [
@@ -58,6 +76,10 @@
             "publisher": {
               "id": "2"
             }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36",
+            "ip": "203.0.113.24"
           },
           "user": {
             "buyeruid": "wx-user-58c1e9"

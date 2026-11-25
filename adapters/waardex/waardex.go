@@ -1,7 +1,6 @@
 package waardex
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -152,22 +151,38 @@ func (a *adapter) makeRequest(request *openrtb2.BidRequest, imp openrtb2.Imp, zo
 	// dollar bids back to the request currency.
 	outgoing.Cur = []string{"USD"}
 
-	body, err := json.Marshal(outgoing)
+	body, err := jsonutil.Marshal(outgoing)
 	if err != nil {
 		return nil, err
 	}
-
-	headers := http.Header{}
-	headers.Set("Content-Type", "application/json;charset=utf-8")
-	headers.Set("Accept", "application/json")
 
 	return &adapters.RequestData{
 		Method:  http.MethodPost,
 		Uri:     uri,
 		Body:    body,
-		Headers: headers,
+		Headers: makeHeaders(request.Device),
 		ImpIDs:  []string{imp.ID},
 	}, nil
+}
+
+// makeHeaders builds the request headers, forwarding the device's User-Agent and IP address as
+// X-Forwarded-For (IPv4 preferred, IPv6 otherwise) the way a direct client call would carry them.
+func makeHeaders(device *openrtb2.Device) http.Header {
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json;charset=utf-8")
+	headers.Set("Accept", "application/json")
+	if device == nil {
+		return headers
+	}
+	if device.UA != "" {
+		headers.Set("User-Agent", device.UA)
+	}
+	if device.IP != "" {
+		headers.Set("X-Forwarded-For", device.IP)
+	} else if device.IPv6 != "" {
+		headers.Set("X-Forwarded-For", device.IPv6)
+	}
+	return headers
 }
 
 func (a *adapter) MakeBids(internalRequest *openrtb2.BidRequest, externalRequest *adapters.RequestData, response *adapters.ResponseData) (*adapters.BidderResponse, []error) {

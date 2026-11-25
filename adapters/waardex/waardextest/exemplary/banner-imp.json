@@ -40,6 +40,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "auction-7731-slot-top-banner",
           "imp": [
@@ -101,7 +109,6 @@
                   "cat": [
                     "IAB2"
                   ],
-                  "mtype": 1,
                   "adomain": [
                     "test.com"
                   ],
@@ -112,14 +119,14 @@
             }
           ],
           "bidid": "wx-resp-4f2c",
-          "cur": "GBP"
+          "cur": "USD"
         }
       }
     }
   ],
   "expectedBidResponses": [
     {
-      "currency": "GBP",
+      "currency": "USD",
       "bids": [
         {
           "bid": {

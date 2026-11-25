@@ -47,6 +47,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=101",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "req-1-imp-1-banner",
           "cur": [

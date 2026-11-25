@@ -52,6 +52,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=301",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "0000000000003-banner-3-banner",
           "imp": [
@@ -124,6 +132,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=302",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "0000000000003-banner-4-banner",
           "imp": [

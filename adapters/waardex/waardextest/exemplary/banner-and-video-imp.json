@@ -41,6 +41,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=102",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "auction-7731-slot-hero-banner",
           "imp": [
@@ -111,6 +119,14 @@
     {
       "expectedRequest": {
         "uri": "http://justbidit2.xyz:8800/hb?pubId=102",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ]
+        },
         "body": {
           "id": "auction-7731-slot-hero-video",
           "imp": [
