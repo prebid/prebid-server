@@ -16,6 +16,10 @@
     {
       "expectedRequest":{
         "uri":"https://bid.smartclip.net/bid/1005",
+        "headers":{
+          "Content-Type":["application/json;charset=utf-8"],
+          "X-Openrtb-Version":["2.6"]
+        },
         "body":{
           "id":"test-request-id-video",
           "imp":[
