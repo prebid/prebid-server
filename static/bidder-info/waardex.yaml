@@ -3,6 +3,7 @@
 endpoint: "http://useast.justbidit2.xyz:8800/hb?pubId={{.ZoneID}}"
 maintainer:
   email: it@waardex.com
+gvlVendorID: 1592
 capabilities:
   app:
     mediaTypes:
