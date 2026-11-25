@@ -1,0 +1,118 @@
+{
+  "mockBidRequest": {
+    "id": "auction-app",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "app-home"
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "example-app",
+      "bundle": "test.example.app",
+      "ext": {
+        "data": {
+          "section": "news"
+        }
+      }
+    },
+    "regs": {
+      "gdpr": 1
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/bid",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "app-home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "",
+          "gdpr": 1,
+          "customs": {
+            "section": "news"
+          }
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": [
+          {
+            "requestId": "imp-1",
+            "bidId": "bid-1",
+            "cpm": 1.2,
+            "currency": "EUR",
+            "width": 300,
+            "height": 250,
+            "ad": "<div>Sample creative</div>",
+            "ttl": 60,
+            "creativeId": "creative-1",
+            "netRevenue": true,
+            "meta": {
+              "advertiserDomains": [
+                "advertiser.example"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "EUR",
+      "bids": [
+        {
+          "type": "banner",
+          "bid": {
+            "id": "bid-1",
+            "impid": "imp-1",
+            "price": 1.2,
+            "adm": "<div>Sample creative</div>",
+            "w": 300,
+            "h": 250,
+            "crid": "creative-1",
+            "exp": 60,
+            "adomain": [
+              "advertiser.example"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

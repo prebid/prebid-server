@@ -1,0 +1,137 @@
+{
+  "mockBidRequest": {
+    "id": "invalid-extensions",
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      },
+      {
+        "id": "bad-imp-ext",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": []
+      },
+      {
+        "id": "bad-bidder",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": "invalid"
+        }
+      },
+      {
+        "id": "video",
+        "video": {},
+        "ext": {
+          "bidder": {
+            "publisher": "152",
+            "adSlot": "home"
+          }
+        }
+      },
+      {
+        "id": "other",
+        "banner": {
+          "w": 300,
+          "h": 250
+        },
+        "ext": {
+          "bidder": {
+            "publisher": "999",
+            "adSlot": "home",
+            "includeOrtb2": true
+          }
+        }
+      }
+    ],
+    "app": {
+      "id": "example-app",
+      "ext": "invalid"
+    }
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://bid.example.test/bid",
+        "body": {
+          "publisher": "152",
+          "slots": [
+            {
+              "adSlot": "home",
+              "id": "imp-1",
+              "sizes": [
+                {
+                  "width": 300,
+                  "height": 250
+                }
+              ]
+            }
+          ],
+          "cur": {
+            "adServerCurrency": "EUR",
+            "granularityMultiplier": 1
+          },
+          "url": "",
+          "sdk_version": "prebid-server",
+          "gdpr_consent": "",
+          "gdpr": 1
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": "invalid bid response"
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "optout: imp bad-imp-ext: invalid impression extension:",
+      "comparison": "startswith"
+    },
+    {
+      "value": "optout: imp bad-bidder: invalid bidder parameters:",
+      "comparison": "startswith"
+    },
+    {
+      "value": "optout: imp video is not banner",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: imp other has publisher 999, expected 152",
+      "comparison": "literal"
+    },
+    {
+      "value": "optout: invalid app.ext:",
+      "comparison": "startswith"
+    }
+  ],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "optout: invalid response JSON:",
+      "comparison": "startswith"
+    }
+  ]
+}
