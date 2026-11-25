@@ -66,6 +66,7 @@ type optoutRequest struct {
 
 type optoutBid struct {
 	RequestID  string          `json:"requestId"`
+	BidID      string          `json:"bidId"`
 	CPM        float64         `json:"cpm"`
 	Currency   string          `json:"currency"`
 	Width      int64           `json:"width"`
@@ -428,6 +429,13 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 			continue
 		}
 
+		if b.BidID == "" {
+			errors = append(errors, &errortypes.BadServerResponse{
+				Message: fmt.Sprintf("optout: missing bid ID for impression %q", b.RequestID),
+			})
+			continue
+		}
+
 		if b.Currency == "" || b.Ad == "" || b.Width <= 0 || b.Height <= 0 ||
 			b.CPM < 0 || math.IsNaN(b.CPM) || math.IsInf(b.CPM, 0) {
 			errors = append(errors, &errortypes.BadServerResponse{
@@ -474,10 +482,8 @@ func (a *adapter) MakeBids(req *openrtb2.BidRequest, outgoing *adapters.RequestD
 			}
 		}
 
-		// The Opt Out endpoint has no separate bid ID, so the impression ID is reused.
-		// This is unique because the endpoint returns at most one bid per slot
 		bid := &openrtb2.Bid{
-			ID:      b.RequestID,
+			ID:      b.BidID,
 			ImpID:   b.RequestID,
 			Price:   b.CPM,
 			AdM:     b.Ad,

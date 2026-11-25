@@ -45,8 +45,8 @@ func response(status int, body string) *adapters.ResponseData {
 	return &adapters.ResponseData{StatusCode: status, Body: []byte(body)}
 }
 
-func bidJSON(id, currency string, price float64) string {
-	return fmt.Sprintf(`{"requestId":%q,"cpm":%g,"currency":%q,"width":300,"height":250,"ad":"<div>ok</div>","creativeId":"creative","ttl":45}`, id, price, currency)
+func bidJSON(requestID, bidID, currency string, price float64) string {
+	return fmt.Sprintf(`{"requestId":%q,"bidId":%q,"cpm":%g,"currency":%q,"width":300,"height":250,"ad":"<div>ok</div>","creativeId":"creative","ttl":45}`, requestID, bidID, price, currency)
 }
 
 func decodeOutgoing(t *testing.T, r *adapters.RequestData) optoutRequest {
@@ -292,15 +292,15 @@ func TestGetAllowedSizes(t *testing.T) {
 func TestMakeBidsSuccessfulFormatsAndCurrency(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
 	for _, tc := range []struct{ name, body string }{
-		{"wrapped", `{"bids":[` + bidJSON("imp-1", "EUR", 1.25) + `]}`},
-		{"array", `[` + bidJSON("imp-1", "EUR", 1.25) + `]`},
+		{"wrapped", `{"bids":[` + bidJSON("imp-1", "bid-1", "EUR", 1.25) + `]}`},
+		{"array", `[` + bidJSON("imp-1", "bid-1", "EUR", 1.25) + `]`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, errs := (&adapter{}).MakeBids(req, outgoing, response(200, tc.body))
 			if len(errs) != 0 || res == nil || len(res.Bids) != 1 {
 				t.Fatalf("res=%+v errs=%v", res, errs)
 			}
-			if res.Currency != "EUR" || res.Bids[0].Bid.Price != 1.25 || res.Bids[0].Bid.ImpID != "imp-1" || res.Bids[0].Bid.Exp != 45 {
+			if res.Currency != "EUR" || res.Bids[0].Bid.ID != "bid-1" || res.Bids[0].Bid.Price != 1.25 || res.Bids[0].Bid.ImpID != "imp-1" || res.Bids[0].Bid.Exp != 45 {
 				t.Fatalf("unexpected bid: currency=%s bid=%+v", res.Currency, res.Bids[0].Bid)
 			}
 		})
@@ -362,17 +362,18 @@ func TestMakeBidsStatusErrorTypes(t *testing.T) {
 func TestMakeBidsRejectsInvalidBidsAndPreservesValidBids(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
 	invalid := []struct{ name, body string }{
-		{"unknown impression", bidJSON("unknown", "EUR", 1)},
-		{"missing currency", bidJSON("imp-1", "", 1)},
-		{"missing markup", `{"requestId":"imp-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":""}`},
-		{"zero width", `{"requestId":"imp-1","cpm":1,"currency":"EUR","width":0,"height":250,"ad":"ok"}`},
-		{"negative cpm", bidJSON("imp-1", "EUR", -1)},
-		{"bad ext array", `{"requestId":"imp-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"ok","optOutExt":[]}`},
-		{"bad ext string", `{"requestId":"imp-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"ok","optOutExt":"test"}`},
+		{"unknown impression", bidJSON("unknown", "bid-1", "EUR", 1)},
+		{"missing bid ID", `{"requestId":"imp-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"ok"}`},
+		{"missing currency", bidJSON("imp-1", "bid-1", "", 1)},
+		{"missing markup", `{"requestId":"imp-1","bidId":"bid-invalid","cpm":1,"currency":"EUR","width":300,"height":250,"ad":""}`},
+		{"zero width", `{"requestId":"imp-1","bidId":"bid-invalid","cpm":1,"currency":"EUR","width":0,"height":250,"ad":"ok"}`},
+		{"negative cpm", bidJSON("imp-1", "bid-1", "EUR", -1)},
+		{"bad ext array", `{"requestId":"imp-1","bidId":"bid-invalid","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"ok","optOutExt":[]}`},
+		{"bad ext string", `{"requestId":"imp-1","bidId":"bid-invalid","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"ok","optOutExt":"test"}`},
 	}
 	for _, tc := range invalid {
 		t.Run(tc.name, func(t *testing.T) {
-			body := `{"bids":[` + bidJSON("imp-1", "EUR", 2) + `,` + tc.body + `]}`
+			body := `{"bids":[` + bidJSON("imp-1", "bid-1", "EUR", 2) + `,` + tc.body + `]}`
 			res, errs := (&adapter{}).MakeBids(req, outgoing, response(200, body))
 			if len(errs) != 1 || res == nil || len(res.Bids) != 1 || res.Currency != "EUR" {
 				t.Fatalf("res=%+v errs=%v", res, errs)
@@ -383,12 +384,12 @@ func TestMakeBidsRejectsInvalidBidsAndPreservesValidBids(t *testing.T) {
 
 func TestMakeBidsMixedCurrenciesAndZeroPrice(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
-	mixed := `{"bids":[` + bidJSON("imp-1", "EUR", 2) + `,` + bidJSON("imp-1", "USD", 3) + `]}`
+	mixed := `{"bids":[` + bidJSON("imp-1", "bid-1", "EUR", 2) + `,` + bidJSON("imp-1", "bid-1", "USD", 3) + `]}`
 	res, errs := (&adapter{}).MakeBids(req, outgoing, response(200, mixed))
 	if len(errs) != 1 || len(res.Bids) != 1 || res.Currency != "EUR" {
 		t.Fatalf("res=%+v errs=%v", res, errs)
 	}
-	zero := `{"bids":[` + bidJSON("imp-1", "EUR", 0) + `]}`
+	zero := `{"bids":[` + bidJSON("imp-1", "bid-1", "EUR", 0) + `]}`
 	res, errs = (&adapter{}).MakeBids(req, outgoing, response(200, zero))
 	if len(errs) != 0 || len(res.Bids) != 1 || res.Bids[0].Bid.Price != 0 {
 		t.Fatalf("zero bid changed: res=%+v errs=%v", res, errs)
@@ -401,7 +402,7 @@ func TestMakeBidsMixedCurrenciesAndZeroPrice(t *testing.T) {
 
 func TestMakeBidsExtensionAndDefaultTTL(t *testing.T) {
 	req, outgoing := makeOutgoing(t)
-	body := `{"bids":[{"requestId":"imp-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"<div/>","optOutExt":{"optout":{"version":1,"key":"test"}}}]}`
+	body := `{"bids":[{"requestId":"imp-1","bidId":"bid-1","cpm":1,"currency":"EUR","width":300,"height":250,"ad":"<div/>","optOutExt":{"optout":{"version":1,"key":"test"}}}]}`
 	res, errs := (&adapter{}).MakeBids(req, outgoing, response(200, body))
 	if len(errs) != 0 || len(res.Bids) != 1 {
 		t.Fatalf("res=%+v errs=%v", res, errs)
