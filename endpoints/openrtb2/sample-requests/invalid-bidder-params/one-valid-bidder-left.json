@@ -1,0 +1,72 @@
+{
+  "description": "The imp has a bidder with invalid params and a bidder with valid params. The invalid bidder is dropped with a warning and the auction runs with the valid bidder.",
+  "config": {
+    "realParamsValidator": true,
+    "mockBidders": [
+      {"bidderName": "appnexus", "currency": "USD", "price": 1.00},
+      {"bidderName": "openx", "currency": "USD", "price": 1.00}
+    ]
+  },
+  "mockBidRequest": {
+    "id": "some-request-id",
+    "site": {
+      "page": "test.somepage.com"
+    },
+    "imp": [
+      {
+        "id": "my-imp-id",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "prebid": {
+            "bidder": {
+              "appnexus": {
+                "placementId": 12883451,
+                "reserve": "0.5"
+              },
+              "openx": {
+                "unit": "539439964",
+                "delDomain": "se-demo-d.openx.net"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expectedBidResponse": {
+    "id": "some-request-id",
+    "bidid": "test bid id",
+    "cur": "USD",
+    "nbr": 0,
+    "seatbid": [
+      {
+        "bid": [
+          {
+            "id": "openx-bid",
+            "impid": "my-imp-id",
+            "price": 1
+          }
+        ],
+        "seat": "openx"
+      }
+    ],
+    "ext": {
+      "warnings": {
+        "general": [
+          {
+            "code": 10018,
+            "message": "request.imp[0].ext.prebid.bidder.appnexus failed validation and was dropped.\nreserve: Invalid type. Expected: number, given: string"
+          }
+        ]
+      }
+    }
+  },
+  "expectedReturnCode": 200
+}

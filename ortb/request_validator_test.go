@@ -8,17 +8,19 @@ import (
 	"github.com/prebid/openrtb/v20/openrtb2"
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
+	"github.com/prebid/prebid-server/v4/stored_responses"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateImpExt(t *testing.T) {
 	type testCase struct {
-		description         string
-		impExt              json.RawMessage
-		cfg                 ValidationConfig
-		paramValidatorError error
-		expectedImpExt      string
-		expectedErrs        []error
+		description                 string
+		impExt                      json.RawMessage
+		cfg                         ValidationConfig
+		paramValidatorError         error
+		paramValidatorErrorByBidder map[openrtb_ext.BidderName]error
+		expectedImpExt              string
+		expectedErrs                []error
 	}
 	testGroups := []struct {
 		description string
@@ -256,6 +258,40 @@ func TestValidateImpExt(t *testing.T) {
 					expectedImpExt:      `{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]}}}}`,
 					expectedErrs:        []error{},
 				},
+				{
+					description: "Invalid Params + Valid Bidder",
+					impExt:      json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]},"rubicon":{"accountId":1001}}}}`),
+					paramValidatorErrorByBidder: map[openrtb_ext.BidderName]error{
+						openrtb_ext.BidderAppnexus: errors.New("params error"),
+					},
+					expectedImpExt: `{"prebid":{"bidder":{"rubicon":{"accountId":1001}}}}`,
+					expectedErrs: []error{&errortypes.Warning{
+						Message:     "request.imp[0].ext.prebid.bidder.appnexus failed validation and was dropped.\nparams error",
+						WarningCode: errortypes.InvalidBidderParamsWarningCode,
+					}},
+				},
+				{
+					description: "Invalid Params + Valid Bidder - Bidders In Legacy imp.ext Location",
+					impExt:      json.RawMessage(`{"appnexus":{"placement_id_wrong_format":[]},"rubicon":{"accountId":1001}}`),
+					paramValidatorErrorByBidder: map[openrtb_ext.BidderName]error{
+						openrtb_ext.BidderAppnexus: errors.New("params error"),
+					},
+					expectedImpExt: `{"prebid":{"bidder":{"rubicon":{"accountId":1001}}}}`,
+					expectedErrs: []error{&errortypes.Warning{
+						Message:     "request.imp[0].ext.prebid.bidder.appnexus failed validation and was dropped.\nparams error",
+						WarningCode: errortypes.InvalidBidderParamsWarningCode,
+					}},
+				},
+				{
+					description:         "Invalid Params - All Bidders",
+					impExt:              json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]},"rubicon":{"accountId":[]}}}}`),
+					paramValidatorError: errors.New("params error"),
+					expectedImpExt:      `{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]},"rubicon":{"accountId":[]}}}}`,
+					expectedErrs: []error{
+						errors.New("request.imp[0].ext.prebid.bidder.appnexus failed validation.\nparams error"),
+						errors.New("request.imp[0].ext.prebid.bidder.rubicon failed validation.\nparams error"),
+					},
+				},
 			},
 		},
 	}
@@ -271,7 +307,8 @@ func TestValidateImpExt(t *testing.T) {
 					bidderMap:       openrtb_ext.BuildBidderMap(),
 					disabledBidders: disabledBidders,
 					paramsValidator: mockBidderParamValidator{
-						Error: test.paramValidatorError,
+						Error:         test.paramValidatorError,
+						ErrorByBidder: test.paramValidatorErrorByBidder,
 					},
 				}
 				errs := rv.validateImpExt(impWrapper, test.cfg, nil, 0, false, nil)
@@ -289,11 +326,53 @@ func TestValidateImpExt(t *testing.T) {
 	}
 }
 
+func TestValidateImpExtDropsStoredBidResponseOfInvalidBidder(t *testing.T) {
+	imp := &openrtb2.Imp{
+		ID:  "imp-id",
+		Ext: json.RawMessage(`{"prebid":{"bidder":{"appnexus":{"placement_id_wrong_format":[]},"rubicon":{"accountId":1001}}}}`),
+	}
+	storedBidResponses := stored_responses.ImpBidderStoredResp{
+		"imp-id": {
+			"appnexus": json.RawMessage(`{"seat":"appnexus"}`),
+			"rubicon":  json.RawMessage(`{"seat":"rubicon"}`),
+		},
+	}
+	rv := standardRequestValidator{
+		bidderMap: openrtb_ext.BuildBidderMap(),
+		paramsValidator: mockBidderParamValidator{
+			ErrorByBidder: map[openrtb_ext.BidderName]error{
+				openrtb_ext.BidderAppnexus: errors.New("params error"),
+			},
+		},
+	}
+
+	impWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
+	errs := rv.validateImpExt(impWrapper, ValidationConfig{}, nil, 0, false, storedBidResponses)
+	assert.NoError(t, impWrapper.RebuildImp())
+
+	assert.ElementsMatch(t, []error{&errortypes.Warning{
+		Message:     "request.imp[0].ext.prebid.bidder.appnexus failed validation and was dropped.\nparams error",
+		WarningCode: errortypes.InvalidBidderParamsWarningCode,
+	}}, errs)
+	assert.Equal(t, stored_responses.ImpBidderStoredResp{
+		"imp-id": {"rubicon": json.RawMessage(`{"seat":"rubicon"}`)},
+	}, storedBidResponses)
+
+	// The imp is validated again when it is split by bidder, and its bidders must still match its stored bid responses.
+	splitImpWrapper := &openrtb_ext.ImpWrapper{Imp: imp}
+	errs = rv.validateImpExt(splitImpWrapper, ValidationConfig{SkipBidderParams: true}, nil, 0, false, storedBidResponses)
+	assert.Empty(t, errs)
+}
+
 type mockBidderParamValidator struct {
-	Error error
+	Error         error
+	ErrorByBidder map[openrtb_ext.BidderName]error
 }
 
 func (v mockBidderParamValidator) Validate(name openrtb_ext.BidderName, ext json.RawMessage) error {
+	if err, found := v.ErrorByBidder[name]; found {
+		return err
+	}
 	return v.Error
 }
 func (v mockBidderParamValidator) Schema(name openrtb_ext.BidderName) string { return "" }
