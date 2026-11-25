@@ -3,6 +3,8 @@ package ortb
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/prebid/prebid-server/v4/errortypes"
 	"github.com/prebid/prebid-server/v4/openrtb_ext"
@@ -135,6 +137,8 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 					invalidParamsByBidder[bidder] = err
 					delete(prebid.Bidder, bidder)
 					prebidModified = true
+					// Stored bid responses must keep matching the bidders of the imp, which is checked again when the imp is split by bidder.
+					delete(storedBidResp[imp.ID], bidder)
 				}
 			}
 		} else {
@@ -158,16 +162,16 @@ func (srv *standardRequestValidator) validateImpExt(imp *openrtb_ext.ImpWrapper,
 			errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder must contain at least one bidder", impIndex))
 		}
 		// No bidder is left to run this imp, so invalid params are errors.
-		for bidder, err := range invalidParamsByBidder {
-			errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, err))
+		for _, bidder := range slices.Sorted(maps.Keys(invalidParamsByBidder)) {
+			errL = append(errL, fmt.Errorf("request.imp[%d].ext.prebid.bidder.%s failed validation.\n%v", impIndex, bidder, invalidParamsByBidder[bidder]))
 		}
 		return errL
 	}
 
 	// Other bidders can still run this imp, so a bidder with invalid params is dropped with a warning.
-	for bidder, err := range invalidParamsByBidder {
+	for _, bidder := range slices.Sorted(maps.Keys(invalidParamsByBidder)) {
 		errL = append(errL, &errortypes.Warning{
-			Message:     fmt.Sprintf("request.imp[%d].ext.prebid.bidder.%s failed validation and was dropped.\n%v", impIndex, bidder, err),
+			Message:     fmt.Sprintf("request.imp[%d].ext.prebid.bidder.%s failed validation and was dropped.\n%v", impIndex, bidder, invalidParamsByBidder[bidder]),
 			WarningCode: errortypes.InvalidBidderParamsWarningCode,
 		})
 	}
