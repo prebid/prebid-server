@@ -1,0 +1,77 @@
+{
+  "mockBidRequest": {
+    "id": "request-publisher-id-escaping",
+    "site": {
+      "id": "site-1",
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "site-publisher"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub 1&x=y/z"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=pub+1%26x%3Dy%2Fz",
+        "body": {
+          "id": "request-publisher-id-escaping",
+          "site": {
+            "id": "site-1",
+            "domain": "publisher.example",
+            "page": "https://publisher.example/article",
+            "publisher": {
+              "id": "site-publisher"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub 1&x=y/z"
+                }
+              }
+            }
+          ],
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 204
+      }
+    }
+  ],
+  "expectedBidResponses": []
+}

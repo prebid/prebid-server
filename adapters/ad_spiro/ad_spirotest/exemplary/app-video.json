@@ -1,0 +1,178 @@
+{
+  "mockBidRequest": {
+    "id": "request-app-video",
+    "app": {
+      "id": "app-1",
+      "name": "Example App",
+      "bundle": "com.example.app",
+      "storeurl": "https://play.google.com/store/apps/details?id=com.example.app",
+      "publisher": {
+        "id": "app-publisher"
+      }
+    },
+    "device": {
+      "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+      "ip": "203.0.113.20",
+      "ifa": "4d7b9e2a-6f3c-4a8e-9b1d-2c5e7f8a9b0c",
+      "os": "android"
+    },
+    "imp": [
+      {
+        "id": "imp-video",
+        "video": {
+          "mimes": [
+            "video/mp4"
+          ],
+          "minduration": 5,
+          "maxduration": 30,
+          "protocols": [
+            2,
+            3,
+            5,
+            6
+          ],
+          "w": 640,
+          "h": 480
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "test"
+          }
+        }
+      }
+    ],
+    "tmax": 800
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=test",
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "X-Openrtb-Version": [
+            "2.6"
+          ]
+        },
+        "body": {
+          "id": "request-app-video",
+          "app": {
+            "id": "app-1",
+            "name": "Example App",
+            "bundle": "com.example.app",
+            "storeurl": "https://play.google.com/store/apps/details?id=com.example.app",
+            "publisher": {
+              "id": "app-publisher"
+            }
+          },
+          "device": {
+            "ua": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+            "ip": "203.0.113.20",
+            "ifa": "4d7b9e2a-6f3c-4a8e-9b1d-2c5e7f8a9b0c",
+            "os": "android"
+          },
+          "imp": [
+            {
+              "id": "imp-video",
+              "video": {
+                "mimes": [
+                  "video/mp4"
+                ],
+                "minduration": 5,
+                "maxduration": 30,
+                "protocols": [
+                  2,
+                  3,
+                  5,
+                  6
+                ],
+                "w": 640,
+                "h": 480
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "test"
+                }
+              }
+            }
+          ],
+          "tmax": 800,
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-video"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "request-app-video",
+          "cur": "USD",
+          "seatbid": [
+            {
+              "seat": "adspiro",
+              "bid": [
+                {
+                  "id": "bid-video",
+                  "impid": "imp-video",
+                  "price": 0.5,
+                  "adm": "<VAST version=\"4.2\"></VAST>",
+                  "adomain": [
+                    "adspiro.io"
+                  ],
+                  "crid": "adspiro-test-video",
+                  "w": 640,
+                  "h": 480,
+                  "exp": 300,
+                  "cat": [
+                    "IAB1-1"
+                  ],
+                  "dur": 30,
+                  "mtype": 2
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "bid-video",
+            "impid": "imp-video",
+            "price": 0.5,
+            "adm": "<VAST version=\"4.2\"></VAST>",
+            "adomain": [
+              "adspiro.io"
+            ],
+            "crid": "adspiro-test-video",
+            "w": 640,
+            "h": 480,
+            "exp": 300,
+            "cat": [
+              "IAB1-1"
+            ],
+            "dur": 30,
+            "mtype": 2
+          },
+          "type": "video",
+          "video": {
+            "duration": 30,
+            "primary_category": "IAB1-1"
+          }
+        }
+      ]
+    }
+  ]
+}

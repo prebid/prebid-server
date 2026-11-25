@@ -1,0 +1,39 @@
+{
+  "mockBidRequest": {
+    "id": "request-invalid-bidder-params",
+    "site": {
+      "id": "site-1",
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "site-publisher"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": 123
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [],
+  "expectedBidResponses": [],
+  "expectedMakeRequestsErrors": [
+    {
+      "value": "imp imp-1: invalid imp.ext.bidder: ",
+      "comparison": "startswith"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "mockBidRequest": {
+    "id": "request-server-error",
+    "site": {
+      "id": "site-1",
+      "domain": "publisher.example",
+      "page": "https://publisher.example/article",
+      "publisher": {
+        "id": "site-publisher"
+      }
+    },
+    "imp": [
+      {
+        "id": "imp-1",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "publisherId": "pub-1"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "https://adspiro.example/pbs?pid=pub-1",
+        "body": {
+          "id": "request-server-error",
+          "site": {
+            "id": "site-1",
+            "domain": "publisher.example",
+            "page": "https://publisher.example/article",
+            "publisher": {
+              "id": "site-publisher"
+            }
+          },
+          "imp": [
+            {
+              "id": "imp-1",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "publisherId": "pub-1"
+                }
+              }
+            }
+          ],
+          "cur": [
+            "USD"
+          ]
+        },
+        "impIDs": [
+          "imp-1"
+        ]
+      },
+      "mockResponse": {
+        "status": 503
+      }
+    }
+  ],
+  "expectedBidResponses": [],
+  "expectedMakeBidsErrors": [
+    {
+      "value": "Unexpected status code: 503. Run with request.debug = 1 for more info",
+      "comparison": "literal"
+    }
+  ]
+}
