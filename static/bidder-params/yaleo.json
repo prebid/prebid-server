@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Yaleo Adapter Params",
+  "description": "A schema which validates params accepted by the Yaleo adapter",
+  "type": "object",
+
+  "properties": {
+    "placementId": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Yaleo placement identifier (UUID)"
+    },
+    "memberId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Member identifier. Defaults to Audienzz member ID 3927 when omitted."
+    },
+    "maxCpm": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Maximum CPM. Bids priced above this value are rejected by the Yaleo bidder."
+    },
+    "forceDarkTheme": {
+      "type": "boolean",
+      "description": "Renders the ad unit in the dark theme."
+    }
+  },
+
+  "required": ["placementId"]
+}

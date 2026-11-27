@@ -1,0 +1,156 @@
+{
+  "mockBidRequest": {
+    "id": "test-app-request",
+    "test": 1,
+    "app": {
+      "bundle": "ch.example.news",
+      "domain": "news.example.ch",
+      "id": "123456"
+    },
+    "device": {
+      "ua": "ExampleApp/1.0",
+      "ip": "130.59.31.248",
+      "ipv6": "2001:db8::1"
+    },
+    "imp": [
+      {
+        "id": "app-imp",
+        "banner": {
+          "format": [
+            {
+              "w": 300,
+              "h": 250
+            }
+          ]
+        },
+        "ext": {
+          "bidder": {
+            "placementId": "9c752583-d856-4b44-a227-c0ce6c7a8cfa"
+          }
+        }
+      }
+    ]
+  },
+  "httpCalls": [
+    {
+      "expectedRequest": {
+        "uri": "http://yaleo.example.com/prebid",
+        "headers": {
+          "Content-Type": [
+            "application/json;charset=utf-8"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "User-Agent": [
+            "ExampleApp/1.0"
+          ],
+          "X-Forwarded-For": [
+            "2001:db8::1",
+            "130.59.31.248"
+          ]
+        },
+        "body": {
+          "id": "test-app-request",
+          "test": 1,
+          "app": {
+            "bundle": "ch.example.news",
+            "domain": "news.example.ch",
+            "id": "123456"
+          },
+          "device": {
+            "ua": "ExampleApp/1.0",
+            "ip": "130.59.31.248",
+            "ipv6": "2001:db8::1"
+          },
+          "imp": [
+            {
+              "id": "app-imp",
+              "banner": {
+                "format": [
+                  {
+                    "w": 300,
+                    "h": 250
+                  }
+                ]
+              },
+              "ext": {
+                "bidder": {
+                  "placementId": "9c752583-d856-4b44-a227-c0ce6c7a8cfa"
+                }
+              }
+            }
+          ]
+        },
+        "impIDs": [
+          "app-imp"
+        ]
+      },
+      "mockResponse": {
+        "status": 200,
+        "body": {
+          "id": "test-app-request",
+          "seatbid": [
+            {
+              "seat": "yaleo",
+              "bid": [
+                {
+                  "id": "app-bid",
+                  "impid": "app-imp",
+                  "price": 4.62085,
+                  "adid": "cc61d43f-6230-4bde-afc2-0d1151694c69",
+                  "adm": "<div>app-ad</div>",
+                  "adomain": [
+                    "audienzz.com",
+                    "yaleo.com"
+                  ],
+                  "crid": "9c752583-d856-4b44-a227-c0ce6c7a8cfa",
+                  "w": 300,
+                  "h": 250,
+                  "mtype": 1,
+                  "ext": {
+                    "prebid": {
+                      "type": "banner"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "bidid": "6776554951447072482",
+          "cur": "USD"
+        }
+      }
+    }
+  ],
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": [
+        {
+          "bid": {
+            "id": "app-bid",
+            "impid": "app-imp",
+            "price": 4.62085,
+            "adid": "cc61d43f-6230-4bde-afc2-0d1151694c69",
+            "adm": "<div>app-ad</div>",
+            "adomain": [
+              "audienzz.com",
+              "yaleo.com"
+            ],
+            "crid": "9c752583-d856-4b44-a227-c0ce6c7a8cfa",
+            "w": 300,
+            "h": 250,
+            "mtype": 1,
+            "ext": {
+              "prebid": {
+                "type": "banner"
+              }
+            }
+          },
+          "type": "banner"
+        }
+      ]
+    }
+  ]
+}
