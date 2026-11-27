@@ -126,6 +126,7 @@
                 {
                   "id": "7706636740145184841",
                   "impid": "test-video-imp",
+                  "mtype": 2,
                   "price": 0.5,
                   "adid": "29681110",
                   "adm": "some-test-ad",
@@ -153,6 +154,7 @@
           "bid": {
             "id": "7706636740145184841",
             "impid": "test-video-imp",
+            "mtype": 2,
             "price": 0.5,
             "adid": "29681110",
             "adm": "some-test-ad",

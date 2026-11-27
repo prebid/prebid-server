@@ -176,7 +176,7 @@
             }
           },
           "ext": {
-            "client": "prebid_server_1.3"
+            "client": "prebid_server_1.4"
           }
         },
         "impIDs": [
@@ -186,9 +186,6 @@
       },
       "mockResponse": {
         "status": 200,
-        "headers": {
-          "X-Smt-Adtype": null
-        },
         "body": {
           "id": "5ebea288-f13a-4754-be6d-4ade66c68877",
           "seatbid": [
@@ -228,9 +225,14 @@
   ],
   "expectedMakeBidsErrors": [
     {
-      "value": "X-Smt-Adtype header is missing.",
+      "value": "Unsupported MType 0 for impression 1_1.",
       "comparison": "literal"
     }
   ],
-  "expectedBidResponses": []
+  "expectedBidResponses": [
+    {
+      "currency": "USD",
+      "bids": []
+    }
+  ]
 }
